@@ -18,7 +18,7 @@ import { useNotes } from "@/context/NotesContext";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
 import { Kajian } from "@/types";
 
-const KATEGORI = ["Semua", "Tafsir", "Hadits", "Fikih", "Akidah", "Sirah"];
+const KATEGORI = ["Semua", "Fikih", "Akidah", "Ilmu", "Tafsir", "Akhlak", "Umum"];
 
 export default function BerandaScreen() {
   const colors = useColors();
