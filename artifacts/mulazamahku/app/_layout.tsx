@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotesProvider } from "@/context/NotesContext";
 import { MudzakarahProvider } from "@/context/MudzakarahContext";
+import { scheduleAllKajianReminders } from "@/services/notificationService";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,6 +36,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace("/(tabs)");
     }
   }, [user, isLoading, segments]);
+
+  // Jadwalkan ulang notifikasi H-1 saat user masuk
+  useEffect(() => {
+    if (user) {
+      scheduleAllKajianReminders();
+    }
+  }, [user]);
 
   return <>{children}</>;
 }
