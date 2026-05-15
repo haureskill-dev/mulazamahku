@@ -36,10 +36,16 @@ export default function BerandaScreen() {
 
   const greeting = () => {
     const h = new Date().getHours();
-    if (h < 10) return "Selamat pagi";
-    if (h < 15) return "Selamat siang";
-    if (h < 18) return "Selamat sore";
-    return "Selamat malam";
+    if (h >= 4 && h < 11) return "Shabahul Khair";   // صباح الخير — pagi
+    if (h >= 11 && h < 15) return "Assalamu'alaikum"; // siang
+    return "Masa'ul Khair";                            // مساء الخير — sore & malam
+  };
+
+  const greetingArabic = () => {
+    const h = new Date().getHours();
+    if (h >= 4 && h < 11) return "صباح الخير";
+    if (h >= 11 && h < 15) return "وعليكم السلام";
+    return "مساء الخير";
   };
 
   return (
@@ -59,6 +65,7 @@ export default function BerandaScreen() {
       >
         <View style={styles.headerTop}>
           <View>
+            <Text style={styles.greetingArabic}>{greetingArabic()}</Text>
             <Text style={styles.greetingText}>{greeting()},</Text>
             <Text style={styles.nameText}>{user?.nama ?? "Muslimah"}</Text>
           </View>
@@ -188,6 +195,14 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: 20,
+  },
+  greetingArabic: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "rgba(255,255,255,0.95)",
+    textAlign: "right",
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   greetingText: {
     fontSize: 14,
