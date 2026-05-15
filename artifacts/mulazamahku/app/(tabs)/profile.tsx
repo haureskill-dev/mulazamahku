@@ -65,18 +65,20 @@ export default function ProfileScreen() {
   const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
   const handleLogout = () => {
-    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert("Keluar", "Yakin ingin keluar dari akun?", [
-      { text: "Batal", style: "cancel" },
-      {
-        text: "Keluar",
-        style: "destructive",
-        onPress: async () => {
-          await signOut();
-          router.replace("/");
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert("Keluar", "Yakin ingin keluar dari akun?", [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Keluar",
+          style: "destructive",
+          onPress: () => signOut(),
         },
-      },
-    ]);
+      ]);
+    } else {
+      const ok = window.confirm("Yakin ingin keluar dari akun?");
+      if (ok) signOut();
+    }
   };
 
   const activeKajian = DUMMY_KAJIAN.filter((k) => k.status === "aktif").length;
