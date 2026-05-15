@@ -14,10 +14,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  aktif: "#2D5A3D",
-  akan_datang: "#D4841A",
-  selesai: "#888",
-  online: "#1A6DA8",
+  aktif: "#3C4A5E",
+  akan_datang: "#B07D2A",
+  selesai: "#8A90A0",
+  online: "#3A6EA8",
 };
 
 export default function KajianDetailScreen() {

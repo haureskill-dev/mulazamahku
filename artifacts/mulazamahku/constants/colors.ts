@@ -1,34 +1,34 @@
 const colors = {
   light: {
-    text: "#1C2E24",
-    tint: "#2D5A3D",
+    text: "#1C1E2A",
+    tint: "#3C4A5E",
 
-    background: "#F8F5EF",
-    foreground: "#1C2E24",
+    background: "#F2F2F5",        // abu lembut hangat
+    foreground: "#1C1E2A",        // hampir hitam dengan undertone biru
 
     card: "#FFFFFF",
-    cardForeground: "#1C2E24",
+    cardForeground: "#1C1E2A",
 
-    primary: "#2D5A3D",
+    primary: "#3C4A5E",           // slate blue-gray — elegan, berkarakter
     primaryForeground: "#FFFFFF",
 
-    secondary: "#4A7C5E",
+    secondary: "#5C6C82",         // slate medium
     secondaryForeground: "#FFFFFF",
 
-    muted: "#EDE8DC",
-    mutedForeground: "#7A8B7D",
+    muted: "#EBEBF0",             // abu sangat terang
+    mutedForeground: "#8A90A0",   // abu medium
 
-    accent: "#C9B99A",
-    accentForeground: "#1C2E24",
+    accent: "#B0BAC8",            // cool blue-gray
+    accentForeground: "#1C1E2A",
 
-    destructive: "#C0392B",
+    destructive: "#B5302A",
     destructiveForeground: "#FFFFFF",
 
-    border: "#DDD6C8",
-    input: "#DDD6C8",
+    border: "#DCDDE8",            // batas abu sejuk
+    input: "#DCDDE8",
 
-    surface: "#FDFAF5",
-    highlight: "#E8F0EA",
+    surface: "#F8F8FB",           // hampir putih
+    highlight: "#ECEEF5",         // highlight abu kebiruan
   },
 
   radius: 12,
