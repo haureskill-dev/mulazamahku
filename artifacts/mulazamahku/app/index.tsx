@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -55,9 +56,11 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.brandArea}>
-          <View style={[styles.logoBox, { backgroundColor: colors.primary }]}>
-            <Feather name="book-open" size={32} color="#FFFFFF" />
-          </View>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={[styles.appName, { color: colors.primary }]}>Mulazamahku</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
             Pendamping setia perjalanan menuntut ilmu
@@ -174,18 +177,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 36,
   },
-  logoBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+  logoImage: {
+    width: 100,
+    height: 100,
     marginBottom: 14,
-    shadowColor: "#3C4A5E",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
   appName: {
     fontSize: 26,

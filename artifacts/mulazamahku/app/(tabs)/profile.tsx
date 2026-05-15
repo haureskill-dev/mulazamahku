@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useNotes } from "@/context/NotesContext";
@@ -96,6 +96,11 @@ export default function ProfileScreen() {
           { backgroundColor: colors.primary, paddingTop: topInset + 16 },
         ]}
       >
+        <Image
+          source={require("@/assets/images/logo.png")}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
         <View style={[styles.avatar, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
           <Text style={styles.avatarLetter}>
             {(user?.nama ?? "M").charAt(0).toUpperCase()}
@@ -183,6 +188,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
     paddingBottom: 28,
+  },
+  headerLogo: {
+    width: 64,
+    height: 64,
+    marginBottom: 12,
+    opacity: 0.9,
   },
   avatar: {
     width: 80,
