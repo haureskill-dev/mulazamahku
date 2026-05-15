@@ -132,7 +132,7 @@ export const DUMMY_KAJIAN: Kajian[] = [
     judul: "100 Dosa yang Diremehkan Wanita",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "10.00 - 11.30 WIB",
-    hari: "Sabtu · Pekan 1, 3 & 4",
+    hari: "Sabtu · Pekan 1 & 3",
     lokasi: "Masjid Arga Baja Grogol",
     alamat: "Masjid Arga Baja Grogol",
     status: "aktif",
@@ -152,6 +152,19 @@ export const DUMMY_KAJIAN: Kajian[] = [
     kategori: "Tafsir",
     deskripsi:
       "Kajian tafsir surah-surah dalam Juz 'Amma bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
+  },
+  {
+    id: "r11b",
+    judul: "100 Dosa yang Diremehkan Wanita",
+    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
+    waktu: "10.00 - 11.30 WIB",
+    hari: "Sabtu · Pekan 4",
+    lokasi: "Masjid Arga Baja Grogol",
+    alamat: "Masjid Arga Baja Grogol",
+    status: "aktif",
+    kategori: "Akhlak",
+    deskripsi:
+      "Kajian tentang 100 dosa yang sering diremehkan wanita bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Sangat penting untuk diikuti setiap muslimah.",
   },
 
   // ── AHAD ────────────────────────────────────────────────
