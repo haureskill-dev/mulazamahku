@@ -14,7 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  aktif: "#3C4A5E",
+  aktif: "#C9A227",
   akan_datang: "#B07D2A",
   selesai: "#8A90A0",
   online: "#3A6EA8",

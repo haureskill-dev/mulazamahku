@@ -2,27 +2,28 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useMemo } from "react";
 import {
-  FlatList,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KajianCard } from "@/components/KajianCard";
+import { MosqueDecoration } from "@/components/MosqueDecoration";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useNotes } from "@/context/NotesContext";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
-import { Kajian } from "@/types";
 
 const KATEGORI = ["Semua", "Fikih", "Akidah", "Ilmu", "Tafsir", "Akhlak", "Umum"];
 
 export default function BerandaScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { user } = useAuth();
   const { notes } = useNotes();
   const [selectedKategori, setSelectedKategori] = React.useState("Semua");
@@ -36,9 +37,9 @@ export default function BerandaScreen() {
 
   const greeting = () => {
     const h = new Date().getHours();
-    if (h >= 4 && h < 11) return "Shabahul Khair";   // صباح الخير — pagi
-    if (h >= 11 && h < 15) return "Assalamu'alaikum"; // siang
-    return "Masa'ul Khair";                            // مساء الخير — sore & malam
+    if (h >= 4 && h < 11) return "Shabahul Khair";
+    if (h >= 11 && h < 15) return "Assalamu'alaikum";
+    return "Masa'ul Khair";
   };
 
   const greetingArabic = () => {
@@ -57,12 +58,16 @@ export default function BerandaScreen() {
       }}
       showsVerticalScrollIndicator={false}
     >
+      {/* ── Header navy ─────────────────────────────────────── */}
       <View
         style={[
           styles.headerSection,
           { backgroundColor: colors.primary, paddingTop: insets.top + 20 },
         ]}
       >
+        {/* Garis aksen gold di paling atas */}
+        <View style={[styles.goldTopBar, { backgroundColor: colors.gold }]} />
+
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.greetingArabic}>{greetingArabic()}</Text>
@@ -71,7 +76,7 @@ export default function BerandaScreen() {
           </View>
           <Pressable
             onPress={() => router.push("/(tabs)/profile")}
-            style={[styles.avatarBtn, { backgroundColor: "rgba(255,255,255,0.2)" }]}
+            style={[styles.avatarBtn, { borderColor: colors.gold }]}
           >
             <Text style={styles.avatarLetter}>
               {(user?.nama ?? "M").charAt(0).toUpperCase()}
@@ -79,64 +84,87 @@ export default function BerandaScreen() {
           </Pressable>
         </View>
 
+        {/* Statistik */}
         <View style={styles.statsRow}>
-          <View style={[styles.statItem, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-            <Text style={styles.statNum}>{DUMMY_KAJIAN.filter((k) => k.status === "aktif").length}</Text>
+          <View style={[styles.statItem, { borderColor: "rgba(201,162,39,0.4)", backgroundColor: "rgba(201,162,39,0.1)" }]}>
+            <Text style={[styles.statNum, { color: colors.gold }]}>
+              {DUMMY_KAJIAN.filter((k) => k.status === "aktif").length}
+            </Text>
             <Text style={styles.statLabel}>Kajian Rutin</Text>
           </View>
-          <View style={[styles.statItem, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-            <Text style={styles.statNum}>{notes.length}</Text>
+          <View style={[styles.statItem, { borderColor: "rgba(201,162,39,0.4)", backgroundColor: "rgba(201,162,39,0.1)" }]}>
+            <Text style={[styles.statNum, { color: colors.gold }]}>{notes.length}</Text>
             <Text style={styles.statLabel}>Catatan</Text>
           </View>
-          <View style={[styles.statItem, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-            <Text style={styles.statNum}>{DUMMY_KAJIAN.length}</Text>
+          <View style={[styles.statItem, { borderColor: "rgba(201,162,39,0.4)", backgroundColor: "rgba(201,162,39,0.1)" }]}>
+            <Text style={[styles.statNum, { color: colors.gold }]}>{DUMMY_KAJIAN.length}</Text>
             <Text style={styles.statLabel}>Total Kajian</Text>
           </View>
         </View>
+
+        {/* Motif silhouette masjid gold di bawah header */}
+        <View style={styles.mosqueWrapper}>
+          <MosqueDecoration width={width} goldColor={colors.gold} opacity={0.85} />
+        </View>
       </View>
 
+      {/* ── Konten ──────────────────────────────────────────── */}
       <View style={styles.content}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Kajian Hari Ini
-        </Text>
+
+        {/* Highlight kajian */}
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionAccent, { backgroundColor: colors.gold }]} />
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Kajian Hari Ini</Text>
+        </View>
+
         <Pressable
           onPress={() => router.push(`/kajian/${highlight.id}`)}
           style={({ pressed }) => [
             styles.highlightCard,
             {
-              backgroundColor: colors.highlight,
-              borderColor: colors.primary,
+              backgroundColor: colors.primary,
+              borderColor: colors.gold,
               opacity: pressed ? 0.92 : 1,
               transform: [{ scale: pressed ? 0.98 : 1 }],
             },
           ]}
         >
-          <View style={styles.highlightTop}>
-            <View style={[styles.highlightBadge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.highlightBadgeText}>{highlight.hari}</Text>
+          {/* Gold accent bar di atas card */}
+          <View style={[styles.highlightTopBar, { backgroundColor: colors.gold }]} />
+          <View style={styles.highlightInner}>
+            <View style={styles.highlightTop}>
+              <View style={[styles.highlightBadge, { backgroundColor: "rgba(201,162,39,0.2)", borderColor: "rgba(201,162,39,0.5)", borderWidth: 1 }]}>
+                <Text style={[styles.highlightBadgeText, { color: colors.gold }]}>{highlight.hari}</Text>
+              </View>
+              <Text style={[styles.highlightTime, { color: "rgba(255,255,255,0.75)" }]}>
+                {highlight.waktu}
+              </Text>
             </View>
-            <Text style={[styles.highlightTime, { color: colors.primary }]}>
-              {highlight.waktu}
+            <Text style={[styles.highlightJudul, { color: "#FFFFFF" }]}>
+              {highlight.judul}
             </Text>
-          </View>
-          <Text style={[styles.highlightJudul, { color: colors.foreground }]}>
-            {highlight.judul}
-          </Text>
-          <Text style={[styles.highlightUstadz, { color: colors.secondary }]}>
-            {highlight.ustadz}
-          </Text>
-          <View style={styles.highlightMeta}>
-            <Feather name="map-pin" size={13} color={colors.primary} />
-            <Text style={[styles.highlightLoc, { color: colors.primary }]}>
-              {highlight.lokasi}
+            <Text style={[styles.highlightUstadz, { color: "rgba(255,255,255,0.7)" }]}>
+              {highlight.ustadz}
             </Text>
+            <View style={styles.highlightMeta}>
+              <Feather name="map-pin" size={13} color={colors.gold} />
+              <Text style={[styles.highlightLoc, { color: colors.gold }]}>
+                {highlight.lokasi}
+              </Text>
+            </View>
           </View>
         </Pressable>
 
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Semua Kajian
-        </Text>
+        {/* Daftar semua kajian */}
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionAccent, { backgroundColor: colors.gold }]} />
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Semua Kajian</Text>
+          <Text style={[styles.sectionCount, { color: colors.mutedForeground }]}>
+            {filtered.length} kajian
+          </Text>
+        </View>
 
+        {/* Filter kategori */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -150,10 +178,9 @@ export default function BerandaScreen() {
               style={[
                 styles.chip,
                 {
-                  backgroundColor:
-                    selectedKategori === k ? colors.primary : colors.card,
-                  borderColor:
-                    selectedKategori === k ? colors.primary : colors.border,
+                  backgroundColor: selectedKategori === k ? colors.primary : colors.card,
+                  borderColor: selectedKategori === k ? colors.gold : colors.border,
+                  borderWidth: selectedKategori === k ? 1.5 : 1,
                 },
               ]}
             >
@@ -161,10 +188,8 @@ export default function BerandaScreen() {
                 style={[
                   styles.chipText,
                   {
-                    color:
-                      selectedKategori === k
-                        ? colors.primaryForeground
-                        : colors.foreground,
+                    color: selectedKategori === k ? colors.gold : colors.foreground,
+                    fontFamily: selectedKategori === k ? "Inter_600SemiBold" : "Inter_400Regular",
                   },
                 ]}
               >
@@ -186,9 +211,17 @@ export default function BerandaScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+
+  // Header
   headerSection: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 0,
+    overflow: "hidden",
+  },
+  goldTopBar: {
+    height: 3,
+    marginHorizontal: -20,
+    marginBottom: 16,
   },
   headerTop: {
     flexDirection: "row",
@@ -197,17 +230,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   greetingArabic: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
-    color: "rgba(255,255,255,0.95)",
-    textAlign: "right",
+    color: "#C9A227",
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   greetingText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.8)",
+    color: "rgba(255,255,255,0.7)",
   },
   nameText: {
     fontSize: 22,
@@ -221,49 +253,80 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1.5,
   },
   avatarLetter: {
     fontSize: 18,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
   },
+
+  // Stats
   statsRow: {
     flexDirection: "row",
     gap: 10,
+    marginBottom: 20,
   },
   statItem: {
     flex: 1,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 10,
+    padding: 10,
     alignItems: "center",
+    borderWidth: 1,
   },
   statNum: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.8)",
+    color: "rgba(255,255,255,0.7)",
     marginTop: 2,
     textAlign: "center",
   },
-  content: {
-    paddingTop: 20,
+  mosqueWrapper: {
+    marginHorizontal: -20,
+  },
+
+  // Content
+  content: { paddingTop: 20 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    gap: 8,
+  },
+  sectionAccent: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
   },
   sectionTitle: {
     fontSize: 17,
     fontFamily: "Inter_700Bold",
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    flex: 1,
   },
+  sectionCount: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+
+  // Highlight card
   highlightCard: {
     marginHorizontal: 20,
     borderRadius: 16,
-    padding: 18,
     borderWidth: 1.5,
     marginBottom: 24,
+    overflow: "hidden",
+  },
+  highlightTopBar: {
+    height: 3,
+  },
+  highlightInner: {
+    padding: 16,
   },
   highlightTop: {
     flexDirection: "row",
@@ -279,11 +342,10 @@ const styles = StyleSheet.create({
   highlightBadgeText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
   },
   highlightTime: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
   },
   highlightJudul: {
     fontSize: 17,
@@ -303,22 +365,17 @@ const styles = StyleSheet.create({
   },
   highlightLoc: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
   },
-  chipScroll: {
-    marginBottom: 14,
-  },
+
+  // Filter chips
+  chipScroll: { marginBottom: 14 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    borderWidth: 1,
   },
-  chipText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-  },
-  list: {
-    paddingHorizontal: 20,
-  },
+  chipText: { fontSize: 13 },
+
+  list: { paddingHorizontal: 20 },
 });
