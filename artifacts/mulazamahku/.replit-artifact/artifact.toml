@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "Mulazamahku"
+version = "1.0.0"
+id = "artifacts/mulazamahku"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 18159
+
+[services.development]
+run = "pnpm --filter @workspace/mulazamahku run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mulazamahku", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/mulazamahku", "run", "serve" ]
+
+[services.env]
+PORT = "18159"
+BASE_PATH = "/"

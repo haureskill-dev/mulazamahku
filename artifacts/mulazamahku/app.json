@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Mulazamahku",
+    "slug": "mulazamahku",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mulazamahku",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F5EF"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mulazamahku.app"
+    },
+    "android": {
+      "package": "com.mulazamahku.app"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
