@@ -3,59 +3,21 @@ import { Kajian, MudzakarahTopic } from "@/types";
 // Semua pekan dijabarkan terpisah — tidak ada penggabungan "Pekan X & Y"
 export const DUMMY_KAJIAN: Kajian[] = [
   // ── SELASA ──────────────────────────────────────────────────────────────
-  {
-    id: "r1",
-    judul: "Perhiasan Penuntut Ilmu",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "(masih konfirmasi)",
-    hari: "Selasa · Pekan 2",
-    lokasi: "Masjid an-Nahl Palm Hills",
-    alamat: "Masjid an-Nahl Palm Hills",
-    status: "akan_datang",
-    kategori: "Ilmu",
-    deskripsi:
-      "Kajian tentang adab dan perhiasan seorang penuntut ilmu bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Jadwal masih konfirmasi.",
-  },
-  {
-    id: "r2",
-    judul: "Keutamaan Islam",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "(masih konfirmasi)",
-    hari: "Selasa · Pekan 4",
-    lokasi: "Masjid an-Nahl Palm Hills",
-    alamat: "Masjid an-Nahl Palm Hills",
-    status: "akan_datang",
-    kategori: "Akidah",
-    deskripsi:
-      "Kajian tentang keutamaan-keutamaan agama Islam bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Jadwal masih konfirmasi.",
-  },
+  // (Jadwal Selasa di-off-kan sementara untuk testing)
 
   // ── RABU ────────────────────────────────────────────────────────────────
   {
-    id: "r3a",
+    id: "r3",
     judul: "Fiqih Wanita",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "15.45 - 17.30 WIB",
-    hari: "Rabu · Pekan 1",
+    hari: "Rabu · Pekan 1 & 3",
     lokasi: "Metro Mediterania",
-    alamat: "Metro Mediterania",
     status: "aktif",
     kategori: "Fikih",
     deskripsi:
       "Kajian fikih khusus untuk wanita bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Membahas hukum-hukum fikih yang berkaitan dengan wanita muslimah.",
-  },
-  {
-    id: "r3b",
-    judul: "Fiqih Wanita",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "15.45 - 17.30 WIB",
-    hari: "Rabu · Pekan 3",
-    lokasi: "Metro Mediterania",
-    alamat: "Metro Mediterania",
-    status: "aktif",
-    kategori: "Fikih",
-    deskripsi:
-      "Kajian fikih khusus untuk wanita bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Membahas hukum-hukum fikih yang berkaitan dengan wanita muslimah.",
+    mapsUrl: "https://maps.google.com/?q=Metro+Mediterania",
   },
   {
     id: "r4",
@@ -64,11 +26,11 @@ export const DUMMY_KAJIAN: Kajian[] = [
     waktu: "16.00 - 17.30 WIB",
     hari: "Rabu · Pekan 2",
     lokasi: "Masjid Imam an-Nawawi",
-    alamat: "Masjid Imam an-Nawawi",
     status: "aktif",
     kategori: "Akidah",
     deskripsi:
       "Kajian kitab Fadhlul Islam bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Membahas keutamaan dan keistimewaan agama Islam.",
+    mapsUrl: "https://maps.google.com/?q=Masjid+Imam+an-Nawawi",
   },
 
   // ── KAMIS ───────────────────────────────────────────────────────────────
@@ -77,50 +39,36 @@ export const DUMMY_KAJIAN: Kajian[] = [
     judul: "Fiqih Asmaul Husna",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "16.00 - 17.15 WIB",
-    hari: "Kamis · Pekan 1",
+    hari: "Kamis · Pekan 1 & 3",
     lokasi: "Masjid Abu Bakar ash-Shiddiq",
-    alamat: "Masjid Abu Bakar ash-Shiddiq",
     status: "aktif",
     kategori: "Akidah",
     deskripsi:
       "Kajian Fiqih Asmaul Husna bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Membahas nama-nama Allah yang indah dan implikasinya dalam kehidupan.",
+    mapsUrl: "https://maps.google.com/?q=Masjid+Abu+Bakar+ash-Shiddiq",
   },
   {
     id: "r6",
     judul: "Kitabut Tauhid",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "16.00 - 17.15 WIB",
-    hari: "Kamis · Pekan 2",
+    hari: "Kamis · Pekan 2 & 4",
     lokasi: "Masjid Abu Bakar ash-Shiddiq",
-    alamat: "Masjid Abu Bakar ash-Shiddiq",
     status: "aktif",
     kategori: "Akidah",
     deskripsi:
       "Kajian Kitabut Tauhid karya Syaikh Muhammad bin Abdul Wahhab bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
+    mapsUrl: "https://maps.google.com/?q=Masjid+Abu+Bakar+ash-Shiddiq",
   },
 
   // ── JUMAT ───────────────────────────────────────────────────────────────
   {
-    id: "r7a",
+    id: "r7",
     judul: "Fiqih Haid",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "16.00 - 17.30 WIB",
-    hari: "Jumat · Pekan 2",
+    hari: "Jumat · Pekan 2 & 4",
     lokasi: "Zircon Villa Permata Hijau",
-    alamat: "Zircon Villa Permata Hijau",
-    status: "aktif",
-    kategori: "Fikih",
-    deskripsi:
-      "Kajian Fiqih Haid bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Membahas hukum-hukum seputar haid yang wajib diketahui setiap muslimah.",
-  },
-  {
-    id: "r7b",
-    judul: "Fiqih Haid",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "16.00 - 17.30 WIB",
-    hari: "Jumat · Pekan 4",
-    lokasi: "Zircon Villa Permata Hijau",
-    alamat: "Zircon Villa Permata Hijau",
     status: "aktif",
     kategori: "Fikih",
     deskripsi:
@@ -128,12 +76,11 @@ export const DUMMY_KAJIAN: Kajian[] = [
   },
   {
     id: "r8",
-    judul: "Kajian Jumat Pekan 4",
+    judul: "Kajian Jumat",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "(masih konfirmasi)",
     hari: "Jumat · Pekan 4",
     lokasi: "Masjid as-Salam GSI",
-    alamat: "Masjid as-Salam GSI",
     status: "akan_datang",
     kategori: "Umum",
     deskripsi:
@@ -142,56 +89,29 @@ export const DUMMY_KAJIAN: Kajian[] = [
 
   // ── SABTU ───────────────────────────────────────────────────────────────
   {
-    id: "r9a",
+    id: "r8_b",
+    judul: "Kajian Sabtu Sore",
+    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
+    waktu: "16.00 - 17.30 WIB",
+    hari: "Sabtu · Pekan 4",
+    lokasi: "GSI Blok H",
+    status: "aktif",
+    kategori: "Umum",
+    deskripsi:
+      "Kajian rutin Sabtu sore bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
+    mapsUrl: "https://maps.google.com/?q=GSI+Blok+H",
+  },
+  {
+    id: "r9",
     judul: "Hilyah Thalibul 'Ilmi & al-Firqotun Naiyah",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "09.30 - selesai",
-    hari: "Sabtu · Pekan 1",
+    hari: "Sabtu · Pekan 1 & 3",
     lokasi: "Masjid Imam asy-Syafi'i",
-    alamat: "Masjid Imam asy-Syafi'i",
     status: "aktif",
     kategori: "Ilmu",
     deskripsi:
       "Kajian Hilyah Thalibul 'Ilmi dan kitab al-Firqotun Naiyah bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
-  },
-  {
-    id: "r9b",
-    judul: "Hilyah Thalibul 'Ilmi & al-Firqotun Naiyah",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "09.30 - selesai",
-    hari: "Sabtu · Pekan 3",
-    lokasi: "Masjid Imam asy-Syafi'i",
-    alamat: "Masjid Imam asy-Syafi'i",
-    status: "aktif",
-    kategori: "Ilmu",
-    deskripsi:
-      "Kajian Hilyah Thalibul 'Ilmi dan kitab al-Firqotun Naiyah bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
-  },
-  {
-    id: "r10a",
-    judul: "100 Dosa yang Diremehkan Wanita",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "10.00 - 11.30 WIB",
-    hari: "Sabtu · Pekan 1",
-    lokasi: "Masjid Arga Baja Grogol",
-    alamat: "Masjid Arga Baja Grogol",
-    status: "aktif",
-    kategori: "Akhlak",
-    deskripsi:
-      "Kajian tentang 100 dosa yang sering diremehkan wanita bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Sangat penting untuk diikuti setiap muslimah.",
-  },
-  {
-    id: "r10b",
-    judul: "100 Dosa yang Diremehkan Wanita",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "10.00 - 11.30 WIB",
-    hari: "Sabtu · Pekan 3",
-    lokasi: "Masjid Arga Baja Grogol",
-    alamat: "Masjid Arga Baja Grogol",
-    status: "aktif",
-    kategori: "Akhlak",
-    deskripsi:
-      "Kajian tentang 100 dosa yang sering diremehkan wanita bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Sangat penting untuk diikuti setiap muslimah.",
   },
   {
     id: "r11",
@@ -200,20 +120,18 @@ export const DUMMY_KAJIAN: Kajian[] = [
     waktu: "08.30 - selesai",
     hari: "Sabtu · Pekan 2",
     lokasi: "Masjid al-Ikhlas",
-    alamat: "Masjid al-Ikhlas",
     status: "aktif",
     kategori: "Tafsir",
     deskripsi:
       "Kajian tafsir surah-surah dalam Juz 'Amma bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
   },
   {
-    id: "r11b",
+    id: "r10",
     judul: "100 Dosa yang Diremehkan Wanita",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "10.00 - 11.30 WIB",
     hari: "Sabtu · Pekan 4",
     lokasi: "Masjid Arga Baja Grogol",
-    alamat: "Masjid Arga Baja Grogol",
     status: "aktif",
     kategori: "Akhlak",
     deskripsi:
@@ -228,7 +146,6 @@ export const DUMMY_KAJIAN: Kajian[] = [
     waktu: "08.00 - 09.30 WIB",
     hari: "Ahad · Pekan 1",
     lokasi: "RT Abu Bakar Topaz VPH",
-    alamat: "RT Abu Bakar Topaz VPH",
     status: "aktif",
     kategori: "Ilmu",
     deskripsi:
@@ -241,7 +158,6 @@ export const DUMMY_KAJIAN: Kajian[] = [
     waktu: "09.30 - 11.00 WIB",
     hari: "Ahad · Pekan 1",
     lokasi: "Rumah Azaji Zamrud",
-    alamat: "Rumah Azaji Zamrud",
     status: "aktif",
     kategori: "Akidah",
     deskripsi:
@@ -249,12 +165,11 @@ export const DUMMY_KAJIAN: Kajian[] = [
   },
   {
     id: "r14",
-    judul: "Kajian Ahad Pekan 2",
+    judul: "Kajian Ahad",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "08.00 - 09.30 WIB",
     hari: "Ahad · Pekan 2",
     lokasi: "R. Bu Malika Topaz VPH",
-    alamat: "R. Bu Malika Topaz VPH",
     status: "akan_datang",
     kategori: "Umum",
     deskripsi:

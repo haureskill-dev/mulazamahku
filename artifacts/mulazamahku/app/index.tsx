@@ -24,12 +24,13 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [isMuslimah, setIsMuslimah] = useState(false);
   const [loading, setLoading] = useState(false);
   const [nameFocus, setNameFocus] = useState(false);
   const [emailFocus, setEmailFocus] = useState(false);
 
   const handleSignIn = async () => {
-    if (!name.trim() || !email.trim()) return;
+    if (!name.trim() || !email.trim() || !isMuslimah) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
@@ -37,7 +38,7 @@ export default function LoginScreen() {
     router.replace("/(tabs)");
   };
 
-  const isValid = name.trim().length > 0 && email.trim().length > 2;
+  const isValid = name.trim().length > 0 && email.trim().length > 2 && isMuslimah;
 
   return (
     <KeyboardAvoidingView
@@ -128,6 +129,21 @@ export default function LoginScreen() {
               />
             </View>
           </View>
+
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsMuslimah(!isMuslimah);
+            }}
+            style={styles.checkboxContainer}
+          >
+            <View style={[styles.checkbox, isMuslimah && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+              {isMuslimah && <Feather name="check" size={14} color="#FFFFFF" />}
+            </View>
+            <Text style={[styles.checkboxLabel, { color: colors.foreground }]}>
+              Saya mengonfirmasi bahwa saya adalah seorang muslimah
+            </Text>
+          </Pressable>
 
           <Pressable
             onPress={handleSignIn}
@@ -250,5 +266,27 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 12,
+    paddingRight: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#A1A1AA",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 18,
   },
 });

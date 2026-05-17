@@ -5,10 +5,10 @@ export interface Kajian {
   waktu: string;
   hari: string;
   lokasi: string;
-  alamat: string;
   status: "aktif" | "akan_datang" | "selesai" | "online";
   kategori: string;
   deskripsi: string;
+  mapsUrl?: string;
   lat?: number;
   lng?: number;
 }

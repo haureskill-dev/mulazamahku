@@ -30,9 +30,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
     const inTabs = segments[0] === "(tabs)";
-    if (!user && inTabs) {
+    
+    const isLoginScreen = segments.length === 0 || segments[0] === "index";
+    
+    // Redirect unauthenticated users trying to access ANY protected screen
+    if (!user && !isLoginScreen) {
       router.replace("/");
-    } else if (user && segments[0] !== "(tabs)") {
+    } 
+    // Redirect authenticated users trying to access the login screen
+    else if (user && (segments.length === 0 || segments[0] === "index")) {
       router.replace("/(tabs)");
     }
   }, [user, isLoading, segments]);

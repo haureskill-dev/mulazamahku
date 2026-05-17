@@ -37,20 +37,24 @@ export default function KajianDetailScreen() {
     );
   }
 
-  const statusColor = STATUS_COLOR[kajian.status] ?? colors.mutedForeground;
-
   const openMaps = async () => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const query = encodeURIComponent(kajian.alamat);
-    const url =
-      Platform.OS === "ios"
-        ? `maps:?q=${query}`
-        : `https://maps.google.com/?q=${query}`;
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      Linking.openURL(url);
-    } else {
-      Linking.openURL(`https://maps.google.com/?q=${query}`);
+    try {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      
+      const query = encodeURIComponent(kajian.lokasi);
+      const url = kajian.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${query}`;
+
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        // Harus sinkron di web agar tidak diblokir popup blocker
+        window.open(url, "_blank");
+        return;
+      }
+      
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error("Gagal membuka Maps:", error);
     }
   };
 
@@ -98,7 +102,6 @@ export default function KajianDetailScreen() {
         <View style={styles.infoSection}>
           <InfoRow icon="clock" label="Hari & Waktu" value={`${kajian.hari} · ${kajian.waktu}`} colors={colors} />
           <InfoRow icon="map-pin" label="Lokasi" value={kajian.lokasi} colors={colors} />
-          <InfoRow icon="navigation" label="Alamat" value={kajian.alamat} colors={colors} />
           <InfoRow icon="tag" label="Kategori" value={kajian.kategori} colors={colors} />
         </View>
 
@@ -120,7 +123,7 @@ export default function KajianDetailScreen() {
             ]}
           >
             <Feather name="map" size={18} color="#FFFFFF" />
-            <Text style={styles.mapsBtnText}>Buka di Google Maps</Text>
+            <Text style={styles.mapsBtnText}>Rute Menuju Taman Surga</Text>
           </Pressable>
         )}
 
