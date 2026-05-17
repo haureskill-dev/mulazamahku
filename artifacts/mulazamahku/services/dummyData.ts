@@ -89,19 +89,6 @@ export const DUMMY_KAJIAN: Kajian[] = [
 
   // ── SABTU ───────────────────────────────────────────────────────────────
   {
-    id: "r8_b",
-    judul: "Kajian Sabtu Sore",
-    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
-    waktu: "16.00 - 17.30 WIB",
-    hari: "Sabtu · Pekan 4",
-    lokasi: "GSI Blok H",
-    status: "aktif",
-    kategori: "Umum",
-    deskripsi:
-      "Kajian rutin Sabtu sore bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
-    mapsUrl: "https://maps.google.com/?q=GSI+Blok+H",
-  },
-  {
     id: "r9",
     judul: "Hilyah Thalibul 'Ilmi & al-Firqotun Naiyah",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
@@ -136,6 +123,19 @@ export const DUMMY_KAJIAN: Kajian[] = [
     kategori: "Akhlak",
     deskripsi:
       "Kajian tentang 100 dosa yang sering diremehkan wanita bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Sangat penting untuk diikuti setiap muslimah.",
+  },
+  {
+    id: "r8_b",
+    judul: "Kajian Sabtu Sore",
+    ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
+    waktu: "16.00 - 17.30 WIB",
+    hari: "Sabtu · Pekan 4",
+    lokasi: "GSI Blok H",
+    status: "aktif",
+    kategori: "Umum",
+    deskripsi:
+      "Kajian rutin Sabtu sore bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
+    mapsUrl: "https://maps.google.com/?q=GSI+Blok+H",
   },
 
   // ── AHAD ────────────────────────────────────────────────────────────────
