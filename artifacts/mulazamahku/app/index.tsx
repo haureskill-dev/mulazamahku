@@ -1,9 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -17,11 +18,24 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { StorageService } from "@/services/storage";
+
+const ACCESS_CODE = "fiqh akbar";
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
+
+  // ── Gate state ──────────────────────────────────────────────
+  const [gateVerified, setGateVerified] = useState<boolean | null>(null); // null = loading
+  const [accessCode, setAccessCode] = useState("");
+  const [gateError, setGateError] = useState(false);
+  const [gateFocus, setGateFocus] = useState(false);
+  const [gateLoading, setGateLoading] = useState(false);
+  const [shakeAnim] = useState(() => new Animated.Value(0));
+
+  // ── Login state ─────────────────────────────────────────────
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isMuslimah, setIsMuslimah] = useState(false);
@@ -29,6 +43,43 @@ export default function LoginScreen() {
   const [nameFocus, setNameFocus] = useState(false);
   const [emailFocus, setEmailFocus] = useState(false);
 
+  // Check if user already passed the gate before
+  useEffect(() => {
+    StorageService.get<boolean>(StorageService.ACCESS_GATE_KEY).then((v) => {
+      setGateVerified(v === true);
+    });
+  }, []);
+
+  // ── Gate handlers ───────────────────────────────────────────
+  const triggerShake = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 12, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -12, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handleGateSubmit = async () => {
+    if (!accessCode.trim()) return;
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setGateLoading(true);
+    await new Promise((r) => setTimeout(r, 600));
+
+    if (accessCode.trim().toLowerCase() === ACCESS_CODE) {
+      await StorageService.set(StorageService.ACCESS_GATE_KEY, true);
+      setGateVerified(true);
+      setGateError(false);
+    } else {
+      setGateError(true);
+      setGateLoading(false);
+      triggerShake();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
+
+  // ── Login handler ───────────────────────────────────────────
   const handleSignIn = async () => {
     if (!name.trim() || !email.trim() || !isMuslimah) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -39,6 +90,15 @@ export default function LoginScreen() {
   };
 
   const isValid = name.trim().length > 0 && email.trim().length > 2 && isMuslimah;
+
+  // ── Loading state ───────────────────────────────────────────
+  if (gateVerified === null) {
+    return (
+      <View style={[styles.loadingRoot, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -68,109 +128,234 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Masuk ke Akun</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Nama</Text>
-            <View
-              style={[
-                styles.inputWrap,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: nameFocus ? colors.primary : colors.border,
-                },
-              ]}
-            >
-              <Feather
-                name="user"
-                size={16}
-                color={nameFocus ? colors.primary : colors.mutedForeground}
-              />
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Nama lengkap kamu"
-                placeholderTextColor={colors.mutedForeground}
-                onFocus={() => setNameFocus(true)}
-                onBlur={() => setNameFocus(false)}
-                style={[styles.input, { color: colors.foreground }]}
-                autoCapitalize="words"
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
-            <View
-              style={[
-                styles.inputWrap,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: emailFocus ? colors.primary : colors.border,
-                },
-              ]}
-            >
-              <Feather
-                name="mail"
-                size={16}
-                color={emailFocus ? colors.primary : colors.mutedForeground}
-              />
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="email@example.com"
-                placeholderTextColor={colors.mutedForeground}
-                onFocus={() => setEmailFocus(true)}
-                onBlur={() => setEmailFocus(false)}
-                style={[styles.input, { color: colors.foreground }]}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-          </View>
-
-          <Pressable
-            onPress={() => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setIsMuslimah(!isMuslimah);
-            }}
-            style={styles.checkboxContainer}
-          >
-            <View style={[styles.checkbox, isMuslimah && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-              {isMuslimah && <Feather name="check" size={14} color="#FFFFFF" />}
-            </View>
-            <Text style={[styles.checkboxLabel, { color: colors.foreground }]}>
-              Saya mengonfirmasi bahwa saya adalah seorang muslimah
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={handleSignIn}
-            disabled={!isValid || loading}
-            style={({ pressed }) => [
-              styles.btn,
+        {/* ════════════════════════════════════════════════════════════════
+            STEP 1 — ACCESS GATE (Password Developer)
+            ════════════════════════════════════════════════════════════════ */}
+        {!gateVerified ? (
+          <Animated.View
+            style={[
+              styles.card,
               {
-                backgroundColor: isValid ? colors.primary : colors.muted,
-                opacity: pressed ? 0.85 : 1,
-                transform: [{ scale: pressed ? 0.97 : 1 }],
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                transform: [{ translateX: shakeAnim }],
               },
             ]}
           >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text
+            <View style={styles.gateIconRow}>
+              <View style={[styles.gateIconCircle, { backgroundColor: `${colors.primary}15` }]}>
+                <Feather name="lock" size={24} color={colors.primary} />
+              </View>
+            </View>
+
+            <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center" }]}>
+              Kode Akses
+            </Text>
+            <Text
+              style={[
+                styles.gateSubtitle,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              Aplikasi ini bersifat privat. Masukkan kode akses yang diberikan oleh pengelola untuk melanjutkan.
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.foreground }]}>Kode Akses</Text>
+              <View
                 style={[
-                  styles.btnText,
-                  { color: isValid ? colors.primaryForeground : colors.mutedForeground },
+                  styles.inputWrap,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: gateError
+                      ? "#EF4444"
+                      : gateFocus
+                      ? colors.primary
+                      : colors.border,
+                  },
                 ]}
               >
-                Masuk
+                <Feather
+                  name="key"
+                  size={16}
+                  color={
+                    gateError
+                      ? "#EF4444"
+                      : gateFocus
+                      ? colors.primary
+                      : colors.mutedForeground
+                  }
+                />
+                <TextInput
+                  value={accessCode}
+                  onChangeText={(t) => {
+                    setAccessCode(t);
+                    if (gateError) setGateError(false);
+                  }}
+                  placeholder="Masukkan kode akses"
+                  placeholderTextColor={colors.mutedForeground}
+                  onFocus={() => setGateFocus(true)}
+                  onBlur={() => setGateFocus(false)}
+                  style={[styles.input, { color: colors.foreground }]}
+                  autoCapitalize="none"
+                  secureTextEntry
+                  onSubmitEditing={handleGateSubmit}
+                  returnKeyType="go"
+                />
+              </View>
+              {gateError && (
+                <View style={styles.errorRow}>
+                  <Feather name="alert-circle" size={13} color="#EF4444" />
+                  <Text style={styles.errorText}>
+                    Kode akses salah. Silakan coba lagi.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <Pressable
+              onPress={handleGateSubmit}
+              disabled={!accessCode.trim() || gateLoading}
+              style={({ pressed }) => [
+                styles.btn,
+                {
+                  backgroundColor: accessCode.trim()
+                    ? colors.primary
+                    : colors.muted,
+                  opacity: pressed ? 0.85 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
+            >
+              {gateLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <View style={styles.btnInner}>
+                  <Feather name="unlock" size={16} color={accessCode.trim() ? "#FFFFFF" : colors.mutedForeground} />
+                  <Text
+                    style={[
+                      styles.btnText,
+                      {
+                        color: accessCode.trim()
+                          ? colors.primaryForeground
+                          : colors.mutedForeground,
+                      },
+                    ]}
+                  >
+                    Verifikasi
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </Animated.View>
+        ) : (
+          /* ════════════════════════════════════════════════════════════════
+             STEP 2 — LOGIN FORM (Existing)
+             ════════════════════════════════════════════════════════════════ */
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Masuk ke Akun</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.foreground }]}>Nama</Text>
+              <View
+                style={[
+                  styles.inputWrap,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: nameFocus ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <Feather
+                  name="user"
+                  size={16}
+                  color={nameFocus ? colors.primary : colors.mutedForeground}
+                />
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Nama lengkap kamu"
+                  placeholderTextColor={colors.mutedForeground}
+                  onFocus={() => setNameFocus(true)}
+                  onBlur={() => setNameFocus(false)}
+                  style={[styles.input, { color: colors.foreground }]}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
+              <View
+                style={[
+                  styles.inputWrap,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: emailFocus ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <Feather
+                  name="mail"
+                  size={16}
+                  color={emailFocus ? colors.primary : colors.mutedForeground}
+                />
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="email@example.com"
+                  placeholderTextColor={colors.mutedForeground}
+                  onFocus={() => setEmailFocus(true)}
+                  onBlur={() => setEmailFocus(false)}
+                  style={[styles.input, { color: colors.foreground }]}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsMuslimah(!isMuslimah);
+              }}
+              style={styles.checkboxContainer}
+            >
+              <View style={[styles.checkbox, isMuslimah && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+                {isMuslimah && <Feather name="check" size={14} color="#FFFFFF" />}
+              </View>
+              <Text style={[styles.checkboxLabel, { color: colors.foreground }]}>
+                Saya mengonfirmasi bahwa saya adalah seorang muslimah
               </Text>
-            )}
-          </Pressable>
-        </View>
+            </Pressable>
+
+            <Pressable
+              onPress={handleSignIn}
+              disabled={!isValid || loading}
+              style={({ pressed }) => [
+                styles.btn,
+                {
+                  backgroundColor: isValid ? colors.primary : colors.muted,
+                  opacity: pressed ? 0.85 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text
+                  style={[
+                    styles.btnText,
+                    { color: isValid ? colors.primaryForeground : colors.mutedForeground },
+                  ]}
+                >
+                  Masuk
+                </Text>
+              )}
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.infoRow}>
           <Feather name="shield" size={12} color={colors.mutedForeground} />
@@ -184,6 +369,11 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingRoot: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   root: { flex: 1 },
   container: {
     paddingHorizontal: 24,
@@ -225,6 +415,40 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     marginBottom: 20,
   },
+
+  // ── Gate specific ───────────────────────────────────────────
+  gateIconRow: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  gateIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gateSubtitle: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  errorText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#EF4444",
+  },
+
+  // ── Shared ──────────────────────────────────────────────────
   inputGroup: {
     marginBottom: 16,
   },
@@ -253,6 +477,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
+  },
+  btnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   btnText: {
     fontSize: 16,

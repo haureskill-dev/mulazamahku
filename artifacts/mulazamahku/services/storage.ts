@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const NOTES_KEY = "@mulazamahku_notes";
 const MUDZAKARAH_KEY = "@mulazamahku_mudzakarah";
 const USER_KEY = "@mulazamahku_user";
+const ACCESS_GATE_KEY = "@mulazamahku_access_gate";
 
 export const StorageService = {
   async get<T>(key: string): Promise<T | null> {
@@ -34,4 +35,5 @@ export const StorageService = {
   NOTES_KEY,
   MUDZAKARAH_KEY,
   USER_KEY,
+  ACCESS_GATE_KEY,
 };
