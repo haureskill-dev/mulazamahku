@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { StorageService } from "@/services/storage";
 import { UserProfile } from "@/types";
+import { logUserLogin } from "@/services/userLogger";
 
 interface AuthContextValue {
   user: UserProfile | null;
@@ -38,6 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     await StorageService.set(StorageService.USER_KEY, profile);
     setUser(profile);
+
+    // Fire-and-forget: catat login ke Supabase
+    logUserLogin(name, email);
   };
 
   const signOut = async () => {
