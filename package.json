@@ -12,5 +12,12 @@
   "devDependencies": {
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "expo": "~54.0.27",
+    "expo-router": "~6.0.17",
+    "expo-notifications": "^0.32.17",
+    "expo-web-browser": "~15.0.10",
+    "expo-font": "~14.0.10"
   }
 }
