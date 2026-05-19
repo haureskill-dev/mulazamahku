@@ -10,7 +10,9 @@
     "web": "expo start --web",
     "build": "expo export"
   },
-  "devDependencies": {
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "expo-notifications": "^0.32.17",
     "@babel/core": "^7.25.2",
     "@expo-google-fonts/inter": "^0.4.0",
     "@expo/cli": "54.0.23",
@@ -54,9 +56,5 @@
     "typescript": "~5.9.2",
     "zod": "^3.25.76",
     "zod-validation-error": "^3.4.0"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.105.4",
-    "expo-notifications": "^0.32.17"
   }
 }
