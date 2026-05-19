@@ -4,6 +4,7 @@
   },
   "build": {
     "preview": {
+      "node": "20.12.0",
       "pnpm": "11.1.2",
       "distribution": "internal",
       "android": {
@@ -11,6 +12,7 @@
       }
     },
     "production": {
+      "node": "20.12.0",
       "pnpm": "11.1.2",
       "android": {
         "buildType": "app-bundle"
