@@ -3,6 +3,9 @@
     "name": "Mulazamahku",
     "slug": "mulazamahku",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mulazamahku",
@@ -27,7 +30,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://mulazamahku.vercel.app/"
         }
       ],
       "expo-font",
@@ -41,9 +44,17 @@
         }
       ]
     ],
+    "updates": {
+      "url": "https://u.expo.dev/6443bfa2-2a27-4d9e-b6c3-93e464ebbab1"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6443bfa2-2a27-4d9e-b6c3-93e464ebbab1"
+      }
     }
   }
 }

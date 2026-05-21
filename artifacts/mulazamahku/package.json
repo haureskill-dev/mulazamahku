@@ -13,6 +13,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
     "expo-notifications": "^0.32.17",
+    "expo-updates": "~29.0.17",
     "@babel/core": "^7.25.2",
     "@expo-google-fonts/inter": "^0.4.0",
     "@expo/cli": "54.0.23",
