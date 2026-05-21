@@ -17,7 +17,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useNotes } from "@/context/NotesContext";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
-import { testNotification } from "@/services/notificationService";
 import { Kajian } from "@/types";
 
 const DAYS_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"];
@@ -125,17 +124,9 @@ export default function BerandaScreen() {
       {/* ── Konten ──────────────────────────────────────────── */}
       <View style={styles.content}>
 
-        {/* Highlight kajian */}
         <View style={styles.sectionHeader}>
           <View style={[styles.sectionAccent, { backgroundColor: colors.gold }]} />
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Kajian Terdekat</Text>
-          <Pressable 
-            onPress={testNotification} 
-            style={[styles.testBtn, { backgroundColor: "rgba(201,162,39,0.2)", borderColor: colors.gold }]}
-          >
-            <Feather name="bell" size={12} color={colors.gold} />
-            <Text style={[styles.testBtnText, { color: colors.gold }]}>Uji Notifikasi</Text>
-          </Pressable>
         </View>
 
         <Pressable

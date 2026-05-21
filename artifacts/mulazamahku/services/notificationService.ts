@@ -76,69 +76,106 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return status === "granted";
 }
 
+function getLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function isKajianActiveOnDate(kajianHari: string, date: Date): boolean {
+  const DAYS_ID = ["ahad", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
+  const dateWeekday = DAYS_ID[date.getDay()];
+  
+  const lowerHari = kajianHari.toLowerCase();
+  if (!lowerHari.startsWith(dateWeekday)) {
+    return false;
+  }
+  
+  // Periksa apakah ada spesifikasi pekan (misal: "Pekan 1 & 3")
+  const pekanMatch = kajianHari.match(/pekan\s*([\d\s&,]+)/i);
+  if (!pekanMatch) {
+    return true; // Jika tidak ada spesifikasi pekan, maka diadakan setiap minggu
+  }
+  
+  const weekNum = Math.ceil(date.getDate() / 7);
+  const pekanSpecs = pekanMatch[1]; // misal "1 & 3" atau "2"
+  return pekanSpecs.includes(String(weekNum));
+}
+
 export async function scheduleAllKajianReminders(): Promise<void> {
   if (Platform.OS === "web") return;
 
   const granted = await requestNotificationPermission();
   if (!granted) return;
 
+  // Batalkan semua notifikasi lama sebelum menjadwalkan ulang
   await Notifications.cancelAllScheduledNotificationsAsync();
 
-  for (const kajian of DUMMY_KAJIAN) {
-    const hariKey = extractHari(kajian.hari);
-    if (!hariKey) continue;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    const kajianWeekday = HARI_TO_WEEKDAY[hariKey];
-    const reminderWeekday = prevDay(kajianWeekday);
-    const waktuLabel = extractWaktuLabel(kajian.waktu);
+  // Jadwalkan notifikasi secara dinamis untuk 14 hari ke depan
+  for (let offset = 0; offset < 14; offset++) {
+    const date = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
+    const dateStr = getLocalDateString(date);
 
-    const pekanMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
-    const pekanLabel = pekanMatch ? ` (${kajian.hari.split("·")[1]?.trim() ?? ""})` : "";
+    for (const kajian of DUMMY_KAJIAN) {
+      if (!isKajianActiveOnDate(kajian.hari, date)) continue;
 
-    // ── Reminder H-1 (sehari sebelumnya, jam 20:00) ─────────────────────
-    try {
-      await Notifications.scheduleNotificationAsync({
-        identifier: `kajian-h1-${kajian.id}`,
-        content: {
-          title: "📚 Pengingat Kajian Besok",
-          body: `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
-          data: { kajianId: kajian.id, reminderType: "h1" },
-          sound: true,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-          weekday: reminderWeekday,
-          hour: 20,
-          minute: 0,
-        },
-      });
-    } catch {
-      // lewati jika trigger tidak didukung di perangkat ini
-    }
+      const waktuLabel = extractWaktuLabel(kajian.waktu);
+      const pekanMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
+      const pekanLabel = pekanMatch ? ` (${kajian.hari.split("·")[1]?.trim() ?? ""})` : "";
 
-    // ── Reminder H-3 jam (3 jam sebelum kajian dimulai) ──────────────────
-    const startTime = extractStartHour(kajian.waktu);
-    if (startTime) {
-      const h3 = threeHoursBefore(startTime.hour, startTime.minute, kajianWeekday);
-      if (h3) {
+      // ── Reminder H-3 jam (3 jam sebelum kajian dimulai) ──────────────────
+      const startTime = extractStartHour(kajian.waktu);
+      if (startTime) {
+        const h3Time = new Date(date.getTime());
+        h3Time.setHours(startTime.hour, startTime.minute, 0, 0);
+        h3Time.setMinutes(h3Time.getMinutes() - 180); // Kurangi 3 jam
+
+        if (h3Time.getTime() > Date.now()) {
+          try {
+            await Notifications.scheduleNotificationAsync({
+              identifier: `kajian-h3jam-${kajian.id}-${dateStr}`,
+              content: {
+                title: "⏰ Kajian 3 Jam Lagi!",
+                body: `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Jangan lupa hadir!`,
+                data: { kajianId: kajian.id, reminderType: "h3jam", dateStr },
+                sound: true,
+              },
+              trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: h3Time,
+              },
+            });
+          } catch {
+            // Lewati jika error
+          }
+        }
+      }
+
+      // ── Reminder H-1 (sehari sebelumnya, jam 20:00) ─────────────────────
+      const h1Time = new Date(date.getTime() - 24 * 60 * 60 * 1000);
+      h1Time.setHours(20, 0, 0, 0);
+
+      if (h1Time.getTime() > Date.now()) {
         try {
           await Notifications.scheduleNotificationAsync({
-            identifier: `kajian-h3jam-${kajian.id}`,
+            identifier: `kajian-h1-${kajian.id}-${dateStr}`,
             content: {
-              title: "⏰ Kajian 3 Jam Lagi!",
-              body: `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Jangan lupa hadir!`,
-              data: { kajianId: kajian.id, reminderType: "h3jam" },
+              title: "📚 Pengingat Kajian Besok",
+              body: `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
+              data: { kajianId: kajian.id, reminderType: "h1", dateStr },
               sound: true,
             },
             trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-              weekday: h3.weekday,
-              hour: h3.hour,
-              minute: h3.minute,
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: h1Time,
             },
           });
         } catch {
-          // lewati jika trigger tidak didukung
+          // Lewati jika error
         }
       }
     }
@@ -150,25 +187,3 @@ export async function cancelAllKajianReminders(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
-export async function testNotification(): Promise<void> {
-  if (Platform.OS === "web") {
-    alert('Simulasi Notifikasi (Web):\n"Fiqih Wanita" di Metro Mediterania pukul 15.45. Siapkan diri untuk menuntut ilmu!');
-    return;
-  }
-  
-  const granted = await requestNotificationPermission();
-  if (!granted) {
-    alert('Izin notifikasi tidak diberikan.');
-    return;
-  }
-
-  await Notifications.scheduleNotificationAsync({
-    identifier: `test-notification-${Date.now()}`,
-    content: {
-      title: "📚 Pengingat Kajian Besok",
-      body: '"Fiqih Wanita" di Metro Mediterania pukul 15.45. Siapkan diri untuk menuntut ilmu!',
-      sound: true,
-    },
-    trigger: null,
-  });
-}
