@@ -21,6 +21,10 @@ import { Kajian } from "@/types";
 
 const DAYS_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"];
 
+// Mapping JS getDay() → nama hari Indonesia
+// getDay(): 0=Ahad, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu
+const JS_DAY_TO_HARI = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
 function extractDayName(hari: string): string {
   const lower = hari.toLowerCase();
   for (const d of DAYS_ORDER) {
@@ -39,6 +43,36 @@ function groupByDay(kajian: Kajian[]): Record<string, Kajian[]> {
   return groups;
 }
 
+/** Konversi "Pekan 1 & 3" → "P1 & P3", "Pekan 2" → "P2" */
+function shortPekan(pekanStr: string): string {
+  return pekanStr.replace(/Pekan\s*/gi, "P");
+}
+
+/** Cek apakah kajian aktif pada tanggal tertentu (cocok hari + pekan) */
+function isKajianOnDate(kajian: Kajian, date: Date): boolean {
+  if (kajian.status !== "aktif") return false;
+  const dayName = JS_DAY_TO_HARI[date.getDay()];
+  const kajianDay = extractDayName(kajian.hari);
+  if (kajianDay !== dayName) return false;
+
+  const pekanMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
+  if (!pekanMatch) return true;
+  const weekNum = Math.ceil(date.getDate() / 7);
+  return pekanMatch[1].includes(String(weekNum));
+}
+
+/** Cari kajian terdekat dalam 14 hari ke depan */
+function findNearestKajian(allKajian: Kajian[]): Kajian {
+  const now = new Date();
+  for (let offset = 0; offset < 14; offset++) {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+    for (const k of allKajian) {
+      if (isKajianOnDate(k, date)) return k;
+    }
+  }
+  return allKajian.find((k) => k.status === "aktif") ?? allKajian[0];
+}
+
 export default function BerandaScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -47,7 +81,7 @@ export default function BerandaScreen() {
   const { notes } = useNotes();
 
   const grouped = useMemo(() => groupByDay(DUMMY_KAJIAN), []);
-  const highlight = DUMMY_KAJIAN.find((k) => k.status === "aktif") ?? DUMMY_KAJIAN[0];
+  const highlight = useMemo(() => findNearestKajian(DUMMY_KAJIAN), []);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -207,7 +241,7 @@ export default function BerandaScreen() {
                     ) : null}
                     {kajian.hari.includes("·") ? (
                       <Text style={[styles.rowPekanText, { color: colors.mutedForeground }]}>
-                        {kajian.hari.split("·")[1].trim()}
+                        {shortPekan(kajian.hari.split("·")[1].trim())}
                       </Text>
                     ) : null}
                   </View>
