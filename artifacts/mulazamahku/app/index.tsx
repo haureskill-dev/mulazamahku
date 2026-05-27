@@ -19,16 +19,31 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { StorageService } from "@/services/storage";
+import { UserRole } from "@/types";
 
-const ACCESS_CODE = "fiqh akbar";
+// Kode akses per peran
+const ACCESS_CODES: Record<UserRole, string> = {
+  murid: "fiqh akbar",
+  pengajar: "unta merah",
+  admin: "khidmat ustadzah",
+};
+
+const ROLE_INFO: Record<UserRole, { label: string; icon: string; desc: string }> = {
+  murid: { label: "Murid", icon: "book-open", desc: "Ikuti kajian & lihat jadwal" },
+  pengajar: { label: "Pengajar", icon: "award", desc: "Catat progress materi" },
+  admin: { label: "Admin", icon: "settings", desc: "Kelola jadwal & flyer" },
+};
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
 
+  // ── Step state ──────────────────────────────────────────────
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
   // ── Gate state ──────────────────────────────────────────────
-  const [gateVerified, setGateVerified] = useState<boolean | null>(null); // null = loading
+  const [gateVerified, setGateVerified] = useState<boolean | null>(null);
   const [accessCode, setAccessCode] = useState("");
   const [gateError, setGateError] = useState(false);
   const [gateFocus, setGateFocus] = useState(false);
@@ -45,8 +60,17 @@ export default function LoginScreen() {
 
   // Check if user already passed the gate before
   useEffect(() => {
-    StorageService.get<boolean>(StorageService.ACCESS_GATE_KEY).then((v) => {
-      setGateVerified(v === true);
+    StorageService.get<string>(StorageService.ACCESS_GATE_KEY).then((v) => {
+      if (v && (v === "murid" || v === "pengajar" || v === "admin")) {
+        setSelectedRole(v as UserRole);
+        setGateVerified(true);
+      } else if (v === true as any) {
+        // Legacy: user lama yang sudah verify dengan sistem lama
+        setSelectedRole("murid");
+        setGateVerified(true);
+      } else {
+        setGateVerified(false);
+      }
     });
   }, []);
 
@@ -62,13 +86,13 @@ export default function LoginScreen() {
   };
 
   const handleGateSubmit = async () => {
-    if (!accessCode.trim()) return;
+    if (!accessCode.trim() || !selectedRole) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setGateLoading(true);
     await new Promise((r) => setTimeout(r, 600));
 
-    if (accessCode.trim().toLowerCase() === ACCESS_CODE) {
-      await StorageService.set(StorageService.ACCESS_GATE_KEY, true);
+    if (accessCode.trim().toLowerCase() === ACCESS_CODES[selectedRole]) {
+      await StorageService.set(StorageService.ACCESS_GATE_KEY, selectedRole);
       setGateVerified(true);
       setGateError(false);
     } else {
@@ -81,11 +105,11 @@ export default function LoginScreen() {
 
   // ── Login handler ───────────────────────────────────────────
   const handleSignIn = async () => {
-    if (!name.trim() || !email.trim() || !isMuslimah) return;
+    if (!name.trim() || !email.trim() || !isMuslimah || !selectedRole) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
-    await signIn(name.trim(), email.trim());
+    await signIn(name.trim(), email.trim(), selectedRole);
     router.replace("/(tabs)");
   };
 
@@ -129,9 +153,58 @@ export default function LoginScreen() {
         </View>
 
         {/* ════════════════════════════════════════════════════════════════
-            STEP 1 — ACCESS GATE (Password Developer)
+            STEP 1 — PILIH PERAN
             ════════════════════════════════════════════════════════════════ */}
-        {!gateVerified ? (
+        {!selectedRole ? (
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.gateIconRow}>
+              <View style={[styles.gateIconCircle, { backgroundColor: `${colors.primary}15` }]}>
+                <Feather name="users" size={24} color={colors.primary} />
+              </View>
+            </View>
+
+            <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center" }]}>
+              Pilih Peran Anda
+            </Text>
+            <Text style={[styles.gateSubtitle, { color: colors.mutedForeground }]}>
+              Pilih peran sesuai dengan posisi Anda di halaqah kajian
+            </Text>
+
+            {(["murid", "pengajar", "admin"] as UserRole[]).map((role) => {
+              const info = ROLE_INFO[role];
+              return (
+                <Pressable
+                  key={role}
+                  onPress={() => {
+                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedRole(role);
+                  }}
+                  style={({ pressed }) => [
+                    styles.roleCard,
+                    {
+                      backgroundColor: pressed ? colors.highlight : colors.surface,
+                      borderColor: colors.border,
+                      opacity: pressed ? 0.9 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    },
+                  ]}
+                >
+                  <View style={[styles.roleIconWrap, { backgroundColor: `${colors.primary}15` }]}>
+                    <Feather name={info.icon as any} size={20} color={colors.primary} />
+                  </View>
+                  <View style={styles.roleTextWrap}>
+                    <Text style={[styles.roleLabel, { color: colors.foreground }]}>{info.label}</Text>
+                    <Text style={[styles.roleDesc, { color: colors.mutedForeground }]}>{info.desc}</Text>
+                  </View>
+                  <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : !gateVerified ? (
+          /* ════════════════════════════════════════════════════════════════
+             STEP 2 — ACCESS GATE (Kode Akses per Peran)
+             ════════════════════════════════════════════════════════════════ */
           <Animated.View
             style={[
               styles.card,
@@ -142,6 +215,18 @@ export default function LoginScreen() {
               },
             ]}
           >
+            <Pressable
+              onPress={() => {
+                setSelectedRole(null);
+                setAccessCode("");
+                setGateError(false);
+              }}
+              style={styles.backBtn}
+            >
+              <Feather name="arrow-left" size={16} color={colors.primary} />
+              <Text style={[styles.backText, { color: colors.primary }]}>Kembali</Text>
+            </Pressable>
+
             <View style={styles.gateIconRow}>
               <View style={[styles.gateIconCircle, { backgroundColor: `${colors.primary}15` }]}>
                 <Feather name="lock" size={24} color={colors.primary} />
@@ -149,15 +234,12 @@ export default function LoginScreen() {
             </View>
 
             <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center" }]}>
-              Kode Akses
+              Kode Akses {ROLE_INFO[selectedRole].label}
             </Text>
             <Text
-              style={[
-                styles.gateSubtitle,
-                { color: colors.mutedForeground },
-              ]}
+              style={[styles.gateSubtitle, { color: colors.mutedForeground }]}
             >
-              Aplikasi ini bersifat privat. Masukkan kode akses yang diberikan oleh pengelola untuk melanjutkan.
+              Masukkan kode akses {ROLE_INFO[selectedRole].label.toLowerCase()} yang diberikan oleh pengelola untuk melanjutkan.
             </Text>
 
             <View style={styles.inputGroup}>
@@ -250,9 +332,19 @@ export default function LoginScreen() {
           </Animated.View>
         ) : (
           /* ════════════════════════════════════════════════════════════════
-             STEP 2 — LOGIN FORM (Existing)
+             STEP 3 — LOGIN FORM
              ════════════════════════════════════════════════════════════════ */
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {/* Role badge */}
+            <View style={styles.roleBadgeRow}>
+              <View style={[styles.roleBadge, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+                <Feather name={ROLE_INFO[selectedRole].icon as any} size={12} color={colors.primary} />
+                <Text style={[styles.roleBadgeText, { color: colors.primary }]}>
+                  {ROLE_INFO[selectedRole].label}
+                </Text>
+              </View>
+            </View>
+
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>Masuk ke Akun</Text>
 
             <View style={styles.inputGroup}>
@@ -414,6 +506,68 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Inter_700Bold",
     marginBottom: 20,
+  },
+
+  // ── Role selection ──────────────────────────────────────────
+  roleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 10,
+    gap: 14,
+  },
+  roleIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleTextWrap: {
+    flex: 1,
+  },
+  roleLabel: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 2,
+  },
+  roleDesc: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+
+  // ── Role badge (login form) ─────────────────────────────────
+  roleBadgeRow: {
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  roleBadgeText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  // ── Back button ─────────────────────────────────────────────
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+    alignSelf: "flex-start",
+  },
+  backText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
   },
 
   // ── Gate specific ───────────────────────────────────────────

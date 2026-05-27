@@ -108,6 +108,13 @@ export default function ProfileScreen() {
         </View>
         <Text style={styles.name}>{user?.nama ?? "Muslimah"}</Text>
         <Text style={styles.email}>{user?.email ?? ""}</Text>
+        {user?.role && (
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleBadgeText}>
+              {user.role === "pengajar" ? "👩‍🏫 Pengajar" : user.role === "admin" ? "⚙️ Admin" : "📖 Murid"}
+            </Text>
+          </View>
+        )}
         {user?.bergabungSejak && (
           <Text style={styles.since}>
             Bergabung {formatDate(user.bergabungSejak)}
@@ -224,6 +231,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.6)",
+  },
+  roleBadge: {
+    backgroundColor: "rgba(201,162,39,0.25)",
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  roleBadgeText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "#C9A227",
   },
   statsCard: {
     flexDirection: "row",

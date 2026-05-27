@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { StorageService } from "@/services/storage";
-import { UserProfile } from "@/types";
+import { UserProfile, UserRole } from "@/types";
 import { logUserLogin } from "@/services/userLogger";
 
 interface AuthContextValue {
   user: UserProfile | null;
   isLoading: boolean;
-  signIn: (name: string, email: string) => Promise<void>;
+  signIn: (name: string, email: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -23,16 +23,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     StorageService.get<UserProfile>(StorageService.USER_KEY).then((saved) => {
-      if (saved) setUser(saved);
+      if (saved) {
+        // Pastikan user lama yang belum punya role mendapat default "murid"
+        if (!saved.role) saved.role = "murid";
+        setUser(saved);
+      }
       setIsLoading(false);
     });
   }, []);
 
-  const signIn = async (name: string, email: string) => {
+  const signIn = async (name: string, email: string, role: UserRole) => {
     const profile: UserProfile = {
       id: Date.now().toString(),
       nama: name,
       email: email,
+      role: role,
       totalKajian: 0,
       totalCatatan: 0,
       bergabungSejak: new Date().toISOString(),
@@ -46,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await StorageService.remove(StorageService.USER_KEY);
+    // Juga hapus access gate agar harus login ulang
+    await StorageService.remove(StorageService.ACCESS_GATE_KEY);
     setUser(null);
   };
 

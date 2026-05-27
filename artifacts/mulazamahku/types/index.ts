@@ -1,3 +1,5 @@
+export type UserRole = "murid" | "pengajar" | "admin";
+
 export interface Kajian {
   id: string;
   judul: string;
@@ -9,8 +11,53 @@ export interface Kajian {
   kategori: string;
   deskripsi: string;
   mapsUrl?: string;
+  maps_url?: string;
   lat?: number;
   lng?: number;
+}
+
+export interface JadwalPerubahan {
+  id: string;
+  kajian_id: string;
+  tanggal: string;
+  perubahan: string;
+  waktu_baru?: string;
+  lokasi_baru?: string;
+  dibuat_oleh?: string;
+  created_at: string;
+}
+
+export interface Flyer {
+  id: string;
+  kajian_id: string;
+  image_url: string;
+  keterangan?: string;
+  tanggal_berlaku?: string;
+  dibuat_oleh?: string;
+  created_at: string;
+}
+
+export interface CatatanPengajar {
+  id: string;
+  kajian_id: string;
+  tanggal: string;
+  materi_sampai: string;
+  catatan?: string;
+  dibuat_oleh?: string;
+  created_at: string;
+}
+
+export interface RujukanKitab {
+  id: string;
+  kajian_id?: string;
+  judul_kitab: string;
+  penulis?: string;
+  deskripsi?: string;
+  file_url?: string;
+  izin_penggunaan: boolean;
+  catatan_izin?: string;
+  dibuat_oleh?: string;
+  created_at: string;
 }
 
 export interface Note {
@@ -45,6 +92,7 @@ export interface UserProfile {
   id: string;
   nama: string;
   email: string;
+  role: UserRole;
   photoURL?: string;
   totalKajian: number;
   totalCatatan: number;
