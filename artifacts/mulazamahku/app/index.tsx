@@ -106,21 +106,38 @@ export default function LoginScreen() {
 
   // ── Listen for OAuth callback on web ────────────────────────
   useEffect(() => {
-    if (Platform.OS !== "web" || !gateVerified || !selectedRole) return;
+    if (Platform.OS !== "web") return;
 
-    // On web, after Google OAuth redirect, Supabase puts tokens in the URL hash.
-    // We listen for auth state changes to detect successful login.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        const userName = session.user.user_metadata?.full_name || "Pengguna Google";
-        const userEmail = session.user.email || "google@user.com";
-        await signIn(userName, userEmail, selectedRole);
-        router.replace("/(tabs)");
+    const handleWebAuth = async (session: any) => {
+      if (!session?.user) return;
+      
+      let role: UserRole = "murid";
+      const savedRole = await StorageService.get<string>(StorageService.ACCESS_GATE_KEY);
+      if (savedRole && (savedRole === "murid" || savedRole === "pengajar" || savedRole === "admin")) {
+        role = savedRole as UserRole;
+      } else if (selectedRole) {
+        role = selectedRole;
+      }
+
+      const userName = session.user.user_metadata?.full_name || "Pengguna Google";
+      const userEmail = session.user.email || "google@user.com";
+      await signIn(userName, userEmail, role);
+      router.replace("/(tabs)");
+    };
+
+    // Cek session saat ini jika baru saja redirect dari Google
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) handleWebAuth(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        handleWebAuth(session);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [gateVerified, selectedRole]);
+  }, [selectedRole]);
 
   // ── Login handler (Google OAuth) ───────────────────────────
   const handleGoogleSignIn = async () => {
