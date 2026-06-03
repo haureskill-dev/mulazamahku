@@ -104,13 +104,47 @@ export default function LoginScreen() {
     }
   };
 
+  // ── Listen for OAuth callback on web ────────────────────────
+  useEffect(() => {
+    if (Platform.OS !== "web" || !gateVerified || !selectedRole) return;
+
+    // On web, after Google OAuth redirect, Supabase puts tokens in the URL hash.
+    // We listen for auth state changes to detect successful login.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        const userName = session.user.user_metadata?.full_name || "Pengguna Google";
+        const userEmail = session.user.email || "google@user.com";
+        await signIn(userName, userEmail, selectedRole);
+        router.replace("/(tabs)");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [gateVerified, selectedRole]);
+
   // ── Login handler (Google OAuth) ───────────────────────────
   const handleGoogleSignIn = async () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
 
     try {
-      // Membuat URL redirect ke aplikasi Expo kita
+      if (Platform.OS === "web") {
+        // Web: redirect langsung di browser (bukan popup)
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+        if (error) {
+          Alert.alert("Google Login Gagal", error.message);
+          setLoading(false);
+        }
+        // Browser akan redirect, loading tetap true
+        return;
+      }
+
+      // Native: buka browser popup
       const redirectUrl = Linking.createURL("/");
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -122,12 +156,9 @@ export default function LoginScreen() {
       if (error) {
         Alert.alert("Google Login Gagal", error.message);
       } else if (data.url) {
-        // Buka browser untuk login Google
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
         if (result.type === "success" && result.url) {
-          // Parsing token dari URL balikan (redirect URL)
-          // Terkadang Supabase menaruh di fragment (#), ubah ke (?) agar mudah diparse
           const urlStr = result.url.replace("#", "?");
           const parsedUrl = Linking.parse(urlStr);
           
@@ -135,7 +166,6 @@ export default function LoginScreen() {
           const refreshToken = parsedUrl.queryParams?.refresh_token;
 
           if (accessToken && refreshToken) {
-            // Set sesi di Supabase
             const { error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken as string,
               refresh_token: refreshToken as string,
@@ -146,16 +176,13 @@ export default function LoginScreen() {
                return;
             }
 
-            // Ambil data user
             const { data: userData } = await supabase.auth.getUser();
             const userName = userData.user?.user_metadata?.full_name || "Pengguna Google";
             const userEmail = userData.user?.email || "google@user.com";
 
-            // Lanjut masuk ke aplikasi
             await signIn(userName, userEmail, selectedRole!);
             router.replace("/(tabs)");
           } else {
-             // Jika gagal mem-parsing token, tampilkan URL untuk debug
              Alert.alert("Login Dibatalkan / Gagal", "Pesan dari server:\n" + result.url);
           }
         } else {
