@@ -1,14 +1,15 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React from "react";
-import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useNotes } from "@/context/NotesContext";
 import { useMudzakarah } from "@/context/MudzakarahContext";
 import { useColors } from "@/hooks/useColors";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
+import * as Updates from "expo-updates";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", {
@@ -57,7 +58,7 @@ function SettingItem({ icon, label, value, onPress, danger }: SettingItemProps) 
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateProfile } = useAuth();
   const { notes } = useNotes();
   const { topics } = useMudzakarah();
 
@@ -83,6 +84,41 @@ export default function ProfileScreen() {
 
   const activeKajian = DUMMY_KAJIAN.filter((k) => k.status === "aktif").length;
   const myTopics = topics.filter((t) => t.authorName === user?.nama).length;
+  const [updating, setUpdating] = useState(false);
+
+  // Edit Name State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
+  const handleSaveName = async () => {
+    if (!newName.trim()) return;
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSavingName(true);
+    await updateProfile({ nama: newName.trim() });
+    setSavingName(false);
+    setEditModalVisible(false);
+  };
+
+  const handleCheckUpdate = async () => {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setUpdating(true);
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        Alert.alert("Pembaruan Tersedia", "Aplikasi akan dimuat ulang untuk menerapkan pembaruan.", [
+          { text: "Muat Ulang", onPress: () => Updates.reloadAsync() },
+        ]);
+      } else {
+        Alert.alert("Sudah Terbaru", "Aplikasi Anda sudah menggunakan versi terbaru.");
+      }
+    } catch (e) {
+      Alert.alert("Gagal", "Tidak dapat memeriksa pembaruan. Pastikan Anda terhubung ke internet.");
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -106,19 +142,38 @@ export default function ProfileScreen() {
             {(user?.nama ?? "M").charAt(0).toUpperCase()}
           </Text>
         </View>
-        <Text style={styles.name}>{user?.nama ?? "Muslimah"}</Text>
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <Text style={styles.name}>{user?.nama ?? "Muslimah"}</Text>
+          <Pressable 
+            onPress={() => {
+              setNewName(user?.nama ?? "");
+              setEditModalVisible(true);
+            }}
+            hitSlop={12}
+            style={({pressed}) => ({ opacity: pressed ? 0.5 : 0.9 })}
+          >
+            <Feather name="edit-2" size={14} color="#FFFFFF" />
+          </Pressable>
+        </View>
+
         <Text style={styles.email}>{user?.email ?? ""}</Text>
-        {user?.role && (
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>
-              {user.role === "pengajar" ? "👩‍🏫 Pengajar" : user.role === "admin" ? "⚙️ Admin" : "📖 Murid"}
-            </Text>
-          </View>
-        )}
         {user?.bergabungSejak && (
-          <Text style={styles.since}>
+          <Text style={[styles.since, { marginBottom: 8 }]}>
             Bergabung {formatDate(user.bergabungSejak)}
           </Text>
+        )}
+        {user?.role && (
+          <View style={styles.roleBadge}>
+            <Feather 
+              name={user.role === "pengajar" ? "award" : user.role === "admin" ? "settings" : "book-open"} 
+              size={12} 
+              color="#C9A227" 
+            />
+            <Text style={styles.roleBadgeText}>
+              {user.role === "pengajar" ? "Pengajar" : user.role === "admin" ? "Admin" : "Murid"}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -129,14 +184,27 @@ export default function ProfileScreen() {
         </View>
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <View style={styles.statCol}>
-          <Text style={[styles.statNum, { color: colors.primary }]}>{notes.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Catatan</Text>
+          <Text style={[styles.statNum, { color: colors.primary }]}>0</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Faedah</Text>
         </View>
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <View style={styles.statCol}>
-          <Text style={[styles.statNum, { color: colors.primary }]}>{myTopics}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Mudzakarah</Text>
-        </View>
+        {user?.role !== "pengajar" && (
+          <>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statCol}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>{notes.length}</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Catatan</Text>
+            </View>
+          </>
+        )}
+        {user?.role !== "pengajar" && (
+          <>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statCol}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>{myTopics}</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Mudzakarah</Text>
+            </View>
+          </>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -149,17 +217,27 @@ export default function ProfileScreen() {
             onPress={() => router.push("/(tabs)")}
           />
           <SettingItem
-            icon="edit-3"
-            label="Catatan Saya"
-            value={`${notes.length} catatan`}
-            onPress={() => router.push("/(tabs)/notes")}
+            icon="image"
+            label="Desain Faedah"
+            value="0 desain"
+            onPress={() => router.push("/(tabs)/faedah")}
           />
-          <SettingItem
-            icon="message-circle"
-            label="Mudzakarah"
-            value={`${topics.length} topik`}
-            onPress={() => router.push("/(tabs)/mudzakarah")}
-          />
+          {user?.role !== "pengajar" && (
+            <SettingItem
+              icon="edit-3"
+              label="Catatan Saya"
+              value={`${notes.length} catatan`}
+              onPress={() => router.push("/(tabs)/notes")}
+            />
+          )}
+          {user?.role !== "pengajar" && (
+            <SettingItem
+              icon="message-circle"
+              label="Mudzakarah"
+              value={`${topics.length} topik`}
+              onPress={() => router.push("/(tabs)/mudzakarah")}
+            />
+          )}
         </View>
       </View>
 
@@ -168,6 +246,28 @@ export default function ProfileScreen() {
         <View style={[styles.settingGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SettingItem icon="info" label="Versi Aplikasi" value="1.0.0" />
           <SettingItem icon="heart" label="Mulazamahku" value="Thalabul 'Ilmi" />
+          <Pressable
+            onPress={handleCheckUpdate}
+            disabled={updating}
+            style={({ pressed }) => [
+              styles.settingItem,
+              { borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View style={[styles.settingIcon, { backgroundColor: colors.highlight }]}>
+              {updating ? (
+                <ActivityIndicator size={16} color={colors.primary} />
+              ) : (
+                <Feather name="refresh-cw" size={16} color={colors.primary} />
+              )}
+            </View>
+            <Text style={[styles.settingLabel, { color: colors.foreground }]}>
+              {updating ? "Memeriksa..." : "Cek Pembaruan"}
+            </Text>
+            <View style={styles.settingRight}>
+              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+            </View>
+          </Pressable>
         </View>
       </View>
 
@@ -185,6 +285,52 @@ export default function ProfileScreen() {
       <Text style={[styles.footer, { color: colors.mutedForeground }]}>
         "Menuntut ilmu itu wajib atas setiap muslim."
       </Text>
+
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Edit Nama</Text>
+            <TextInput
+              style={[
+                styles.modalInput,
+                { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }
+              ]}
+              value={newName}
+              onChangeText={setNewName}
+              placeholder="Masukkan nama Anda"
+              placeholderTextColor={colors.mutedForeground}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalBtn, { backgroundColor: colors.surface }]}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={[styles.modalBtnText, { color: colors.foreground }]}>Batal</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                onPress={handleSaveName}
+                disabled={savingName || !newName.trim()}
+              >
+                {savingName ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.modalBtnText, { color: "#FFFFFF" }]}>Simpan</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScrollView>
   );
 }
@@ -233,9 +379,12 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.6)",
   },
   roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     backgroundColor: "rgba(201,162,39,0.25)",
     paddingHorizontal: 14,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 20,
     marginTop: 6,
     marginBottom: 4,
@@ -328,5 +477,53 @@ const styles = StyleSheet.create({
     marginHorizontal: 32,
     marginTop: 28,
     lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 16,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  modalBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  modalBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
   },
 });

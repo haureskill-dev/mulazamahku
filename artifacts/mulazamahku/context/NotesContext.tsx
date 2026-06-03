@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { StorageService } from "@/services/storage";
 import { Note } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 
 interface NotesContextValue {
   notes: Note[];
@@ -18,43 +19,37 @@ const NotesContext = createContext<NotesContextValue>({
 
 export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
-    StorageService.get<Note[]>(StorageService.NOTES_KEY).then((saved) => {
+    if (!user?.email) {
+      setNotes([]);
+      return;
+    }
+
+    const emailKey = `${StorageService.NOTES_KEY}_${user.email}`;
+
+    StorageService.get<Note[]>(emailKey).then(async (saved) => {
       if (saved && saved.length > 0) {
         setNotes(saved);
       } else {
-        const sample: Note[] = [
-          {
-            id: "n1",
-            judul: "Faedah Tafsir Al-Mulk",
-            isi: "Siapa yang membaca surat Al-Mulk setiap malam, Allah akan menghalanginya dari azab kubur. (HR. At-Tirmidzi)\n\nHikmah: Konsistensi ibadah meski ringan lebih dicintai Allah daripada yang banyak tapi terputus.",
-            kajianId: "1",
-            kajianJudul: "Tafsir Al-Quran Juz 30",
-            createdAt: "2026-05-08T09:00:00Z",
-            updatedAt: "2026-05-08T09:00:00Z",
-            tags: ["tafsir", "amalan"],
-          },
-          {
-            id: "n2",
-            judul: "Keutamaan Menuntut Ilmu",
-            isi: "Barangsiapa menempuh jalan untuk menuntut ilmu, Allah akan memudahkan baginya jalan menuju surga. (HR. Muslim)\n\nNote: Niat harus ikhlas karena Allah, bukan untuk dipuji.",
-            kajianId: "2",
-            kajianJudul: "Hadits Arbain Nawawi",
-            createdAt: "2026-05-07T10:30:00Z",
-            updatedAt: "2026-05-07T10:30:00Z",
-            tags: ["hadits", "ilmu"],
-          },
-        ];
-        setNotes(sample);
-        StorageService.set(StorageService.NOTES_KEY, sample);
+        // Fallback to old key if migrating
+        const oldSaved = await StorageService.get<Note[]>(StorageService.NOTES_KEY);
+        if (oldSaved && oldSaved.length > 0) {
+          setNotes(oldSaved);
+          await StorageService.set(emailKey, oldSaved); // Migrate
+        } else {
+          setNotes([]);
+        }
       }
     });
-  }, []);
+  }, [user?.email]);
 
   const saveNotes = async (updated: Note[]) => {
     setNotes(updated);
-    await StorageService.set(StorageService.NOTES_KEY, updated);
+    if (user?.email) {
+      await StorageService.set(`${StorageService.NOTES_KEY}_${user.email}`, updated);
+    }
   };
 
   const addNote = async (note: Omit<Note, "id" | "createdAt" | "updatedAt">) => {

@@ -14,6 +14,10 @@ export interface Kajian {
   maps_url?: string;
   lat?: number;
   lng?: number;
+  cp_nama?: string;
+  cp_telepon?: string;
+  is_custom?: boolean;
+  is_public?: boolean;
 }
 
 export interface JadwalPerubahan {
@@ -97,4 +101,31 @@ export interface UserProfile {
   totalKajian: number;
   totalCatatan: number;
   bergabungSejak: string;
+}
+
+export interface OjekMuslimahContact {
+  id: string;
+  nama: string;
+  phone: string;
+}
+
+export interface PengajarProfile {
+  id: string;
+  nama: string;
+  gelar?: string;
+  tempatLahir: string;
+  agama: string;
+  status: string;
+  pendidikanTerakhir: string;
+  alamat: string;
+  pendidikanNonFormal: string[];
+  aktivitasSaatIni: string[];
+  aktivitasBelajar: string[];
+}
+
+export interface AdminKajianContact {
+  id: string;
+  nama: string;
+  phone: string;
+  lokasi: string;
 }

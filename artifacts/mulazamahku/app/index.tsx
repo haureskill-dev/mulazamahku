@@ -1,9 +1,10 @@
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Image,
   KeyboardAvoidingView,
@@ -20,6 +21,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { StorageService } from "@/services/storage";
 import { UserRole } from "@/types";
+import { supabase } from "@/services/supabase";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+
+WebBrowser.maybeCompleteAuthSession();
 
 // Kode akses per peran
 const ACCESS_CODES: Record<UserRole, string> = {
@@ -51,12 +57,7 @@ export default function LoginScreen() {
   const [shakeAnim] = useState(() => new Animated.Value(0));
 
   // ── Login state ─────────────────────────────────────────────
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [isMuslimah, setIsMuslimah] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [nameFocus, setNameFocus] = useState(false);
-  const [emailFocus, setEmailFocus] = useState(false);
 
   // Check if user already passed the gate before
   useEffect(() => {
@@ -103,17 +104,72 @@ export default function LoginScreen() {
     }
   };
 
-  // ── Login handler ───────────────────────────────────────────
-  const handleSignIn = async () => {
-    if (!name.trim() || !email.trim() || !isMuslimah || !selectedRole) return;
+  // ── Login handler (Google OAuth) ───────────────────────────
+  const handleGoogleSignIn = async () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    await signIn(name.trim(), email.trim(), selectedRole);
-    router.replace("/(tabs)");
-  };
 
-  const isValid = name.trim().length > 0 && email.trim().length > 2 && isMuslimah;
+    try {
+      // Membuat URL redirect ke aplikasi Expo kita
+      const redirectUrl = Linking.createURL("/");
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+
+      if (error) {
+        Alert.alert("Google Login Gagal", error.message);
+      } else if (data.url) {
+        // Buka browser untuk login Google
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+        if (result.type === "success" && result.url) {
+          // Parsing token dari URL balikan (redirect URL)
+          // Terkadang Supabase menaruh di fragment (#), ubah ke (?) agar mudah diparse
+          const urlStr = result.url.replace("#", "?");
+          const parsedUrl = Linking.parse(urlStr);
+          
+          const accessToken = parsedUrl.queryParams?.access_token;
+          const refreshToken = parsedUrl.queryParams?.refresh_token;
+
+          if (accessToken && refreshToken) {
+            // Set sesi di Supabase
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken as string,
+              refresh_token: refreshToken as string,
+            });
+
+            if (sessionError) {
+               Alert.alert("Gagal Set Sesi", sessionError.message);
+               return;
+            }
+
+            // Ambil data user
+            const { data: userData } = await supabase.auth.getUser();
+            const userName = userData.user?.user_metadata?.full_name || "Pengguna Google";
+            const userEmail = userData.user?.email || "google@user.com";
+
+            // Lanjut masuk ke aplikasi
+            await signIn(userName, userEmail, selectedRole!);
+            router.replace("/(tabs)");
+          } else {
+             // Jika gagal mem-parsing token, tampilkan URL untuk debug
+             Alert.alert("Login Dibatalkan / Gagal", "Pesan dari server:\n" + result.url);
+          }
+        } else {
+           if (result.type !== "cancel") {
+             Alert.alert("Info", "Login dibatalkan atau gagal diproses browser. (" + result.type + ")");
+           }
+        }
+      }
+    } catch (e) {
+      Alert.alert("Error", "Gagal membuka autentikasi Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Loading state ───────────────────────────────────────────
   if (gateVerified === null) {
@@ -147,9 +203,12 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
           <Text style={[styles.appName, { color: colors.primary }]}>Mulazamahku</Text>
-          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Pendamping setia perjalanan menuntut ilmu
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 4, marginBottom: 8, paddingHorizontal: 20 }}>
+            <View style={{ height: 1, backgroundColor: colors.border, flex: 1 }} />
+            <Feather name="book-open" size={10} color={colors.primary} style={{ marginHorizontal: 8 }} />
+            <View style={{ height: 1, backgroundColor: colors.border, flex: 1 }} />
+          </View>
+          <Text style={[styles.tagline, { color: "#3399B8", fontSize: 12 }]}>Bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله</Text>
         </View>
 
         {/* ════════════════════════════════════════════════════════════════
@@ -157,13 +216,7 @@ export default function LoginScreen() {
             ════════════════════════════════════════════════════════════════ */}
         {!selectedRole ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.gateIconRow}>
-              <View style={[styles.gateIconCircle, { backgroundColor: `${colors.primary}15` }]}>
-                <Feather name="users" size={24} color={colors.primary} />
-              </View>
-            </View>
-
-            <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center" }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center", marginTop: 8 }]}>
               Pilih Peran Anda
             </Text>
             <Text style={[styles.gateSubtitle, { color: colors.mutedForeground }]}>
@@ -334,125 +387,56 @@ export default function LoginScreen() {
           /* ════════════════════════════════════════════════════════════════
              STEP 3 — LOGIN FORM
              ════════════════════════════════════════════════════════════════ */
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {/* Role badge */}
-            <View style={styles.roleBadgeRow}>
-              <View style={[styles.roleBadge, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
-                <Feather name={ROLE_INFO[selectedRole].icon as any} size={12} color={colors.primary} />
-                <Text style={[styles.roleBadgeText, { color: colors.primary }]}>
-                  {ROLE_INFO[selectedRole].label}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Masuk ke Akun</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.foreground }]}>Nama</Text>
-              <View
-                style={[
-                  styles.inputWrap,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: nameFocus ? colors.primary : colors.border,
-                  },
-                ]}
-              >
-                <Feather
-                  name="user"
-                  size={16}
-                  color={nameFocus ? colors.primary : colors.mutedForeground}
-                />
-                <TextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Nama lengkap kamu"
-                  placeholderTextColor={colors.mutedForeground}
-                  onFocus={() => setNameFocus(true)}
-                  onBlur={() => setNameFocus(false)}
-                  style={[styles.input, { color: colors.foreground }]}
-                  autoCapitalize="words"
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
-              <View
-                style={[
-                  styles.inputWrap,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: emailFocus ? colors.primary : colors.border,
-                  },
-                ]}
-              >
-                <Feather
-                  name="mail"
-                  size={16}
-                  color={emailFocus ? colors.primary : colors.mutedForeground}
-                />
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="email@example.com"
-                  placeholderTextColor={colors.mutedForeground}
-                  onFocus={() => setEmailFocus(true)}
-                  onBlur={() => setEmailFocus(false)}
-                  style={[styles.input, { color: colors.foreground }]}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
-            </View>
-
-            <Pressable
-              onPress={() => {
-                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setIsMuslimah(!isMuslimah);
-              }}
-              style={styles.checkboxContainer}
-            >
-              <View style={[styles.checkbox, isMuslimah && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                {isMuslimah && <Feather name="check" size={14} color="#FFFFFF" />}
-              </View>
-              <Text style={[styles.checkboxLabel, { color: colors.foreground }]}>
-                Saya mengonfirmasi bahwa saya adalah seorang muslimah
+          <View style={styles.loginFormContainer}>
+            <View style={{ alignItems: "center", marginBottom: 32 }}>
+              <Feather name="log-in" size={36} color="#3399B8" style={{ marginBottom: 12 }} />
+              <Text style={{ fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.foreground, textAlign: "center", marginBottom: 6 }}>
+                Masuk ke Aplikasi
               </Text>
-            </Pressable>
+              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center" }}>
+                Gunakan akun Google Anda untuk melanjutkan ke aplikasi Mulazamahku.
+              </Text>
+            </View>
 
             <Pressable
-              onPress={handleSignIn}
-              disabled={!isValid || loading}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
               style={({ pressed }) => [
-                styles.btn,
+                styles.mockupBtn,
                 {
-                  backgroundColor: isValid ? colors.primary : colors.muted,
+                  backgroundColor: "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: "#DDDDDD",
+                  flexDirection: "row",
+                  gap: 12,
                   opacity: pressed ? 0.85 : 1,
                   transform: [{ scale: pressed ? 0.97 : 1 }],
                 },
               ]}
             >
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color="#555555" size="small" />
               ) : (
-                <Text
-                  style={[
-                    styles.btnText,
-                    { color: isValid ? colors.primaryForeground : colors.mutedForeground },
-                  ]}
-                >
-                  Masuk
-                </Text>
+                <>
+                  <Ionicons name="logo-google" size={20} color="#EA4335" />
+                  <Text style={[styles.mockupBtnText, { color: "#555555", fontSize: 16 }]}>
+                    Login dengan Google
+                  </Text>
+                </>
               )}
             </Pressable>
           </View>
         )}
 
-        <View style={styles.infoRow}>
-          <Feather name="shield" size={12} color={colors.mutedForeground} />
-          <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-            Data tersimpan aman di perangkatmu
+        <View style={styles.quoteRow}>
+          <Text style={[styles.quoteText, { color: colors.foreground }]}>
+            "Belajar sistematis di bawah bimbingan{"\n"}seorang guru."
+          </Text>
+        </View>
+
+        <View style={styles.copyrightRow}>
+          <Text style={[styles.copyrightText, { color: colors.foreground }]}>
+            © Mulazamahku 1447 H
           </Text>
         </View>
       </ScrollView>
@@ -487,8 +471,69 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_500Medium",
     textAlign: "center",
+  },
+  loginFormContainer: {
+    width: "100%",
+    paddingHorizontal: 16,
+    marginTop: 24,
+  },
+  mockupInputWrap: {
+    borderWidth: 2,
+    borderRadius: 30,
+    height: 52,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    justifyContent: "center",
+  },
+  mockupInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+  },
+  forgotText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#888888",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  mockupBtn: {
+    height: 52,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    paddingHorizontal: 48,
+    marginBottom: 40,
+  },
+  mockupBtnText: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+  },
+  quoteRow: {
+    marginTop: 32,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  quoteText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    fontStyle: "italic",
+    textAlign: "center",
+  },
+  copyrightRow: {
+    marginTop: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  copyrightText: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
   },
   card: {
     width: "100%",

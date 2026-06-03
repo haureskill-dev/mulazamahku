@@ -126,3 +126,21 @@ CREATE POLICY "Public read flyers" ON storage.objects FOR SELECT USING (bucket_i
 CREATE POLICY "Public upload flyers" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'flyers');
 CREATE POLICY "Public read kitab" ON storage.objects FOR SELECT USING (bucket_id = 'kitab');
 CREATE POLICY "Public upload kitab" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'kitab');
+
+-- 7. Tabel Faedah Kajian (Desain Canva)
+CREATE TABLE IF NOT EXISTS public.faedah_kajian (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  kajian_id TEXT REFERENCES public.jadwal_kajian(id) ON DELETE CASCADE,
+  image_url TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'menunggu' CHECK (status IN ('menunggu', 'diverifikasi', 'revisi')),
+  catatan_pengajar TEXT,
+  dibuat_oleh UUID REFERENCES public.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.faedah_kajian ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all for anon" ON public.faedah_kajian FOR ALL USING (true) WITH CHECK (true);
+
+INSERT INTO storage.buckets (id, name, public) VALUES ('faedah', 'faedah', true) ON CONFLICT DO NOTHING;
+CREATE POLICY "Public read faedah" ON storage.objects FOR SELECT USING (bucket_id = 'faedah');
+CREATE POLICY "Public upload faedah" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'faedah');
+

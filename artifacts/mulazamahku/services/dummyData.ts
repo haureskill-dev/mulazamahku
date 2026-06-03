@@ -1,4 +1,4 @@
-import { Kajian, MudzakarahTopic } from "@/types";
+import { Kajian, MudzakarahTopic, OjekMuslimahContact, PengajarProfile, AdminKajianContact } from "@/types";
 
 // Semua pekan dijabarkan terpisah — tidak ada penggabungan "Pekan X & Y"
 export const DUMMY_KAJIAN: Kajian[] = [
@@ -243,4 +243,58 @@ export const DUMMY_MUDZAKARAH: MudzakarahTopic[] = [
       },
     ],
   },
+];
+
+// ── Kontak Ojek Muslimah (urut abjad) ─────────────────────────────────
+export const OJEK_CONTACTS: OjekMuslimahContact[] = [
+  { id: "1", nama: "Bu Ojek Muslimah", phone: "6282179375736" },
+  { id: "2", nama: "Ummu Tama", phone: "6281953993941" },
+  { id: "3", nama: "Ummu Tsabit", phone: "6288293108711" },
+];
+
+// ── Profil Pengajar ───────────────────────────────────────────────────
+export const PENGAJAR_PROFILES: PengajarProfile[] = [
+  {
+    id: "p1",
+    nama: "Rubeya Litiloly",
+    gelar: "S.Kom.",
+    tempatLahir: "Fak-fak, Papua",
+    agama: "Islam",
+    status: "Menikah",
+    pendidikanTerakhir: "S1 – Teknik Informatika",
+    alamat: "Cilegon, Banten",
+    pendidikanNonFormal: [
+      "PP. Al Furqon Al Islamy Gresik",
+      "Belajar Ilmu Hadits pada Syaikh Muhammad Alu Syaikh",
+      "Belajar Ilmu Fiqih kepada Syaikh Abul Hasan Yahya Al Ja'fary",
+      "Belajar Kitab-kitab Silsilah Tholibil Ilmi pada Syaikh Sholih Bin Abdullah Bin Hamad Al 'Ushoimiy",
+    ],
+    aktivitasSaatIni: [
+      "Praktisi Pendidikan (Kepala SMAIT Putri Al Hanif)",
+      "Da'iyyah",
+      "Ketua Ikatan Alumni Akhwat – Ma'had Al Furqon Al Islamy, Gresik",
+      "Ketua Tim Janaiz Akhwat – DKM Imam An Nawawi, Yayasan Al Hanif",
+      "Pengurus Divisi Kemuslimahan Lajnah Dakwah Yayasan Al Hanif",
+    ],
+    aktivitasBelajar: [
+      "Mahasantri HSI Akademi dan Santri HSI Reguler",
+      "Kelas Hifdzul Qur'an secara Online di Masjid Nabawi, Madinah Al Munawwaroh pada Syaikhoh Ummu Hani'",
+      "Kelas Hifdzul Mutun Ilmiyyah secara Online pada Syaikhoh Hauro dan Syaikhoh Manar",
+    ],
+  },
+];
+
+// ── Admin CP Kajian ───────────────────────────────────────────────────
+export const ADMIN_KAJIAN_CONTACTS: AdminKajianContact[] = [
+  { id: "cp1", nama: "Ibu Gina", phone: "6281380810334", lokasi: "Metro Mediterania" },
+  { id: "cp2", nama: "Eka Ummu Utsman", phone: "6281932011785", lokasi: "Masjid Imam an-Nawawi" },
+  { id: "cp3", nama: "Ummu Azka", phone: "6287755247467", lokasi: "Masjid Abu Bakar ash-Shiddiq" },
+  { id: "cp4", nama: "Ummu Niar", phone: "6287774004560", lokasi: "Zircon Villa Permata Hijau" },
+  { id: "cp5", nama: "Ukh Hilda", phone: "6289517288810", lokasi: "Masjid as-Salam GSI" },
+  { id: "cp6", nama: "Ukh Dinda", phone: "628121366889", lokasi: "Masjid Imam asy-Syafi'i" },
+  { id: "cp7", nama: "CP Masjid Al Ikhlash", phone: "6281276964336", lokasi: "Masjid al-Ikhlas" },
+  { id: "cp8", nama: "CP Masjid Arga", phone: "6281288691998", lokasi: "Masjid Arga Baja Grogol" },
+  { id: "cp9", nama: "Ummu Iffvy", phone: "6285291171799", lokasi: "RT Abu Bakar Topaz VPH" },
+  { id: "cp10", nama: "CP Kajian Rumah Azaji Zamrud", phone: "6281805021014", lokasi: "Rumah Azaji Zamrud" },
+  { id: "cp11", nama: "Ukh Lenny", phone: "62817895557", lokasi: "R. Bu Malika Topaz VPH" },
 ];

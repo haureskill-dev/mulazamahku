@@ -1,23 +1,30 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
+  Alert,
+  Modal,
 } from "react-native";
+import * as Updates from "expo-updates";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MosqueDecoration } from "@/components/MosqueDecoration";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useNotes } from "@/context/NotesContext";
-import { DUMMY_KAJIAN } from "@/services/dummyData";
-import { Kajian } from "@/types";
+import { DUMMY_KAJIAN, PENGAJAR_PROFILES } from "@/services/dummyData";
+import { Kajian, Flyer } from "@/types";
+import { FlyerService } from "@/services/flyerService";
+import { KajianTambahanService } from "@/services/kajianTambahanService";
+import { Image } from "expo-image";
 
 const DAYS_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"];
 
@@ -80,8 +87,47 @@ export default function BerandaScreen() {
   const { user } = useAuth();
   const { notes } = useNotes();
 
-  const grouped = useMemo(() => groupByDay(DUMMY_KAJIAN), []);
-  const highlight = useMemo(() => findNearestKajian(DUMMY_KAJIAN), []);
+  const [customKajian, setCustomKajian] = useState<Kajian[]>([]);
+  
+  const fetchCustomKajian = useCallback(async () => {
+    const data = await KajianTambahanService.getAll();
+    
+    // Murid hanya boleh melihat yang is_public = true (meskipun sudah dijaga di RLS Supabase)
+    const filteredData = (user?.role === "pengajar" || user?.role === "admin") 
+      ? data 
+      : data.filter(d => d.is_public);
+      
+    const mapped: Kajian[] = filteredData.map(d => ({
+      id: d.id,
+      judul: d.judul,
+      ustadz: d.ustadz,
+      waktu: d.waktu,
+      hari: d.hari,
+      lokasi: d.lokasi,
+      status: "aktif",
+      cp_nama: d.cp_nama,
+      cp_telepon: d.cp_telepon,
+      is_custom: true,
+      is_public: d.is_public
+    } as Kajian & { cp_nama?: string; cp_telepon?: string; is_custom?: boolean; is_public?: boolean }));
+    
+    setCustomKajian(mapped);
+  }, [user?.role]);
+
+  const allKajianList = useMemo(() => [...DUMMY_KAJIAN, ...customKajian], [customKajian]);
+  const grouped = useMemo(() => groupByDay(allKajianList), [allKajianList]);
+  const highlight = useMemo(() => findNearestKajian(allKajianList), [allKajianList]);
+
+  const [flyers, setFlyers] = useState<Flyer[]>([]);
+  const fetchFlyers = useCallback(async () => {
+    const data = await FlyerService.getAllFlyers();
+    setFlyers(data);
+  }, []);
+
+  React.useEffect(() => {
+    fetchFlyers();
+    fetchCustomKajian();
+  }, [fetchFlyers, fetchCustomKajian]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -97,6 +143,26 @@ export default function BerandaScreen() {
     return "مساء الخير";
   };
 
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedFlyer, setSelectedFlyer] = useState<Flyer | null>(null);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchFlyers();
+    await fetchCustomKajian();
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        await Updates.reloadAsync();
+      }
+    } catch (e) {
+      // Abaikan error di dev mode
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchFlyers]);
+
   return (
     <ScrollView
       style={[styles.root, { backgroundColor: colors.background }]}
@@ -105,8 +171,16 @@ export default function BerandaScreen() {
         paddingTop: Platform.OS === "web" ? 67 : 0,
       }}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+        />
+      }
     >
-      {/* ── Header navy ─────────────────────────────────────── */}
+      {/* ── Header navy (User) ─────────────────────────────────────── */}
       <View
         style={[
           styles.headerSection,
@@ -116,19 +190,42 @@ export default function BerandaScreen() {
         <View style={[styles.goldTopBar, { backgroundColor: colors.gold }]} />
 
         <View style={styles.headerTop}>
-          <Pressable
-            onPress={() => router.push("/(tabs)/profile")}
-            style={[styles.avatarBtn, { borderColor: colors.gold, marginRight: 14 }]}
-          >
-            <Text style={styles.avatarLetter}>
-              {(user?.nama ?? "M").charAt(0).toUpperCase()}
-            </Text>
-          </Pressable>
+          <View style={{ alignItems: "center", marginRight: 14 }}>
+            <Pressable
+              onPress={() => router.push("/(tabs)/profile")}
+              style={[styles.avatarBtn, { borderColor: colors.gold, marginBottom: 4, marginRight: 0 }]}
+            >
+              <Text style={styles.avatarLetter}>
+                {(user?.nama ?? "M").charAt(0).toUpperCase()}
+              </Text>
+            </Pressable>
+            {user?.role && (
+              <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                <Text style={{ fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", textTransform: "capitalize" }}>
+                  {user.role}
+                </Text>
+              </View>
+            )}
+          </View>
+
           <View style={{ flex: 1 }}>
             <Text style={styles.greetingArabic}>{greetingArabic()}</Text>
             <Text style={styles.greetingText}>{greeting()},</Text>
-            <Text style={styles.nameText}>{user?.nama ?? "Muslimah"}</Text>
+            <Text style={[styles.nameText, { marginTop: 2 }]}>{user?.nama ?? "Muslimah"}</Text>
           </View>
+
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (PENGAJAR_PROFILES.length > 0) {
+                router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
+              }
+            }}
+            style={styles.headerRightBtn}
+          >
+            <Feather name="users" size={20} color="#FFFFFF" />
+            <Text style={styles.headerRightBtnText}>Pengajar</Text>
+          </Pressable>
         </View>
 
         {/* Statistik */}
@@ -157,9 +254,8 @@ export default function BerandaScreen() {
 
       {/* ── Konten ──────────────────────────────────────────── */}
       <View style={styles.content}>
-
+        {/* Kajian Terdekat */}
         <View style={styles.sectionHeader}>
-          <View style={[styles.sectionAccent, { backgroundColor: colors.gold }]} />
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Kajian Terdekat</Text>
         </View>
 
@@ -200,70 +296,145 @@ export default function BerandaScreen() {
           </View>
         </Pressable>
 
-        {/* Tabel Jadwal Kajian */}
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionAccent, { backgroundColor: colors.gold }]} />
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Jadwal Lengkap</Text>
+        {/* Flyer / Poster Kajian */}
+        <View style={{ marginBottom: 24 }}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Info & Poster Kajian</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+            {flyers.length > 0 ? (
+              flyers.map((f) => (
+                <Pressable key={f.id} onPress={() => setSelectedFlyer(f)}>
+                  <View style={[styles.flyerCard, { borderColor: colors.border }]}>
+                    <Image source={{ uri: f.image_url }} style={styles.flyerImage} contentFit="cover" />
+                  </View>
+                </Pressable>
+              ))
+            ) : (
+              <View style={[styles.flyerCard, { borderColor: colors.border, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.02)" }]}>
+                <Feather name="image" size={32} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+                <Text style={{ color: colors.mutedForeground, marginTop: 8, fontSize: 12, fontFamily: "Inter_500Medium" }}>Belum ada poster</Text>
+              </View>
+            )}
+          </ScrollView>
         </View>
 
-        <View style={[styles.tableContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.tableHeader, { backgroundColor: colors.highlight, borderBottomColor: colors.border }]}>
-            <Text style={[styles.colHari, styles.tableHeaderText, { color: colors.mutedForeground }]}>Hari</Text>
-            <Text style={[styles.colWaktu, styles.tableHeaderText, { color: colors.mutedForeground }]}>Waktu</Text>
-            <Text style={[styles.colKajian, styles.tableHeaderText, { color: colors.mutedForeground }]}>Kajian & Lokasi</Text>
-          </View>
+        {/* Tabel Jadwal Kajian - Desain Bento */}
+        <View style={[styles.sectionHeader, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Jadwal Lengkap</Text>
+          {(user?.role === "pengajar" || user?.role === "admin") && (
+            <Pressable
+              onPress={() => router.push("/kajian/tambah")}
+              style={({ pressed }) => [
+                styles.addScheduleBtn,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <Feather name="plus" size={16} color="#FFF" />
+              <Text style={styles.addScheduleBtnText}>Jadwal</Text>
+            </Pressable>
+          )}
+        </View>
 
-          {DAYS_ORDER.map((day, dayIdx) => {
+        <View style={styles.bentoGrid}>
+          {DAYS_ORDER.map((day) => {
             const items = grouped[day];
             if (items.length === 0) return null;
 
-            return items.map((kajian, idx) => {
-              const isLast = dayIdx === DAYS_ORDER.length - 1 && idx === items.length - 1;
-              return (
-                <Pressable
-                  key={kajian.id}
-                  onPress={() => {
-                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/kajian/${kajian.id}`);
-                  }}
-                  style={({ pressed }) => [
-                    styles.tableRow,
-                    {
-                      borderBottomWidth: isLast ? 0 : 1,
-                      borderBottomColor: colors.border,
-                      backgroundColor: pressed ? colors.highlight : colors.card,
-                    },
-                  ]}
-                >
-                  <View style={styles.colHari}>
-                    {idx === 0 ? (
-                      <Text style={[styles.rowDayText, { color: colors.primary }]}>{day}</Text>
-                    ) : null}
-                    {kajian.hari.includes("·") ? (
-                      <Text style={[styles.rowPekanText, { color: colors.mutedForeground }]}>
-                        {shortPekan(kajian.hari.split("·")[1].trim())}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View style={styles.colWaktu}>
-                    <Text style={[styles.rowTimeText, { color: colors.foreground }]}>
-                      {kajian.waktu.includes("konfirmasi") ? "Confirm" : kajian.waktu.split("-")[0].trim()}
-                    </Text>
-                  </View>
-                  <View style={styles.colKajian}>
-                    <Text style={[styles.rowTitleText, { color: colors.foreground }]} numberOfLines={2}>
-                      {kajian.judul}
-                    </Text>
-                    <Text style={[styles.rowLocText, { color: colors.mutedForeground }]} numberOfLines={2}>
-                      {kajian.lokasi}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            });
+            const isDesktop = width > 600;
+            return (
+              <View 
+                key={day} 
+                style={[
+                  styles.bentoCard, 
+                  { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border,
+                    width: isDesktop ? '48%' : '100%'
+                  }
+                ]}
+              >
+                <View style={[styles.bentoHeader, { backgroundColor: colors.highlight, borderBottomColor: colors.border }]}>
+                  <Feather name="calendar" size={14} color={colors.primary} />
+                  <Text style={[styles.bentoDayText, { color: colors.primary }]}>{day}</Text>
+                </View>
+                <View style={styles.bentoContent}>
+                  {items.map((kajian, idx) => {
+                    const isLast = idx === items.length - 1;
+                    const isConfirm = kajian.waktu.includes("konfirmasi");
+                    const timeStr = isConfirm ? "Confirm" : kajian.waktu.replace("WIB", "").split("-")[0].trim();
+                    const pekanStr = kajian.hari.includes("·") ? kajian.hari.split("·")[1].replace(/pekan/i, "Pk.").trim() : "";
+
+                    return (
+                      <Pressable
+                        key={kajian.id}
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          router.push(`/kajian/${kajian.id}`);
+                        }}
+                        style={({ pressed }) => [
+                          styles.bentoItem,
+                          {
+                            borderBottomWidth: isLast ? 0 : 1,
+                            borderBottomColor: colors.border,
+                            backgroundColor: pressed ? colors.highlight : "transparent",
+                          }
+                        ]}
+                      >
+                        <View style={styles.bentoItemTop}>
+                          <Text style={[styles.bentoTime, { color: colors.foreground }]}>
+                            {kajian.waktu.includes("konfirmasi") ? "Confirm" : kajian.waktu.split("-")[0].trim()}
+                          </Text>
+                          {kajian.hari.includes("·") && (
+                            <View style={[styles.bentoPekanBadge, { backgroundColor: colors.highlight }]}>
+                              <Text style={[styles.bentoPekanText, { color: colors.mutedForeground }]}>
+                                {kajian.hari.split("·")[1].trim()}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={[styles.bentoTitle, { color: colors.foreground }]} numberOfLines={2}>
+                          {kajian.judul}
+                        </Text>
+                        <Text style={[styles.bentoLoc, { color: colors.mutedForeground }]} numberOfLines={1}>
+                          <Feather name="map-pin" size={10} /> {kajian.lokasi}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
           })}
         </View>
+
+        <View style={{ height: 20 }} />
       </View>
+
+      <Modal visible={!!selectedFlyer} transparent={true} animationType="fade" onRequestClose={() => setSelectedFlyer(null)}>
+        <View style={styles.modalContainer}>
+          <Pressable style={styles.modalCloseBtn} onPress={() => setSelectedFlyer(null)}>
+            <Feather name="x" size={24} color="#FFF" />
+          </Pressable>
+          
+          <ScrollView contentContainerStyle={styles.modalScrollContent} style={{ width: "100%" }}>
+            {selectedFlyer && (
+              <>
+                <Image 
+                  source={{ uri: selectedFlyer.image_url }} 
+                  style={{ width: "100%", aspectRatio: 3/4, borderRadius: 12, backgroundColor: "#000" }} 
+                  contentFit="contain" 
+                />
+                {selectedFlyer.keterangan ? (
+                  <View style={styles.modalTextContainer}>
+                    <Text style={styles.modalText}>{selectedFlyer.keterangan}</Text>
+                  </View>
+                ) : null}
+              </>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -300,6 +471,19 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.7)",
   },
+  addScheduleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  addScheduleBtnText: {
+    color: "#FFF",
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
   nameText: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
@@ -319,6 +503,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
+  },
+  headerRightBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  headerRightBtnText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    marginTop: 4,
   },
 
   // Stats
@@ -434,63 +632,147 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
 
-  // Table
-  tableContainer: {
-    borderRadius: 12,
+  bentoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  bentoCard: {
+    borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",
-    marginBottom: 20,
+    marginBottom: 4,
   },
-  tableHeader: {
+  bentoHeader: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    paddingHorizontal: 12,
     borderBottomWidth: 1,
   },
-  tableHeaderText: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
+  bentoDayText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
   },
-  tableRow: {
+  bentoContent: {
+    paddingBottom: 4,
+  },
+  bentoItem: {
+    padding: 14,
+  },
+  bentoItemTop: {
     flexDirection: "row",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
   },
-  
-  colHari: {
-    flex: 1.8,
-    paddingRight: 6,
-  },
-  colWaktu: {
-    flex: 1.8,
-    paddingRight: 6,
-  },
-  colKajian: {
-    flex: 5,
-  },
-
-  rowDayText: {
+  bentoTime: {
     fontSize: 13,
     fontFamily: "Inter_700Bold",
   },
-  rowPekanText: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    marginTop: 2,
+  bentoPekanBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  rowTimeText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+  bentoPekanText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
   },
-  rowTitleText: {
+  bentoTitle: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    marginBottom: 2,
+    marginBottom: 4,
     lineHeight: 18,
   },
-  rowLocText: {
+  bentoLoc: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+  },
+
+  // Flyers
+  flyerCard: {
+    width: 220,
+    aspectRatio: 3 / 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  flyerImage: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "transparent",
+  },
+
+  // Pengajar Card
+  pengajarCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 14,
+  },
+  pengajarAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pengajarAvatarText: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+  },
+  pengajarNama: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    marginBottom: 1,
+  },
+  pengajarSub: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 2,
+  },
+  pengajarRole: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
   },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+  },
+  modalCloseBtn: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 20,
+  },
+  modalScrollContent: {
+    paddingTop: 100,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  modalTextContainer: {
+    marginTop: 20,
+    width: "100%",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    padding: 16,
+    borderRadius: 12,
+  },
+  modalText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 22,
+  }
 });

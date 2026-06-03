@@ -25,20 +25,11 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
         <Rect x="34" y="36" width="19" height="4" rx="1" fill={goldColor} />
         {/* Puncak lancip kiri */}
         <Path d="M38 18 L43.5 4 L49 18 Z" fill={goldColor} />
-        {/* Bulan sabit kiri */}
-        <Path
-          d="M43.5 6 C42 5 40 6 40 8 C40 10 42 11 44 10 C42.5 10.5 41 9 41 8 C41 7 42.5 6.5 43.5 6 Z"
-          fill={goldColor}
-        />
 
         {/* ── Menara kanan ────────────────────────────── */}
         <Rect x="311" y="18" width="11" height="48" rx="1" fill={goldColor} />
         <Rect x="307" y="36" width="19" height="4" rx="1" fill={goldColor} />
         <Path d="M311 18 L316.5 4 L322 18 Z" fill={goldColor} />
-        <Path
-          d="M316.5 6 C315 5 313 6 313 8 C313 10 315 11 317 10 C315.5 10.5 314 9 314 8 C314 7 315.5 6.5 316.5 6 Z"
-          fill={goldColor}
-        />
 
         {/* ── Dinding utama ───────────────────────────── */}
         <Rect x="55" y="50" width="250" height="22" rx="2" fill={goldColor} />
@@ -80,11 +71,6 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
         />
         {/* Hiasan puncak kubah (finial) */}
         <Rect x="178" y="0" width="4" height="8" rx="1" fill={goldColor} />
-        {/* Bulan sabit di puncak kubah */}
-        <Path
-          d="M180 -2 C177 -3 174 -1 174 2 C174 5 177 6 180 5 C177.5 5.5 175 4 175 2 C175 0 177.5 -1 180 -2 Z"
-          fill={goldColor}
-        />
 
         {/* ── Ornamen jendela (arcade) ─────────────────── */}
         <Path d="M 100 66 Q 100 58 108 56 Q 116 58 116 66 Z" fill="rgba(26,39,68,0.4)" />
