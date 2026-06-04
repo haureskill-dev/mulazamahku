@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { StorageService } from "@/services/storage";
 import { UserProfile, UserRole } from "@/types";
 import { logUserLogin } from "@/services/userLogger";
@@ -53,11 +54,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    
     await StorageService.remove(StorageService.USER_KEY);
-    // Juga hapus access gate agar harus login ulang
     await StorageService.remove(StorageService.ACCESS_GATE_KEY);
-    setUser(null);
+    
+    if (Platform.OS === "web") {
+      window.location.replace("/");
+    } else {
+      setUser(null);
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
