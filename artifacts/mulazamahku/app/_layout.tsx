@@ -11,9 +11,14 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+let KeyboardProvider: React.ComponentType<any> = ({ children }) => <>{children}</>;
+if (Platform.OS !== "web") {
+  try {
+    KeyboardProvider = require("react-native-keyboard-controller").KeyboardProvider;
+  } catch {}
+}
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotesProvider } from "@/context/NotesContext";

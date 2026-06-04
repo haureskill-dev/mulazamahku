@@ -1,8 +1,5 @@
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
@@ -11,8 +8,29 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 
+// Native-only imports — use dynamic require to prevent web crash
+let isLiquidGlassAvailable: () => boolean = () => false;
+let NativeTabsModule: any = null;
+let SymbolViewComponent: any = null;
+
+if (Platform.OS !== "web") {
+  try {
+    const glassModule = require("expo-glass-effect");
+    isLiquidGlassAvailable = glassModule.isLiquidGlassAvailable;
+  } catch {}
+  try {
+    NativeTabsModule = require("expo-router/unstable-native-tabs");
+  } catch {}
+  try {
+    const symbolsModule = require("expo-symbols");
+    SymbolViewComponent = symbolsModule.SymbolView;
+  } catch {}
+}
+
 function NativeTabLayout() {
   const { user } = useAuth();
+  if (!NativeTabsModule) return <ClassicTabLayout />;
+  const { NativeTabs, Icon, Label } = NativeTabsModule;
   return (
     <NativeTabs>
       {user?.role !== "pengajar" && (
@@ -112,8 +130,8 @@ function ClassicTabLayout() {
           title: "Catatan",
           href: user?.role === "pengajar" ? null : undefined,
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="note.text" tintColor={color} size={24} />
+            isIOS && SymbolViewComponent ? (
+              <SymbolViewComponent name="note.text" tintColor={color} size={24} />
             ) : (
               <Feather name="edit-3" size={22} color={color} />
             ),
@@ -124,8 +142,8 @@ function ClassicTabLayout() {
         options={{
           title: "Faedah",
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="photo.artframe" tintColor={color} size={24} />
+            isIOS && SymbolViewComponent ? (
+              <SymbolViewComponent name="photo.artframe" tintColor={color} size={24} />
             ) : (
               <Feather name="image" size={22} color={color} />
             ),
@@ -137,8 +155,8 @@ function ClassicTabLayout() {
           title: "Flyer",
           href: user?.role !== "admin" ? null : undefined,
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="megaphone" tintColor={color} size={24} />
+            isIOS && SymbolViewComponent ? (
+              <SymbolViewComponent name="megaphone" tintColor={color} size={24} />
             ) : (
               <Feather name="airplay" size={22} color={color} />
             ),
@@ -150,8 +168,8 @@ function ClassicTabLayout() {
           title: "Beranda",
           tabBarShowLabel: isOddTabs ? false : true,
           tabBarIcon: ({ color, focused }) => {
-            if (isIOS) {
-              return <SymbolView name="house" tintColor={color} size={24} />;
+            if (isIOS && SymbolViewComponent) {
+              return <SymbolViewComponent name="house" tintColor={color} size={24} />;
             }
             
             if (isOddTabs) {
@@ -187,8 +205,8 @@ function ClassicTabLayout() {
         options={{
           title: "Rujukan",
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="book" tintColor={color} size={24} />
+            isIOS && SymbolViewComponent ? (
+              <SymbolViewComponent name="book" tintColor={color} size={24} />
             ) : (
               <Feather name="book-open" size={22} color={color} />
             ),
@@ -200,8 +218,8 @@ function ClassicTabLayout() {
           title: "Mudzakarah",
           href: user?.role === "pengajar" ? null : undefined,
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="message.circle" tintColor={color} size={24} />
+            isIOS && SymbolViewComponent ? (
+              <SymbolViewComponent name="message.circle" tintColor={color} size={24} />
             ) : (
               <Feather name="message-circle" size={22} color={color} />
             ),
@@ -212,8 +230,8 @@ function ClassicTabLayout() {
         options={{
           title: "Profil",
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person.circle" tintColor={color} size={24} />
+            isIOS && SymbolViewComponent ? (
+              <SymbolViewComponent name="person.circle" tintColor={color} size={24} />
             ) : (
               <Feather name="user" size={22} color={color} />
             ),
@@ -224,7 +242,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
+  if (Platform.OS !== "web" && isLiquidGlassAvailable()) {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;

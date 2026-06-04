@@ -1,5 +1,4 @@
 import { supabase } from "./supabase";
-import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import { RujukanKitab } from "@/types";
 
