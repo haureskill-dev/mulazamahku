@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { StorageService } from "@/services/storage";
 import { UserProfile, UserRole } from "@/types";
 import { logUserLogin } from "@/services/userLogger";
+import { supabase } from "@/services/supabase";
 
 interface AuthContextValue {
   user: UserProfile | null;
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    await supabase.auth.signOut();
     await StorageService.remove(StorageService.USER_KEY);
     // Juga hapus access gate agar harus login ulang
     await StorageService.remove(StorageService.ACCESS_GATE_KEY);
