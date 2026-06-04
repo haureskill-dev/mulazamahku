@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface KajianTambahan {
   id: string;
@@ -17,16 +18,36 @@ export interface KajianTambahan {
 }
 
 const TABLE_NAME = "kajian_tambahan";
+const CACHE_KEY = "@mulazamahku_kajian_tambahan_cache";
 
 export const KajianTambahanService = {
   async getAll(): Promise<KajianTambahan[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error || !data) return [];
-    return data as KajianTambahan[];
+      if (error || !data) {
+        // Network gagal → fallback ke cache
+        return this._getFromCache();
+      }
+
+      // Simpan ke cache untuk offline
+      await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      return data as KajianTambahan[];
+    } catch (e) {
+      // Offline → fallback ke cache
+      return this._getFromCache();
+    }
+  },
+
+  async _getFromCache(): Promise<KajianTambahan[]> {
+    try {
+      const cached = await AsyncStorage.getItem(CACHE_KEY);
+      if (cached) return JSON.parse(cached) as KajianTambahan[];
+    } catch {}
+    return [];
   },
 
   async create(kajian: Omit<KajianTambahan, "id" | "created_at">): Promise<{ success: boolean; error?: string }> {

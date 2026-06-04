@@ -1,9 +1,11 @@
 import { supabase } from "./supabase";
 import { decode } from "base64-arraybuffer";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Flyer } from "@/types";
 
 const BUCKET_NAME = "flyers";
 const TABLE_NAME = "flyers";
+const FLYER_CACHE_KEY = "@mulazamahku_flyers_cache";
 
 export const FlyerService = {
   /**
@@ -69,16 +71,32 @@ export const FlyerService = {
   },
 
   /**
-   * Ambil semua flyer
+   * Ambil semua flyer (dengan offline cache)
    */
   async getAllFlyers(): Promise<Flyer[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error || !data) return [];
-    return data as Flyer[];
+      if (error || !data) {
+        return this._getFromCache();
+      }
+
+      await AsyncStorage.setItem(FLYER_CACHE_KEY, JSON.stringify(data));
+      return data as Flyer[];
+    } catch {
+      return this._getFromCache();
+    }
+  },
+
+  async _getFromCache(): Promise<Flyer[]> {
+    try {
+      const cached = await AsyncStorage.getItem(FLYER_CACHE_KEY);
+      if (cached) return JSON.parse(cached) as Flyer[];
+    } catch {}
+    return [];
   },
 
   /**

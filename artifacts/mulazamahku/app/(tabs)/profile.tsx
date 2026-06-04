@@ -103,6 +103,17 @@ export default function ProfileScreen() {
   const handleCheckUpdate = async () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setUpdating(true);
+
+    if (Platform.OS === "web") {
+      // Web tidak mendukung expo-updates, cukup reload halaman
+      setTimeout(() => {
+        setUpdating(false);
+        const ok = window.confirm("Muat ulang halaman untuk mendapatkan versi terbaru?");
+        if (ok) window.location.reload();
+      }, 800);
+      return;
+    }
+
     try {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {

@@ -136,18 +136,57 @@ export default function FlyerScreen() {
     });
   };
 
+  const handleDeleteFlyer = async (id: string) => {
+    Alert.alert(
+      "Hapus Flyer",
+      "Yakin ingin menghapus flyer ini?",
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            const { success, error } = await FlyerService.deleteFlyer(id);
+            if (success) {
+              if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              fetchFlyers();
+            } else {
+              Alert.alert("Gagal", error || "Gagal menghapus flyer.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderFlyerItem = ({ item }: { item: Flyer }) => (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Image source={{ uri: item.image_url }} style={styles.cardImage} resizeMode="cover" />
       <View style={styles.cardBody}>
-        <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-          {getKajianTitle(item.kajian_id)}
-        </Text>
-        {item.keterangan ? (
-          <Text style={[styles.cardDesc, { color: colors.mutedForeground }]}>
-            {item.keterangan}
-          </Text>
-        ) : null}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+              {getKajianTitle(item.kajian_id)}
+            </Text>
+            {item.keterangan ? (
+              <Text style={[styles.cardDesc, { color: colors.mutedForeground }]}>
+                {item.keterangan}
+              </Text>
+            ) : null}
+          </View>
+          {user?.role === "admin" && (
+            <Pressable
+              onPress={() => handleDeleteFlyer(item.id)}
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                { backgroundColor: pressed ? "#FEE2E2" : "#FFF1F2", borderColor: "#FECACA" },
+              ]}
+              hitSlop={8}
+            >
+              <Feather name="trash-2" size={14} color="#EF4444" />
+            </Pressable>
+          )}
+        </View>
         <View style={styles.cardMeta}>
           <Feather name="user" size={11} color={colors.mutedForeground} />
           <Text style={[styles.cardMetaText, { color: colors.mutedForeground }]}>
@@ -335,6 +374,10 @@ const styles = StyleSheet.create({
   cardDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 8 },
   cardMeta: { flexDirection: "row", alignItems: "center", gap: 5 },
   cardMetaText: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  deleteBtn: {
+    width: 32, height: 32, borderRadius: 8, borderWidth: 1,
+    alignItems: "center", justifyContent: "center", marginLeft: 8,
+  },
 
   // Modal
   modalContainer: { flex: 1 },

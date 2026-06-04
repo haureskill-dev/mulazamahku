@@ -150,17 +150,18 @@ export default function BerandaScreen() {
     setRefreshing(true);
     await fetchFlyers();
     await fetchCustomKajian();
-    try {
-      const update = await Updates.checkForUpdateAsync();
-      if (update.isAvailable) {
-        await Updates.fetchUpdateAsync();
-        await Updates.reloadAsync();
+    if (Platform.OS !== "web") {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        // Abaikan error di dev mode
       }
-    } catch (e) {
-      // Abaikan error di dev mode
-    } finally {
-      setRefreshing(false);
     }
+    setRefreshing(false);
   }, [fetchFlyers]);
 
   return (
