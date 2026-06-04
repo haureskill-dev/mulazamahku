@@ -151,6 +151,7 @@ export default function LoginScreen() {
           provider: "google",
           options: {
             redirectTo: window.location.origin,
+            queryParams: { prompt: "select_account" },
           },
         });
         if (error) {
@@ -167,6 +168,7 @@ export default function LoginScreen() {
         provider: "google",
         options: {
           redirectTo: redirectUrl,
+          queryParams: { prompt: "select_account" },
         },
       });
 
