@@ -365,27 +365,37 @@ export default function KajianDetailScreen() {
           </View>
         )}
 
+        {/* Tampilkan CP untuk semua user agar murid bisa bertanya */}
+        <View style={{ marginTop: 8, paddingHorizontal: 20, alignItems: "center" }}>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              openAdminWhatsApp();
+            }}
+            style={({ pressed }) => [
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#25D366", // Warna hijau khas WhatsApp
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+                borderRadius: 24,
+                gap: 10,
+                opacity: pressed ? 0.85 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+          >
+            <FontAwesome name="whatsapp" size={20} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontSize: 14, fontFamily: "Inter_600SemiBold" }}>
+              Hubungi CP Kajian
+            </Text>
+          </Pressable>
+        </View>
+
         {(user?.role === "pengajar" || user?.role === "admin") && (
           <View style={{ marginTop: 8 }}>
-            <Pressable
-              onPress={() => {
-                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                openAdminWhatsApp();
-              }}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                {
-                  backgroundColor: colors.primary,
-                  opacity: pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                  width: "100%",
-                },
-              ]}
-            >
-              <FontAwesome name="whatsapp" size={20} color="#FFFFFF" />
-              <Text style={styles.actionBtnText}>Hubungi Admin / CP Kajian</Text>
-            </Pressable>
-            
             {kajian.is_custom && (
               <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
                 <Pressable

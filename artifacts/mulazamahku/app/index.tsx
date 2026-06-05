@@ -448,15 +448,26 @@ export default function LoginScreen() {
               onPress={handleGoogleSignIn}
               disabled={loading}
               style={({ pressed }) => [
-                styles.mockupBtn,
                 {
                   backgroundColor: "#FFFFFF",
                   borderWidth: 1,
-                  borderColor: "#DDDDDD",
+                  borderColor: "#E5E7EB",
                   flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: 48,
+                  borderRadius: 24,
+                  paddingHorizontal: 24,
+                  alignSelf: "stretch",
+                  marginHorizontal: 16,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  elevation: 2,
                   gap: 12,
                   opacity: pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
                 },
               ]}
             >
@@ -465,8 +476,8 @@ export default function LoginScreen() {
               ) : (
                 <>
                   <Ionicons name="logo-google" size={20} color="#EA4335" />
-                  <Text style={[styles.mockupBtnText, { color: "#555555", fontSize: 16 }]}>
-                    Login dengan Google
+                  <Text style={{ color: "#374151", fontSize: 15, fontFamily: "Inter_600SemiBold" }}>
+                    Lanjutkan dengan Google
                   </Text>
                 </>
               )}

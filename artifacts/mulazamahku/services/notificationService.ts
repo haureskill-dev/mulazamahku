@@ -72,6 +72,16 @@ function threeHoursBefore(
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (Platform.OS === "web") return false;
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "Jadwal Kajian",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#C9A227",
+    });
+  }
+
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === "granted") return true;
   const { status } = await Notifications.requestPermissionsAsync();

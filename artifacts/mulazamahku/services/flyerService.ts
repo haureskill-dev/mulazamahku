@@ -91,6 +91,27 @@ export const FlyerService = {
     }
   },
 
+  /**
+   * Update metadata flyer
+   */
+  async updateFlyer(
+    id: string,
+    kajianId: string,
+    keterangan: string,
+    tanggalBerlaku: string
+  ): Promise<{ success: boolean; error?: string }> {
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .update({
+        kajian_id: kajianId,
+        keterangan,
+        tanggal_berlaku: tanggalBerlaku || null,
+      })
+      .eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
   async _getFromCache(): Promise<Flyer[]> {
     try {
       const cached = await AsyncStorage.getItem(FLYER_CACHE_KEY);

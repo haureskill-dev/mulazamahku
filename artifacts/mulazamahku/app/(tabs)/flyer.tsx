@@ -41,8 +41,9 @@ export default function FlyerScreen() {
   // State form upload
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
-  const [selectedKajian, setSelectedKajian] = useState("");
-  const [keterangan, setKeterangan] = useState("");
+  const [selectedKajian, setSelectedKajian] = useState<string>("");
+  const [keterangan, setKeterangan] = useState<string>("");
+  const [editingFlyerId, setEditingFlyerId] = useState<string | null>(null);
   const [showKajianPicker, setShowKajianPicker] = useState(false);
 
   const fetchFlyers = useCallback(async () => {
@@ -83,8 +84,16 @@ export default function FlyerScreen() {
     setShowUploadForm(true);
   };
 
+  const handleEditFlyer = (flyer: Flyer) => {
+    setEditingFlyerId(flyer.id);
+    setSelectedKajian(flyer.kajian_id);
+    setKeterangan(flyer.keterangan || "");
+    setPreviewUri(flyer.image_url);
+    setShowUploadForm(true);
+  };
+
   const confirmUpload = async () => {
-    if (!previewUri || !selectedKajian) {
+    if (!selectedKajian || (!previewUri && !editingFlyerId)) {
       Alert.alert("Data belum lengkap", "Pilih kajian terlebih dahulu.");
       return;
     }
@@ -94,25 +103,43 @@ export default function FlyerScreen() {
 
     setUploading(true);
 
-    const { success, error } = await FlyerService.uploadFlyer(
-      previewUri,
-      selectedKajian,
-      keterangan,
-      new Date().toISOString().split("T")[0],
-      user?.nama ?? "Admin"
-    );
+    let success = false;
+    let error: string | undefined = undefined;
+
+    if (editingFlyerId) {
+      const res = await FlyerService.updateFlyer(
+        editingFlyerId,
+        selectedKajian,
+        keterangan,
+        new Date().toISOString().split("T")[0]
+      );
+      success = res.success;
+      error = res.error;
+    } else {
+      if (!previewUri) return;
+      const res = await FlyerService.uploadFlyer(
+        previewUri,
+        selectedKajian,
+        keterangan,
+        new Date().toISOString().split("T")[0],
+        user?.nama ?? "Admin"
+      );
+      success = res.success;
+      error = res.error;
+    }
 
     setUploading(false);
     setShowUploadForm(false);
     setPreviewUri(null);
     setSelectedKajian("");
     setKeterangan("");
+    setEditingFlyerId(null);
 
     if (success) {
-      Alert.alert("Berhasil ✓", "Flyer berhasil diupload.");
+      Alert.alert("Berhasil ✓", editingFlyerId ? "Flyer berhasil diperbarui." : "Flyer berhasil diupload.");
       fetchFlyers();
     } else {
-      Alert.alert("Gagal Upload", error || "Terjadi kesalahan.");
+      Alert.alert("Gagal", error || "Terjadi kesalahan.");
     }
   };
 
@@ -121,6 +148,7 @@ export default function FlyerScreen() {
     setPreviewUri(null);
     setSelectedKajian("");
     setKeterangan("");
+    setEditingFlyerId(null);
   };
 
   const getKajianTitle = (id: string) => {
@@ -175,16 +203,28 @@ export default function FlyerScreen() {
             ) : null}
           </View>
           {user?.role === "admin" && (
-            <Pressable
-              onPress={() => handleDeleteFlyer(item.id)}
-              style={({ pressed }) => [
-                styles.deleteBtn,
-                { backgroundColor: pressed ? "#FEE2E2" : "#FFF1F2", borderColor: "#FECACA" },
-              ]}
-              hitSlop={8}
-            >
-              <Feather name="trash-2" size={14} color="#EF4444" />
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              <Pressable
+                onPress={() => handleEditFlyer(item)}
+                style={({ pressed }) => [
+                  styles.deleteBtn,
+                  { backgroundColor: pressed ? "#E5E7EB" : "#F3F4F6", borderColor: "#D1D5DB" },
+                ]}
+                hitSlop={8}
+              >
+                <Feather name="edit-2" size={14} color="#4B5563" />
+              </Pressable>
+              <Pressable
+                onPress={() => handleDeleteFlyer(item.id)}
+                style={({ pressed }) => [
+                  styles.deleteBtn,
+                  { backgroundColor: pressed ? "#FEE2E2" : "#FFF1F2", borderColor: "#FECACA" },
+                ]}
+                hitSlop={8}
+              >
+                <Feather name="trash-2" size={14} color="#EF4444" />
+              </Pressable>
+            </View>
           )}
         </View>
         <View style={styles.cardMeta}>
@@ -259,15 +299,21 @@ export default function FlyerScreen() {
             <Pressable onPress={cancelUpload} hitSlop={8}>
               <Feather name="x" size={22} color={colors.foreground} />
             </Pressable>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Upload Flyer</Text>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+              {editingFlyerId ? "Edit Flyer" : "Upload Flyer Baru"}
+            </Text>
             <View style={{ width: 22 }} />
           </View>
 
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
             {/* Preview gambar */}
-            {previewUri && (
+            {editingFlyerId ? (
+                <View style={styles.imagePlaceholder}>
+                  <Image source={{ uri: previewUri! }} style={{ width: "100%", height: "100%", borderRadius: 10 }} resizeMode="cover" />
+                </View>
+              ) : previewUri ? (
               <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />
-            )}
+            ) : null}
 
             {/* Pilih Kajian */}
             <Text style={[styles.formLabel, { color: colors.foreground }]}>Kajian *</Text>
@@ -306,7 +352,7 @@ export default function FlyerScreen() {
               ) : (
                 <>
                   <Feather name="send" size={18} color="#FFFFFF" />
-                  <Text style={styles.sendBtnText}>Upload Flyer</Text>
+                  <Text style={styles.sendBtnText}>{editingFlyerId ? "Simpan Perubahan" : "Upload Flyer"}</Text>
                 </>
               )}
             </Pressable>
