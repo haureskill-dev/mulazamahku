@@ -94,23 +94,21 @@ const MOTIVASI_QUOTES = [
 import { Easing } from "react-native";
 
 function MarqueeText({ colors, width }: { colors: any; width: number }) {
-  // Start right off the screen
   const translateX = useRef(new Animated.Value(width)).current;
   const fullText = MOTIVASI_QUOTES.join("      ✦      ");
   
-  // Estimate width more accurately for desktop
-  const estimatedTextWidth = fullText.length * 8; 
+  // Berikan lebar fix yang sangat besar untuk container teks
+  const containerWidth = 6000; 
 
   useEffect(() => {
-    // Reset to start position
     translateX.setValue(width);
 
     const animation = Animated.loop(
       Animated.timing(translateX, {
-        toValue: -estimatedTextWidth,
-        duration: (estimatedTextWidth + width) * 15, // 15ms per pixel, steady speed
+        toValue: -containerWidth,
+        duration: (containerWidth + width) * 12, // kecepatan scroll
         easing: Easing.linear,
-        useNativeDriver: Platform.OS !== "web",
+        useNativeDriver: false, // MATIKAN native driver agar aman di semua platform web/android
       })
     );
     
@@ -132,7 +130,7 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
         style={{
           flexDirection: "row",
           transform: [{ translateX }],
-          width: estimatedTextWidth,
+          width: containerWidth,
         }}
       >
         <Text
