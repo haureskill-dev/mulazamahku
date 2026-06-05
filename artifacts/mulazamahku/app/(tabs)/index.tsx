@@ -1,7 +1,7 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import {
   Platform,
   Pressable,
@@ -13,6 +13,7 @@ import {
   View,
   Alert,
   Modal,
+  Animated,
 } from "react-native";
 import * as Updates from "expo-updates";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,6 +26,7 @@ import { Kajian, Flyer } from "@/types";
 import { FlyerService } from "@/services/flyerService";
 import { KajianTambahanService } from "@/services/kajianTambahanService";
 import { Image } from "expo-image";
+import { WebPullToRefresh } from "@/components/WebPullToRefresh";
 
 const DAYS_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"];
 
@@ -78,6 +80,66 @@ function findNearestKajian(allKajian: Kajian[]): Kajian {
     }
   }
   return allKajian.find((k) => k.status === "aktif") ?? allKajian[0];
+}
+
+const MOTIVASI_QUOTES = [
+  "📚 \"Menuntut ilmu itu wajib atas setiap muslim.\" — HR. Ibnu Majah",
+  "🌟 \"Barangsiapa menempuh jalan untuk menuntut ilmu, Allah akan memudahkan baginya jalan ke surga.\" — HR. Muslim",
+  "💎 \"Ilmu itu lebih baik daripada harta. Ilmu menjagamu, sedangkan harta engkau yang menjaganya.\" — Ali bin Abi Thalib",
+  "🌙 \"Carilah ilmu walau sampai ke negeri China.\" — HR. Ibnu 'Abdil Barr",
+  "📖 \"Seorang 'alim yang mengamalkan ilmunya lebih utama dari seribu orang yang beribadah.\" — HR. Ad-Dailami",
+  "🕌 \"Duduk bersama ulama lebih baik dari berdiri di hadapan raja.\" — Al-Imam Asy-Syafi'i",
+];
+
+function MarqueeText({ colors, width }: { colors: any; width: number }) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const fullText = MOTIVASI_QUOTES.join("      ✦      ");
+  // Estimate text width: roughly 7px per char
+  const estimatedTextWidth = fullText.length * 7;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.timing(translateX, {
+        toValue: -estimatedTextWidth,
+        duration: estimatedTextWidth * 28, // slower = more readable
+        useNativeDriver: true,
+      })
+    );
+    animation.start();
+    return () => animation.stop();
+  }, []);
+
+  return (
+    <View
+      style={{
+        overflow: "hidden",
+        backgroundColor: colors.highlight,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+      }}
+    >
+      <Animated.View
+        style={{
+          flexDirection: "row",
+          transform: [{ translateX }],
+        }}
+      >
+        <Text
+          numberOfLines={1}
+          style={{
+            fontSize: 12,
+            fontFamily: "Inter_500Medium",
+            color: colors.primary,
+            width: estimatedTextWidth + width,
+            paddingLeft: width,
+          }}
+        >
+          {fullText}
+        </Text>
+      </Animated.View>
+    </View>
+  );
 }
 
 export default function BerandaScreen() {
@@ -165,21 +227,15 @@ export default function BerandaScreen() {
   }, [fetchFlyers]);
 
   return (
-    <ScrollView
+    <WebPullToRefresh
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+      primaryColor={colors.primary}
       style={[styles.root, { backgroundColor: colors.background }]}
       contentContainerStyle={{
         paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 90,
         paddingTop: Platform.OS === "web" ? 67 : 0,
       }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={[colors.primary]}
-          tintColor={colors.primary}
-        />
-      }
     >
       {/* ── Header navy (User) ─────────────────────────────────────── */}
       <View
@@ -215,18 +271,30 @@ export default function BerandaScreen() {
             <Text style={[styles.nameText, { marginTop: 2 }]}>{user?.nama ?? "Muslimah"}</Text>
           </View>
 
-          <Pressable
-            onPress={() => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              if (PENGAJAR_PROFILES.length > 0) {
-                router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
-              }
-            }}
-            style={styles.headerRightBtn}
-          >
-            <Feather name="users" size={20} color="#FFFFFF" />
-            <Text style={styles.headerRightBtnText}>Pengajar</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            {Platform.OS === "web" && (
+              <Pressable
+                onPress={() => {
+                  onRefresh();
+                }}
+                style={({ pressed }) => [styles.headerRightBtn, { opacity: pressed ? 0.7 : 1, paddingHorizontal: 10 }]}
+              >
+                <Feather name="refresh-cw" size={18} color="#FFFFFF" />
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (PENGAJAR_PROFILES.length > 0) {
+                  router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
+                }
+              }}
+              style={styles.headerRightBtn}
+            >
+              <Feather name="users" size={20} color="#FFFFFF" />
+              <Text style={styles.headerRightBtnText}>Pengajar</Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Statistik */}
@@ -252,6 +320,9 @@ export default function BerandaScreen() {
           <MosqueDecoration width={width} goldColor={colors.gold} opacity={0.85} />
         </View>
       </View>
+
+      {/* ── Tulisan Berjalan (Marquee) ────────────────────────── */}
+      <MarqueeText colors={colors} width={width} />
 
       {/* ── Konten ──────────────────────────────────────────── */}
       <View style={styles.content}>
@@ -436,7 +507,7 @@ export default function BerandaScreen() {
           </ScrollView>
         </View>
       </Modal>
-    </ScrollView>
+    </WebPullToRefresh>
   );
 }
 

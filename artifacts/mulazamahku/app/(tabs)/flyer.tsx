@@ -165,26 +165,37 @@ export default function FlyerScreen() {
   };
 
   const handleDeleteFlyer = async (id: string) => {
-    Alert.alert(
-      "Hapus Flyer",
-      "Yakin ingin menghapus flyer ini?",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Hapus",
-          style: "destructive",
-          onPress: async () => {
-            const { success, error } = await FlyerService.deleteFlyer(id);
-            if (success) {
-              if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              fetchFlyers();
-            } else {
-              Alert.alert("Gagal", error || "Gagal menghapus flyer.");
-            }
+    const doDelete = async () => {
+      const { success, error } = await FlyerService.deleteFlyer(id);
+      if (success) {
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        fetchFlyers();
+      } else {
+        if (Platform.OS === "web") {
+          window.alert(error || "Gagal menghapus flyer.");
+        } else {
+          Alert.alert("Gagal", error || "Gagal menghapus flyer.");
+        }
+      }
+    };
+
+    if (Platform.OS === "web") {
+      const ok = window.confirm("Yakin ingin menghapus flyer ini?");
+      if (ok) await doDelete();
+    } else {
+      Alert.alert(
+        "Hapus Flyer",
+        "Yakin ingin menghapus flyer ini?",
+        [
+          { text: "Batal", style: "cancel" },
+          {
+            text: "Hapus",
+            style: "destructive",
+            onPress: doDelete,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const renderFlyerItem = ({ item }: { item: Flyer }) => (

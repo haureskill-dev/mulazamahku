@@ -439,8 +439,8 @@ export default function LoginScreen() {
               <Text style={{ fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.foreground, textAlign: "center", marginBottom: 6 }}>
                 Masuk ke Aplikasi
               </Text>
-              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center" }}>
-                Gunakan akun Google Anda untuk melanjutkan ke aplikasi Mulazamahku.
+              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 12 }}>
+                Gunakan akun Google Anda untuk melanjutkan.
               </Text>
             </View>
 
@@ -450,22 +450,21 @@ export default function LoginScreen() {
               style={({ pressed }) => [
                 {
                   backgroundColor: "#FFFFFF",
-                  borderWidth: 1,
+                  borderWidth: 1.5,
                   borderColor: "#E5E7EB",
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
-                  height: 48,
-                  borderRadius: 24,
-                  paddingHorizontal: 24,
-                  alignSelf: "stretch",
-                  marginHorizontal: 16,
+                  height: 50,
+                  borderRadius: 25,
+                  paddingHorizontal: 20,
+                  alignSelf: "center",
+                  minWidth: 260,
                   shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 2,
-                  gap: 12,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 4,
+                  elevation: 3,
                   opacity: pressed ? 0.85 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 },
@@ -474,12 +473,12 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color="#555555" size="small" />
               ) : (
-                <>
-                  <Ionicons name="logo-google" size={20} color="#EA4335" />
-                  <Text style={{ color: "#374151", fontSize: 15, fontFamily: "Inter_600SemiBold" }}>
-                    Lanjutkan dengan Google
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <Ionicons name="logo-google" size={18} color="#EA4335" />
+                  <Text numberOfLines={1} style={{ color: "#374151", fontSize: 14, fontFamily: "Inter_600SemiBold" }}>
+                    Masuk dengan Google
                   </Text>
-                </>
+                </View>
               )}
             </Pressable>
           </View>
