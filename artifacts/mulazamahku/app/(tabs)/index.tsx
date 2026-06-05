@@ -538,6 +538,7 @@ const styles = StyleSheet.create({
     color: "#C9A227",
     letterSpacing: 0.5,
     marginBottom: 2,
+    textAlign: "left",
   },
   greetingText: {
     fontSize: 13,

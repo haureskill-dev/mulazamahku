@@ -23,6 +23,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { FlyerService } from "@/services/flyerService";
+import { scheduleAllKajianReminders } from "@/services/notificationService";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
 import { Flyer } from "@/types";
 
@@ -144,6 +145,7 @@ export default function FlyerScreen() {
     if (success) {
       Alert.alert("Berhasil ✓", editingFlyerId ? "Flyer berhasil diperbarui." : "Flyer berhasil diupload.");
       fetchFlyers();
+      if (Platform.OS !== "web") scheduleAllKajianReminders().catch(() => {});
     } else {
       Alert.alert("Gagal", error || "Terjadi kesalahan.");
     }
@@ -177,6 +179,7 @@ export default function FlyerScreen() {
       if (success) {
         if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         fetchFlyers();
+        if (Platform.OS !== "web") scheduleAllKajianReminders().catch(() => {});
       } else {
         if (Platform.OS === "web") {
           window.alert(error || "Gagal menghapus flyer.");
