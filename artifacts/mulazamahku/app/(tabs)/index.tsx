@@ -91,30 +91,39 @@ const MOTIVASI_QUOTES = [
   "🕌 \"Duduk bersama ulama lebih baik dari berdiri di hadapan raja.\" — Al-Imam Asy-Syafi'i",
 ];
 
+import { Easing } from "react-native";
+
 function MarqueeText({ colors, width }: { colors: any; width: number }) {
-  const translateX = useRef(new Animated.Value(0)).current;
+  // Start right off the screen
+  const translateX = useRef(new Animated.Value(width)).current;
   const fullText = MOTIVASI_QUOTES.join("      ✦      ");
-  // Estimate text width: roughly 7px per char
-  const estimatedTextWidth = fullText.length * 7;
+  
+  // Estimate width more accurately for desktop
+  const estimatedTextWidth = fullText.length * 8; 
 
   useEffect(() => {
+    // Reset to start position
+    translateX.setValue(width);
+
     const animation = Animated.loop(
       Animated.timing(translateX, {
         toValue: -estimatedTextWidth,
-        duration: estimatedTextWidth * 28, // slower = more readable
-        useNativeDriver: true,
+        duration: (estimatedTextWidth + width) * 15, // 15ms per pixel, steady speed
+        easing: Easing.linear,
+        useNativeDriver: Platform.OS !== "web",
       })
     );
+    
     animation.start();
     return () => animation.stop();
-  }, []);
+  }, [width]);
 
   return (
     <View
       style={{
         overflow: "hidden",
         backgroundColor: colors.highlight,
-        paddingVertical: 10,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
       }}
@@ -123,16 +132,15 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
         style={{
           flexDirection: "row",
           transform: [{ translateX }],
+          width: estimatedTextWidth,
         }}
       >
         <Text
           numberOfLines={1}
           style={{
-            fontSize: 12,
+            fontSize: 13,
             fontFamily: "Inter_500Medium",
             color: colors.primary,
-            width: estimatedTextWidth + width,
-            paddingLeft: width,
           }}
         >
           {fullText}
