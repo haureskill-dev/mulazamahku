@@ -14,6 +14,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   ScrollView,
+  Image as RNImage,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -60,6 +61,17 @@ export default function FlyerScreen() {
     fetchFlyers();
   }, [fetchFlyers]);
 
+  useEffect(() => {
+    flyerList.forEach(f => {
+      if (f.image_url && !imageAspectRatios[f.id]) {
+        RNImage.getSize(f.image_url, (width, height) => {
+          if (width && height) {
+            setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
+          }
+        }, () => {});
+      }
+    });
+  }, [flyerList]);
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchFlyers();
@@ -232,7 +244,7 @@ export default function FlyerScreen() {
       <Image 
         source={{ uri: item.image_url }} 
         style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 16 / 9, height: undefined }]} 
-        contentFit="fill"
+        contentFit="contain"
         onLoad={(e) => {
           const { width, height } = e.source;
           if (width && height) {

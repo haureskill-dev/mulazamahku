@@ -13,6 +13,7 @@ import {
   Dimensions,
   TextInput,
   ScrollView,
+  Image as RNImage,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -58,6 +59,18 @@ export default function FaedahScreen() {
   useEffect(() => {
     fetchFaedah();
   }, [fetchFaedah]);
+
+  useEffect(() => {
+    faedahList.forEach(f => {
+      if (f.image_url && !imageAspectRatios[f.id]) {
+        RNImage.getSize(f.image_url, (width, height) => {
+          if (width && height) {
+            setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
+          }
+        }, () => {});
+      }
+    });
+  }, [faedahList]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -223,7 +236,7 @@ export default function FaedahScreen() {
           <Image
             source={{ uri: item.image_url || 'https://placehold.co/600x400/png' }}
             style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 4 / 5, height: undefined }]}
-            contentFit="fill"
+            contentFit="contain"
             onLoad={(e) => {
               const { width, height } = e.source;
               if (width && height) {
@@ -340,7 +353,7 @@ export default function FaedahScreen() {
                   <Image
                     source={{ uri: f.image_url || 'https://placehold.co/300x400/png' }}
                     style={[styles.carouselImage, { aspectRatio: imageAspectRatios[f.id] || 4 / 5, height: undefined }]}
-                    contentFit="fill"
+                    contentFit="contain"
                     onLoad={(e) => {
                       const { width, height } = e.source;
                       if (width && height) {
@@ -427,7 +440,7 @@ export default function FaedahScreen() {
               <Image
                 source={{ uri: previewUri }}
                 style={[styles.previewImage, { aspectRatio: imageAspectRatios['preview'] || 4 / 5, height: undefined }]}
-                contentFit="fill"
+                contentFit="contain"
                 onLoad={(e) => {
                   const { width, height } = e.source;
                   if (width && height) {

@@ -119,8 +119,15 @@ export default function LoginScreen() {
         role = selectedRole;
       }
 
-      const userName = session.user.user_metadata?.full_name || "Pengguna Google";
+      let userName = session.user.user_metadata?.full_name || "Pengguna Google";
       const userEmail = session.user.email || "google@user.com";
+
+      // Pertahankan nama yang sudah diubah oleh user di profile
+      const existingUser = await StorageService.get<UserProfile>(StorageService.USER_KEY);
+      if (existingUser && existingUser.email === userEmail && existingUser.nama) {
+        userName = existingUser.nama;
+      }
+
       await signIn(userName, userEmail, role);
       router.replace("/(tabs)");
     };

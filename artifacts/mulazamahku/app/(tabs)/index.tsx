@@ -14,6 +14,7 @@ import {
   Alert,
   Modal,
   Animated,
+  Image as RNImage,
 } from "react-native";
 import * as Updates from "expo-updates";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -249,6 +250,18 @@ export default function BerandaScreen() {
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, number>>({});
   const [selectedFlyer, setSelectedFlyer] = useState<Flyer | null>(null);
 
+  useEffect(() => {
+    flyers.forEach(f => {
+      if (f.image_url && !imageAspectRatios[f.id]) {
+        RNImage.getSize(f.image_url, (width, height) => {
+          if (width && height) {
+            setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
+          }
+        }, () => {});
+      }
+    });
+  }, [flyers]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchFlyers();
@@ -418,7 +431,7 @@ export default function BerandaScreen() {
                       <Image 
                         source={{ uri: f.image_url }} 
                         style={styles.flyerImage} 
-                        contentFit="fill"
+                        contentFit="contain"
                         onLoad={(e) => {
                           if (e.source.width && e.source.height) {
                             setImageAspectRatios(prev => ({
