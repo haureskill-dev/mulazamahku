@@ -47,6 +47,7 @@ export default function FlyerScreen() {
   const [editingFlyerId, setEditingFlyerId] = useState<string | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [showKajianPicker, setShowKajianPicker] = useState(false);
+  const [tanggalBerlaku, setTanggalBerlaku] = useState<string>("");
 
   const fetchFlyers = useCallback(async () => {
     const data = await FlyerService.getAllFlyers();
@@ -90,6 +91,7 @@ export default function FlyerScreen() {
     setEditingFlyerId(flyer.id);
     setSelectedKajian(flyer.kajian_id);
     setKeterangan(flyer.keterangan || "");
+    setTanggalBerlaku(flyer.tanggal_berlaku || "");
     setPreviewUri(flyer.image_url);
     setOriginalImageUrl(flyer.image_url);
     setShowUploadForm(true);
@@ -116,7 +118,7 @@ export default function FlyerScreen() {
         editingFlyerId,
         selectedKajian,
         keterangan,
-        new Date().toISOString().split("T")[0],
+        tanggalBerlaku || new Date().toISOString().split("T")[0],
         newImageUri
       );
       success = res.success;
@@ -127,7 +129,7 @@ export default function FlyerScreen() {
         previewUri,
         selectedKajian,
         keterangan,
-        new Date().toISOString().split("T")[0],
+        tanggalBerlaku || new Date().toISOString().split("T")[0],
         user?.nama ?? "Admin"
       );
       success = res.success;
@@ -156,6 +158,7 @@ export default function FlyerScreen() {
     setPreviewUri(null);
     setSelectedKajian("");
     setKeterangan("");
+    setTanggalBerlaku("");
     setEditingFlyerId(null);
     setOriginalImageUrl(null);
   };
@@ -381,6 +384,16 @@ export default function FlyerScreen() {
               placeholderTextColor={colors.mutedForeground}
               style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
               multiline
+            />
+
+            {/* Tanggal Reschedule (Opsional) */}
+            <Text style={[styles.formLabel, { color: colors.foreground }]}>Tanggal Kajian / Reschedule (Opsional)</Text>
+            <TextInput
+              value={tanggalBerlaku}
+              onChangeText={setTanggalBerlaku}
+              placeholder="Contoh: 2026-06-05"
+              placeholderTextColor={colors.mutedForeground}
+              style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
             />
 
             {/* Tombol Kirim */}

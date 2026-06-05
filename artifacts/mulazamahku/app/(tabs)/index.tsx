@@ -59,8 +59,14 @@ function shortPekan(pekanStr: string): string {
 }
 
 /** Cek apakah kajian aktif pada tanggal tertentu (cocok hari + pekan) */
-function isKajianOnDate(kajian: Kajian, date: Date): boolean {
+function isKajianOnDate(kajian: Kajian, date: Date, flyers: Flyer[] = []): boolean {
   if (kajian.status !== "aktif") return false;
+
+  // Cek apakah ada flyer (reschedule) yang tanggal berlakunya cocok dengan date ini
+  const dateStr = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+  const hasReschedule = flyers.some(f => f.kajian_id === kajian.id && f.tanggal_berlaku === dateStr);
+  if (hasReschedule) return true;
+
   const dayName = JS_DAY_TO_HARI[date.getDay()];
   const kajianDay = extractDayName(kajian.hari);
   if (kajianDay !== dayName) return false;
@@ -72,12 +78,12 @@ function isKajianOnDate(kajian: Kajian, date: Date): boolean {
 }
 
 /** Cari kajian terdekat dalam 14 hari ke depan */
-function findNearestKajian(allKajian: Kajian[]): Kajian {
+function findNearestKajian(allKajian: Kajian[], flyers: Flyer[] = []): Kajian {
   const now = new Date();
   for (let offset = 0; offset < 14; offset++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
     for (const k of allKajian) {
-      if (isKajianOnDate(k, date)) return k;
+      if (isKajianOnDate(k, date, flyers)) return k;
     }
   }
   return allKajian.find((k) => k.status === "aktif") ?? allKajian[0];
@@ -187,9 +193,11 @@ export default function BerandaScreen() {
 
   const allKajianList = useMemo(() => [...DUMMY_KAJIAN, ...customKajian], [customKajian]);
   const grouped = useMemo(() => groupByDay(allKajianList), [allKajianList]);
-  const highlight = useMemo(() => findNearestKajian(allKajianList), [allKajianList]);
-
+  
   const [flyers, setFlyers] = useState<Flyer[]>([]);
+  const highlight = useMemo(() => findNearestKajian(allKajianList, flyers), [allKajianList, flyers]);
+
+
   const fetchFlyers = useCallback(async () => {
     const data = await FlyerService.getAllFlyers();
     setFlyers(data);
