@@ -412,7 +412,7 @@ export default function BerandaScreen() {
               flyers.map((f) => (
                 <Pressable key={f.id} onPress={() => setSelectedFlyer(f)}>
                   <View style={[styles.flyerCard, { borderColor: colors.border }]}>
-                    <Image source={{ uri: f.image_url }} style={styles.flyerImage} contentFit="cover" />
+                    <Image source={{ uri: f.image_url }} style={styles.flyerImage} contentFit="contain" />
                   </View>
                 </Pressable>
               ))
@@ -801,16 +801,16 @@ const styles = StyleSheet.create({
 
   // Flyers
   flyerCard: {
-    width: 220,
-    aspectRatio: 3 / 4,
-    borderRadius: 16,
+    width: 280,
+    aspectRatio: 16 / 9,
+    borderRadius: 12,
     borderWidth: 1,
     overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.05)",
   },
   flyerImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "transparent",
   },
 
   // Pengajar Card
