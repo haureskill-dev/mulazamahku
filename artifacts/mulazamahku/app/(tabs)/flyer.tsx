@@ -6,7 +6,6 @@ import {
   Pressable,
   Platform,
   Alert,
-  Image,
   FlatList,
   ActivityIndicator,
   RefreshControl,
@@ -16,6 +15,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
@@ -232,9 +232,9 @@ export default function FlyerScreen() {
       <Image 
         source={{ uri: item.image_url }} 
         style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 16 / 9, height: undefined }]} 
-        resizeMode="stretch"
+        contentFit="fill"
         onLoad={(e) => {
-          const { width, height } = e.nativeEvent.source;
+          const { width, height } = e.source;
           if (width && height) {
             setImageAspectRatios(prev => ({ ...prev, [item.id]: width / height }));
           }
@@ -359,7 +359,7 @@ export default function FlyerScreen() {
             {/* Preview gambar */}
             {editingFlyerId ? (
               <View>
-                <Image source={{ uri: previewUri! }} style={styles.previewImage} resizeMode="contain" />
+                <Image source={{ uri: previewUri! }} style={styles.previewImage} contentFit="contain" />
                 <Pressable
                   onPress={pickImage}
                   style={({ pressed }) => [{
@@ -386,7 +386,7 @@ export default function FlyerScreen() {
                 </Pressable>
               </View>
             ) : previewUri ? (
-              <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />
+              <Image source={{ uri: previewUri }} style={styles.previewImage} contentFit="contain" />
             ) : null}
 
             {/* Pilih Kajian */}

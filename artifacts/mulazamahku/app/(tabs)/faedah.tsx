@@ -6,7 +6,6 @@ import {
   Pressable,
   Platform,
   Alert,
-  Image,
   FlatList,
   ActivityIndicator,
   RefreshControl,
@@ -15,6 +14,7 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
@@ -223,9 +223,9 @@ export default function FaedahScreen() {
           <Image
             source={{ uri: item.image_url || 'https://placehold.co/600x400/png' }}
             style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 4 / 5, height: undefined }]}
-            resizeMode="stretch"
+            contentFit="fill"
             onLoad={(e) => {
-              const { width, height } = e.nativeEvent.source;
+              const { width, height } = e.source;
               if (width && height) {
                 setImageAspectRatios(prev => ({ ...prev, [item.id]: width / height }));
               }
@@ -340,9 +340,9 @@ export default function FaedahScreen() {
                   <Image
                     source={{ uri: f.image_url || 'https://placehold.co/300x400/png' }}
                     style={[styles.carouselImage, { aspectRatio: imageAspectRatios[f.id] || 4 / 5, height: undefined }]}
-                    resizeMode="stretch"
+                    contentFit="fill"
                     onLoad={(e) => {
-                      const { width, height } = e.nativeEvent.source;
+                      const { width, height } = e.source;
                       if (width && height) {
                         setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
                       }
@@ -427,9 +427,9 @@ export default function FaedahScreen() {
               <Image
                 source={{ uri: previewUri }}
                 style={[styles.previewImage, { aspectRatio: imageAspectRatios['preview'] || 4 / 5, height: undefined }]}
-                resizeMode="stretch"
+                contentFit="fill"
                 onLoad={(e) => {
-                  const { width, height } = e.nativeEvent.source;
+                  const { width, height } = e.source;
                   if (width && height) {
                     setImageAspectRatios(prev => ({ ...prev, ['preview']: width / height }));
                   }
@@ -593,7 +593,7 @@ export default function FaedahScreen() {
             <Image 
               source={{ uri: viewImageUri }} 
               style={styles.fullScreenImage} 
-              resizeMode="contain" 
+              contentFit="contain"
             />
           )}
         </View>
