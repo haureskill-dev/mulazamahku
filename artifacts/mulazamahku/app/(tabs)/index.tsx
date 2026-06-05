@@ -520,13 +520,15 @@ export default function BerandaScreen() {
                           <Text style={[styles.bentoTime, { color: colors.foreground }]}>
                             {kajian.waktu.includes("konfirmasi") ? "Confirm" : kajian.waktu.split("-")[0].trim()}
                           </Text>
-                          {kajian.hari.includes("·") && (
-                            <View style={[styles.bentoPekanBadge, { backgroundColor: colors.highlight }]}>
-                              <Text style={[styles.bentoPekanText, { color: colors.mutedForeground }]}>
-                                {kajian.hari.split("·")[1].trim()}
-                              </Text>
-                            </View>
-                          )}
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            {kajian.hari.includes("·") && (
+                              <View style={[styles.bentoPekanBadge, { backgroundColor: colors.highlight }]}>
+                                <Text style={[styles.bentoPekanText, { color: colors.mutedForeground }]}>
+                                  {kajian.hari.split("·")[1].trim()}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
                         <Text style={[styles.bentoTitle, { color: colors.foreground }]} numberOfLines={2}>
                           {kajian.judul}

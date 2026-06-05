@@ -215,7 +215,7 @@ export default function KajianDetailScreen() {
           {
             backgroundColor: colors.background,
             borderBottomColor: colors.border,
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 8,
+            paddingTop: insets.top + 8,
           },
         ]}
       >
@@ -231,7 +231,7 @@ export default function KajianDetailScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 40 },
+          { paddingBottom: insets.bottom + 40 },
         ]}
         showsVerticalScrollIndicator={false}
       >
