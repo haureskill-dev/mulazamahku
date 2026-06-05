@@ -39,18 +39,18 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
           d="M 70 50 Q 70 36 82 32 Q 94 36 94 50 Z"
           fill={goldColor}
         />
-        {/* Menara kecil kiri (diperpanjang sampai y=50) */}
-        <Rect x="76" y="22" width="6" height="28" rx="1" fill={goldColor} />
-        <Path d="M76 22 L79 14 L82 22 Z" fill={goldColor} />
+        {/* Hiasan puncak kubah kecil kiri */}
+        <Rect x="81" y="20" width="2" height="13" rx="0.5" fill={goldColor} />
+        <Path d="M80 20 L82 14 L84 20 Z" fill={goldColor} />
 
         {/* ── Kubah kecil kanan ───────────────────────── */}
         <Path
           d="M 266 50 Q 266 36 278 32 Q 290 36 290 50 Z"
           fill={goldColor}
         />
-        {/* Menara kecil kanan (diperpanjang sampai y=50) */}
-        <Rect x="272" y="22" width="6" height="28" rx="1" fill={goldColor} />
-        <Path d="M272 22 L275 14 L278 22 Z" fill={goldColor} />
+        {/* Hiasan puncak kubah kecil kanan */}
+        <Rect x="277" y="20" width="2" height="13" rx="0.5" fill={goldColor} />
+        <Path d="M276 20 L278 14 L280 20 Z" fill={goldColor} />
 
         {/* ── Kubah utama (onion dome yang simetris) ───── */}
         <Path
