@@ -62,8 +62,8 @@ export default function ProfileScreen() {
   const { notes } = useNotes();
   const { topics } = useMudzakarah();
 
-  const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
+  const topInset = insets.top;
+  const bottomInset = insets.bottom;
 
   const handleLogout = () => {
     if (Platform.OS !== "web") {

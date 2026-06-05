@@ -90,7 +90,7 @@ export const DUMMY_KAJIAN: Kajian[] = [
   // ── SABTU ───────────────────────────────────────────────────────────────
   {
     id: "r9",
-    judul: "Hilyah Thalibul 'Ilmi & al-Firqotun Naiyah",
+    judul: "Hilyah Thalibul 'Ilmi & al-Firqotun Najiyah",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "09.30 - selesai",
     hari: "Sabtu · Pekan 1 & 3",
@@ -98,7 +98,7 @@ export const DUMMY_KAJIAN: Kajian[] = [
     status: "aktif",
     kategori: "Ilmu",
     deskripsi:
-      "Kajian Hilyah Thalibul 'Ilmi dan kitab al-Firqotun Naiyah bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
+      "Kajian Hilyah Thalibul 'Ilmi dan kitab al-Firqotun Najiyah bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
   },
   {
     id: "r11",

@@ -293,7 +293,7 @@ export default function BerandaScreen() {
       primaryColor={colors.primary}
       style={[styles.root, { backgroundColor: colors.background }]}
       contentContainerStyle={{
-        paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 90,
+        paddingBottom: insets.bottom + 90,
       }}
     >
       {/* ── Tulisan Berjalan (Paling Atas) ───────────────────────── */}

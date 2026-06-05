@@ -243,8 +243,8 @@ export default function LoginScreen() {
         contentContainerStyle={[
           styles.container,
           {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 40,
-            paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 40,
+            paddingTop: insets.top + 40,
+            paddingBottom: insets.bottom + 40,
           },
         ]}
         keyboardShouldPersistTaps="handled"

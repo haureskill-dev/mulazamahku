@@ -42,7 +42,7 @@ export default function MudzakarahScreen() {
   const [newPertanyaan, setNewPertanyaan] = useState("");
   const [jawabanText, setJawabanText] = useState("");
 
-  const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
+  const topInset = insets.top;
 
   const handleAddTopic = async () => {
     if (!newJudul.trim() || !newPertanyaan.trim()) return;
@@ -115,7 +115,7 @@ export default function MudzakarahScreen() {
         contentContainerStyle={[
           styles.list,
           {
-            paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 90,
+            paddingBottom: insets.bottom + 90,
           },
         ]}
         ListEmptyComponent={

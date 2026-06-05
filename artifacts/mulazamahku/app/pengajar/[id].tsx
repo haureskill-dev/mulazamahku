@@ -54,7 +54,7 @@ export default function PengajarDetailScreen() {
           {
             backgroundColor: colors.background,
             borderBottomColor: colors.border,
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 8,
+            paddingTop: insets.top + 8,
           },
         ]}
       >
@@ -79,7 +79,7 @@ export default function PengajarDetailScreen() {
           styles.scroll,
           {
             paddingBottom:
-              insets.bottom + (Platform.OS === "web" ? 34 : 0) + 40,
+              insets.bottom + 40,
           },
         ]}
         showsVerticalScrollIndicator={false}

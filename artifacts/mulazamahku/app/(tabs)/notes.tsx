@@ -76,7 +76,7 @@ export default function NotesScreen() {
     setModalVisible(false);
   };
 
-  const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
+  const topInset = insets.top;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -126,7 +126,7 @@ export default function NotesScreen() {
         contentContainerStyle={[
           styles.list,
           {
-            paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 90,
+            paddingBottom: insets.bottom + 90,
           },
         ]}
         ListEmptyComponent={
