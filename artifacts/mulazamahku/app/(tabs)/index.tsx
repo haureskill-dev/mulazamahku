@@ -25,6 +25,7 @@ import { DUMMY_KAJIAN, PENGAJAR_PROFILES } from "@/services/dummyData";
 import { Kajian, Flyer } from "@/types";
 import { FlyerService } from "@/services/flyerService";
 import { KajianTambahanService } from "@/services/kajianTambahanService";
+import { scheduleAllKajianReminders } from "@/services/notificationService";
 import { Image } from "expo-image";
 import { WebPullToRefresh } from "@/components/WebPullToRefresh";
 
@@ -120,10 +121,11 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
     <View
       style={{
         overflow: "hidden",
-        backgroundColor: "rgba(0,0,0,0.15)",
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: "rgba(201,162,39,0.2)",
+        backgroundColor: colors.primary,
+        paddingTop: Platform.OS === "web" ? 12 : 12,
+        paddingBottom: 12,
+        borderBottomWidth: 2,
+        borderBottomColor: colors.gold,
       }}
     >
       <Animated.View
@@ -219,7 +221,11 @@ export default function BerandaScreen() {
     setRefreshing(true);
     await fetchFlyers();
     await fetchCustomKajian();
+    
     if (Platform.OS !== "web") {
+      // Sinkronkan notifikasi dengan kajian terbaru dari database
+      scheduleAllKajianReminders().catch(() => {});
+      
       try {
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
@@ -243,15 +249,18 @@ export default function BerandaScreen() {
         paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 90,
       }}
     >
+      {/* ── Tulisan Berjalan (Paling Atas) ───────────────────────── */}
+      <View style={{ paddingTop: insets.top, backgroundColor: colors.primary }}>
+        <MarqueeText colors={colors} width={width} />
+      </View>
+
       {/* ── Header navy (User) ─────────────────────────────────────── */}
       <View
         style={[
           styles.headerSection,
-          { backgroundColor: colors.primary, paddingTop: insets.top + 20 },
+          { backgroundColor: colors.primary, paddingTop: 16 },
         ]}
       >
-        <View style={[styles.goldTopBar, { backgroundColor: colors.gold }]} />
-        <MarqueeText colors={colors} width={width} />
 
         <View style={styles.headerTop}>
           <View style={{ alignItems: "center", marginRight: 14 }}>

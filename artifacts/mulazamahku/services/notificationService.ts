@@ -1,6 +1,8 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { DUMMY_KAJIAN } from "./dummyData";
+import { KajianTambahanService } from "./kajianTambahanService";
+import { Kajian } from "../types";
 
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
@@ -128,11 +130,32 @@ export async function scheduleAllKajianReminders(): Promise<void> {
   today.setHours(0, 0, 0, 0);
 
   // Jadwalkan notifikasi secara dinamis untuk 14 hari ke depan
+  let allKajian: Kajian[] = [...DUMMY_KAJIAN];
+  
+  try {
+    const customKajianData = await KajianTambahanService.getAll();
+    const publicCustomKajian = customKajianData
+      .filter(d => d.is_public)
+      .map(d => ({
+        id: d.id,
+        judul: d.judul,
+        ustadz: d.ustadz,
+        waktu: d.waktu,
+        hari: d.hari,
+        lokasi: d.lokasi,
+        status: "aktif",
+      } as Kajian));
+      
+    allKajian = [...allKajian, ...publicCustomKajian];
+  } catch (e) {
+    // Abaikan jika gagal memuat custom kajian
+  }
+
   for (let offset = 0; offset < 14; offset++) {
     const date = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
     const dateStr = getLocalDateString(date);
 
-    for (const kajian of DUMMY_KAJIAN) {
+    for (const kajian of allKajian) {
       if (!isKajianActiveOnDate(kajian.hari, date)) continue;
 
       const waktuLabel = extractWaktuLabel(kajian.waktu);
