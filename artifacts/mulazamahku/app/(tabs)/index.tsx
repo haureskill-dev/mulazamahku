@@ -77,13 +77,34 @@ function isKajianOnDate(kajian: Kajian, date: Date, flyers: Flyer[] = []): boole
   return pekanMatch[1].includes(String(weekNum));
 }
 
+function isKajianPassedToday(waktu: string): boolean {
+  if (!waktu || waktu.includes("konfirmasi")) return false;
+  const matches = waktu.match(/\d{2}[.:]\d{2}/g);
+  if (!matches || matches.length === 0) return false;
+  
+  const lastTime = matches.length > 1 ? matches[1] : matches[0];
+  const [h, m] = lastTime.replace(".", ":").split(":");
+  
+  const now = new Date();
+  const end = new Date();
+  end.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+  
+  // Beri buffer 60 menit setelah jadwal habis/mulai
+  end.setMinutes(end.getMinutes() + 60);
+  
+  return now.getTime() > end.getTime();
+}
+
 /** Cari kajian terdekat dalam 14 hari ke depan */
 function findNearestKajian(allKajian: Kajian[], flyers: Flyer[] = []): Kajian {
   const now = new Date();
   for (let offset = 0; offset < 14; offset++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
     for (const k of allKajian) {
-      if (isKajianOnDate(k, date, flyers)) return k;
+      if (isKajianOnDate(k, date, flyers)) {
+        if (offset === 0 && isKajianPassedToday(k.waktu)) continue;
+        return k;
+      }
     }
   }
   return allKajian.find((k) => k.status === "aktif") ?? allKajian[0];

@@ -67,24 +67,24 @@ export const DUMMY_KAJIAN: Kajian[] = [
     judul: "Fiqih Haid",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "16.00 - 17.30 WIB",
-    hari: "Jumat",
+    hari: "Jumat · Pekan 2 & 4",
     lokasi: "Zircon Villa Permata Hijau",
     status: "aktif",
     kategori: "Fikih",
     deskripsi:
-      "Kajian Fiqih Haid bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله. Membahas hukum-hukum seputar haid yang wajib diketahui setiap muslimah.",
+      "Kajian Fiqih Haid bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله.",
   },
   {
     id: "r8",
     judul: "Kajian Jumat",
     ustadz: "Ustadzah Rubeya Litiloly, S.Kom.",
     waktu: "(masih konfirmasi)",
-    hari: "Jumat",
+    hari: "Jumat · Pekan 4",
     lokasi: "Masjid as-Salam GSI",
-    status: "aktif",
+    status: "akan_datang",
     kategori: "Umum",
     deskripsi:
-      "Kajian rutin bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله di Masjid as-Salam GSI. Jadwal dan topik masih konfirmasi.",
+      "Kajian rutin bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله di Masjid as-Salam GSI.",
   },
 
   // ── SABTU ───────────────────────────────────────────────────────────────
