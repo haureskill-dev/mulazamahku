@@ -222,7 +222,9 @@ export default function BerandaScreen() {
     await fetchFlyers();
     await fetchCustomKajian();
     
-    if (Platform.OS !== "web") {
+    if (Platform.OS === "web") {
+      window.location.reload();
+    } else {
       // Sinkronkan notifikasi dengan kajian terbaru dari database
       scheduleAllKajianReminders().catch(() => {});
       
