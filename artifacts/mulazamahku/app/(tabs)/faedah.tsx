@@ -34,6 +34,7 @@ export default function FaedahScreen() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, number>>({});
 
   // State untuk preview sebelum kirim
   const [previewUri, setPreviewUri] = useState<string | null>(null);
@@ -221,8 +222,14 @@ export default function FaedahScreen() {
         <Pressable onPress={() => setViewImageUri(item.image_url || null)}>
           <Image
             source={{ uri: item.image_url || 'https://placehold.co/600x400/png' }}
-            style={styles.cardImage}
-            resizeMode="contain"
+            style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 4 / 5, height: undefined }]}
+            resizeMode="stretch"
+            onLoad={(e) => {
+              const { width, height } = e.nativeEvent.source;
+              if (width && height) {
+                setImageAspectRatios(prev => ({ ...prev, [item.id]: width / height }));
+              }
+            }}
           />
         </Pressable>
         <View style={styles.cardBody}>
@@ -332,8 +339,14 @@ export default function FaedahScreen() {
                 <View style={[styles.carouselCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
                   <Image
                     source={{ uri: f.image_url || 'https://placehold.co/300x400/png' }}
-                    style={styles.carouselImage}
-                    resizeMode="cover"
+                    style={[styles.carouselImage, { aspectRatio: imageAspectRatios[f.id] || 4 / 5, height: undefined }]}
+                    resizeMode="stretch"
+                    onLoad={(e) => {
+                      const { width, height } = e.nativeEvent.source;
+                      if (width && height) {
+                        setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
+                      }
+                    }}
                   />
                   <View style={styles.carouselMeta}>
                     <Text style={[styles.carouselName, { color: colors.foreground }]} numberOfLines={1}>
@@ -413,8 +426,14 @@ export default function FaedahScreen() {
             {!!previewUri && (
               <Image
                 source={{ uri: previewUri }}
-                style={styles.previewImage}
-                resizeMode="contain"
+                style={[styles.previewImage, { aspectRatio: imageAspectRatios['preview'] || 4 / 5, height: undefined }]}
+                resizeMode="stretch"
+                onLoad={(e) => {
+                  const { width, height } = e.nativeEvent.source;
+                  if (width && height) {
+                    setImageAspectRatios(prev => ({ ...prev, ['preview']: width / height }));
+                  }
+                }}
               />
             )}
           </View>
@@ -644,8 +663,7 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: "100%",
-    height: 260,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: "rgba(0,0,0,0.02)",
   },
   cardBody: {
     padding: 14,
