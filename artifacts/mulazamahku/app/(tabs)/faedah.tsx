@@ -688,11 +688,13 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
+    textAlign: "left",
   },
   cardDate: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
     marginTop: 2,
+    textAlign: "left",
   },
   deleteBtn: {
     flexDirection: "row",

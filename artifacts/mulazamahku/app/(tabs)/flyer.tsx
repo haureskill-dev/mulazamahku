@@ -512,8 +512,8 @@ const styles = StyleSheet.create({
   card: { borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 16 },
   cardImage: { width: "100%", backgroundColor: "rgba(0,0,0,0.05)" },
   cardBody: { padding: 14 },
-  cardTitle: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 4 },
-  cardDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 8 },
+  cardTitle: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 4, textAlign: "left" },
+  cardDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 8, textAlign: "left" },
   cardMeta: { flexDirection: "row", alignItems: "center", gap: 5 },
   cardMetaText: { fontSize: 11, fontFamily: "Inter_400Regular" },
   deleteBtn: {

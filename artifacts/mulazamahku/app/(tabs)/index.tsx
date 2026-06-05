@@ -752,11 +752,13 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     marginBottom: 4,
     lineHeight: 24,
+    textAlign: "left",
   },
   highlightUstadz: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     marginBottom: 10,
+    textAlign: "left",
   },
   highlightMeta: {
     flexDirection: "row",
@@ -822,10 +824,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     marginBottom: 4,
     lineHeight: 18,
+    textAlign: "left",
   },
   bentoLoc: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
+    textAlign: "left",
   },
 
   // Flyers
