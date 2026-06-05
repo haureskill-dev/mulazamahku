@@ -120,10 +120,10 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
     <View
       style={{
         overflow: "hidden",
-        backgroundColor: colors.highlight,
-        paddingVertical: 12,
+        backgroundColor: "rgba(0,0,0,0.15)",
+        paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        borderBottomColor: "rgba(201,162,39,0.2)",
       }}
     >
       <Animated.View
@@ -136,9 +136,10 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
         <Text
           numberOfLines={1}
           style={{
-            fontSize: 13,
+            fontSize: 12,
             fontFamily: "Inter_500Medium",
-            color: colors.primary,
+            color: colors.gold,
+            letterSpacing: 0.3,
           }}
         >
           {fullText}
@@ -251,6 +252,7 @@ export default function BerandaScreen() {
         ]}
       >
         <View style={[styles.goldTopBar, { backgroundColor: colors.gold }]} />
+        <MarqueeText colors={colors} width={width} />
 
         <View style={styles.headerTop}>
           <View style={{ alignItems: "center", marginRight: 14 }}>
@@ -314,9 +316,6 @@ export default function BerandaScreen() {
           <MosqueDecoration width={width} goldColor={colors.gold} opacity={0.85} />
         </View>
       </View>
-
-      {/* ── Tulisan Berjalan (Marquee) ────────────────────────── */}
-      <MarqueeText colors={colors} width={width} />
 
       {/* ── Konten ──────────────────────────────────────────── */}
       <View style={styles.content}>
