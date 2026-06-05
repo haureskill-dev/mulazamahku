@@ -195,10 +195,12 @@ export default function BerandaScreen() {
     setFlyers(data);
   }, []);
 
-  React.useEffect(() => {
-    fetchFlyers();
-    fetchCustomKajian();
-  }, [fetchFlyers, fetchCustomKajian]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchFlyers();
+      fetchCustomKajian();
+    }, [fetchFlyers, fetchCustomKajian])
+  );
 
   const greeting = () => {
     const h = new Date().getHours();
