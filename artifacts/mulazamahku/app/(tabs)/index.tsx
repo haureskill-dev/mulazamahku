@@ -121,7 +121,7 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
     <View
       style={{
         overflow: "hidden",
-        backgroundColor: colors.primary,
+        backgroundColor: "#FFFFFF",
         paddingTop: Platform.OS === "web" ? 12 : 12,
         paddingBottom: 12,
         borderBottomWidth: 2,
@@ -140,7 +140,7 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
           style={{
             fontSize: 12,
             fontFamily: "Inter_500Medium",
-            color: "#FFFFFF",
+            color: "#000000",
             letterSpacing: 0.3,
           }}
         >
