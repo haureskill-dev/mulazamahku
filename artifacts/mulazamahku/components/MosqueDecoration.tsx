@@ -19,15 +19,15 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
     <Svg width={width} height={h} viewBox="0 0 360 72" style={{ display: "flex" }}>
       <G opacity={opacity}>
         {/* ── Menara kiri ─────────────────────────────── */}
-        {/* Badan menara */}
-        <Rect x="38" y="18" width="11" height="48" rx="1" fill={goldColor} />
+        {/* Badan menara (diperpanjang sampai y=72 agar tidak ngambang) */}
+        <Rect x="38" y="18" width="11" height="54" rx="1" fill={goldColor} />
         {/* Balkon menara kiri */}
         <Rect x="34" y="36" width="19" height="4" rx="1" fill={goldColor} />
         {/* Puncak lancip kiri */}
         <Path d="M38 18 L43.5 4 L49 18 Z" fill={goldColor} />
 
         {/* ── Menara kanan ────────────────────────────── */}
-        <Rect x="311" y="18" width="11" height="48" rx="1" fill={goldColor} />
+        <Rect x="311" y="18" width="11" height="54" rx="1" fill={goldColor} />
         <Rect x="307" y="36" width="19" height="4" rx="1" fill={goldColor} />
         <Path d="M311 18 L316.5 4 L322 18 Z" fill={goldColor} />
 
@@ -39,8 +39,8 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
           d="M 70 50 Q 70 36 82 32 Q 94 36 94 50 Z"
           fill={goldColor}
         />
-        {/* Menara kecil kiri */}
-        <Rect x="76" y="22" width="6" height="12" rx="1" fill={goldColor} />
+        {/* Menara kecil kiri (diperpanjang sampai y=50) */}
+        <Rect x="76" y="22" width="6" height="28" rx="1" fill={goldColor} />
         <Path d="M76 22 L79 14 L82 22 Z" fill={goldColor} />
 
         {/* ── Kubah kecil kanan ───────────────────────── */}
@@ -48,29 +48,19 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
           d="M 266 50 Q 266 36 278 32 Q 290 36 290 50 Z"
           fill={goldColor}
         />
-        <Rect x="272" y="22" width="6" height="12" rx="1" fill={goldColor} />
+        {/* Menara kecil kanan (diperpanjang sampai y=50) */}
+        <Rect x="272" y="22" width="6" height="28" rx="1" fill={goldColor} />
         <Path d="M272 22 L275 14 L278 22 Z" fill={goldColor} />
 
-        {/* ── Kubah utama (onion dome) ─────────────────── */}
+        {/* ── Kubah utama (onion dome yang simetris) ───── */}
         <Path
           d="M 138 50
-             Q 138 28 155 14
-             Q 162 8  167 5
-             Q 171 3  174 2
-             Q 177 1  180 0.5
-             Q 183 1  186 2
-             Q 189 3  193 5
-             Q 198 8  205 14
-             Q 222 28 222 50 Z"
-          fill={goldColor}
-        />
-        {/* Lingkaran dasar kubah */}
-        <Path
-          d="M 132 50 Q 132 42 138 50 Z"
+             C 138 15, 165 15, 180 2
+             C 195 15, 222 15, 222 50 Z"
           fill={goldColor}
         />
         {/* Hiasan puncak kubah (finial) */}
-        <Rect x="178" y="0" width="4" height="8" rx="1" fill={goldColor} />
+        <Rect x="178" y="-6" width="4" height="10" rx="1" fill={goldColor} />
 
         {/* ── Ornamen jendela (arcade) ─────────────────── */}
         <Path d="M 100 66 Q 100 58 108 56 Q 116 58 116 66 Z" fill="rgba(26,39,68,0.4)" />
