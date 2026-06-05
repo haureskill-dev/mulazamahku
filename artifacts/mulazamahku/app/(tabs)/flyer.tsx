@@ -111,6 +111,21 @@ export default function FlyerScreen() {
     let success = false;
     let error: string | undefined = undefined;
 
+    const parseTanggal = (input: string) => {
+      if (!input.trim()) return new Date().toISOString().split("T")[0];
+      const match = input.trim().match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+      if (match) {
+        let [_, day, month, year] = match;
+        day = day.padStart(2, "0");
+        month = month.padStart(2, "0");
+        if (year.length === 2) year = "20" + year;
+        return `${year}-${month}-${day}`;
+      }
+      return input.trim();
+    };
+
+    const finalTanggal = parseTanggal(tanggalBerlaku);
+
     if (editingFlyerId) {
       // Cek apakah gambar diganti (URI berbeda dari original)
       const newImageUri = (previewUri && previewUri !== originalImageUrl) ? previewUri : undefined;
@@ -118,7 +133,7 @@ export default function FlyerScreen() {
         editingFlyerId,
         selectedKajian,
         keterangan,
-        tanggalBerlaku || new Date().toISOString().split("T")[0],
+        finalTanggal,
         newImageUri
       );
       success = res.success;
@@ -129,7 +144,7 @@ export default function FlyerScreen() {
         previewUri,
         selectedKajian,
         keterangan,
-        tanggalBerlaku || new Date().toISOString().split("T")[0],
+        finalTanggal,
         user?.nama ?? "Admin"
       );
       success = res.success;
@@ -391,7 +406,7 @@ export default function FlyerScreen() {
             <TextInput
               value={tanggalBerlaku}
               onChangeText={setTanggalBerlaku}
-              placeholder="Contoh: 2026-06-05"
+              placeholder="Contoh: 05-06-2026 atau 05/06/26"
               placeholderTextColor={colors.mutedForeground}
               style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
             />
