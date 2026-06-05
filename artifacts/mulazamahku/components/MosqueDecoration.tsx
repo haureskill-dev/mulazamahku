@@ -59,8 +59,7 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
              C 195 15, 222 15, 222 50 Z"
           fill={goldColor}
         />
-        {/* Hiasan puncak kubah (finial) */}
-        <Rect x="178" y="-6" width="4" height="10" rx="1" fill={goldColor} />
+        {/* Hiasan puncak kubah (finial) dihapus agar kubah terlihat botak */}
 
         {/* ── Ornamen jendela (arcade) ─────────────────── */}
         <Path d="M 100 66 Q 100 58 108 56 Q 116 58 116 66 Z" fill="rgba(26,39,68,0.4)" />
