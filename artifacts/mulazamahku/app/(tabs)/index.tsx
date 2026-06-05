@@ -138,7 +138,7 @@ function MarqueeText({ colors, width }: { colors: any; width: number }) {
           style={{
             fontSize: 12,
             fontFamily: "Inter_500Medium",
-            color: colors.gold,
+            color: "#FFFFFF",
             letterSpacing: 0.3,
           }}
         >
@@ -241,7 +241,6 @@ export default function BerandaScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       contentContainerStyle={{
         paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 90,
-        paddingTop: Platform.OS === "web" ? 67 : 0,
       }}
     >
       {/* ── Header navy (User) ─────────────────────────────────────── */}
