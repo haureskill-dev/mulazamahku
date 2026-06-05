@@ -271,30 +271,18 @@ export default function BerandaScreen() {
             <Text style={[styles.nameText, { marginTop: 2 }]}>{user?.nama ?? "Muslimah"}</Text>
           </View>
 
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-            {Platform.OS === "web" && (
-              <Pressable
-                onPress={() => {
-                  onRefresh();
-                }}
-                style={({ pressed }) => [styles.headerRightBtn, { opacity: pressed ? 0.7 : 1, paddingHorizontal: 10 }]}
-              >
-                <Feather name="refresh-cw" size={18} color="#FFFFFF" />
-              </Pressable>
-            )}
-            <Pressable
-              onPress={() => {
-                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (PENGAJAR_PROFILES.length > 0) {
-                  router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
-                }
-              }}
-              style={styles.headerRightBtn}
-            >
-              <Feather name="users" size={20} color="#FFFFFF" />
-              <Text style={styles.headerRightBtnText}>Pengajar</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (PENGAJAR_PROFILES.length > 0) {
+                router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
+              }
+            }}
+            style={styles.headerRightBtn}
+          >
+            <Feather name="users" size={20} color="#FFFFFF" />
+            <Text style={styles.headerRightBtnText}>Pengajar</Text>
+          </Pressable>
         </View>
 
         {/* Statistik */}

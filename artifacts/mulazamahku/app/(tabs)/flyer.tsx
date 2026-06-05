@@ -44,6 +44,7 @@ export default function FlyerScreen() {
   const [selectedKajian, setSelectedKajian] = useState<string>("");
   const [keterangan, setKeterangan] = useState<string>("");
   const [editingFlyerId, setEditingFlyerId] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [showKajianPicker, setShowKajianPicker] = useState(false);
 
   const fetchFlyers = useCallback(async () => {
@@ -89,6 +90,7 @@ export default function FlyerScreen() {
     setSelectedKajian(flyer.kajian_id);
     setKeterangan(flyer.keterangan || "");
     setPreviewUri(flyer.image_url);
+    setOriginalImageUrl(flyer.image_url);
     setShowUploadForm(true);
   };
 
@@ -107,11 +109,14 @@ export default function FlyerScreen() {
     let error: string | undefined = undefined;
 
     if (editingFlyerId) {
+      // Cek apakah gambar diganti (URI berbeda dari original)
+      const newImageUri = (previewUri && previewUri !== originalImageUrl) ? previewUri : undefined;
       const res = await FlyerService.updateFlyer(
         editingFlyerId,
         selectedKajian,
         keterangan,
-        new Date().toISOString().split("T")[0]
+        new Date().toISOString().split("T")[0],
+        newImageUri
       );
       success = res.success;
       error = res.error;
@@ -134,6 +139,7 @@ export default function FlyerScreen() {
     setSelectedKajian("");
     setKeterangan("");
     setEditingFlyerId(null);
+    setOriginalImageUrl(null);
 
     if (success) {
       Alert.alert("Berhasil ✓", editingFlyerId ? "Flyer berhasil diperbarui." : "Flyer berhasil diupload.");
@@ -149,6 +155,7 @@ export default function FlyerScreen() {
     setSelectedKajian("");
     setKeterangan("");
     setEditingFlyerId(null);
+    setOriginalImageUrl(null);
   };
 
   const getKajianTitle = (id: string) => {
@@ -319,10 +326,34 @@ export default function FlyerScreen() {
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
             {/* Preview gambar */}
             {editingFlyerId ? (
-                <View style={styles.imagePlaceholder}>
-                  <Image source={{ uri: previewUri! }} style={{ width: "100%", height: "100%", borderRadius: 10 }} resizeMode="cover" />
-                </View>
-              ) : previewUri ? (
+              <View>
+                <Image source={{ uri: previewUri! }} style={styles.previewImage} resizeMode="contain" />
+                <Pressable
+                  onPress={pickImage}
+                  style={({ pressed }) => [{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    paddingVertical: 10,
+                    paddingHorizontal: 16,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.card,
+                    alignSelf: "center",
+                    marginTop: 8,
+                    marginBottom: 12,
+                    opacity: pressed ? 0.7 : 1,
+                  }]}
+                >
+                  <Feather name="image" size={16} color={colors.primary} />
+                  <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.primary }}>
+                    Ganti Gambar
+                  </Text>
+                </Pressable>
+              </View>
+            ) : previewUri ? (
               <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />
             ) : null}
 

@@ -92,24 +92,67 @@ export const FlyerService = {
   },
 
   /**
-   * Update metadata flyer
+   * Update metadata flyer (dan opsional ganti gambar)
    */
   async updateFlyer(
     id: string,
     kajianId: string,
     keterangan: string,
-    tanggalBerlaku: string
+    tanggalBerlaku: string,
+    newImageUri?: string
   ): Promise<{ success: boolean; error?: string }> {
-    const { error } = await supabase
-      .from(TABLE_NAME)
-      .update({
+    try {
+      const updateData: any = {
         kajian_id: kajianId,
         keterangan,
         tanggal_berlaku: tanggalBerlaku || null,
-      })
-      .eq("id", id);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+      };
+
+      // Jika ada gambar baru, upload dulu
+      if (newImageUri) {
+        const response = await fetch(newImageUri);
+        const blob = await response.blob();
+
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(',')[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+
+        const fileName = `flyer_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+        const filePath = `uploads/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(filePath, decode(base64), {
+            contentType: "image/jpeg",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          return { success: false, error: uploadError.message };
+        }
+
+        const { data: urlData } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(filePath);
+
+        updateData.image_url = urlData.publicUrl;
+      }
+
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .update(updateData)
+        .eq("id", id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message || "Update gagal" };
+    }
   },
 
   async _getFromCache(): Promise<Flyer[]> {
