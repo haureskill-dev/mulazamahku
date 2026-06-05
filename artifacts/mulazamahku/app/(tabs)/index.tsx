@@ -246,6 +246,7 @@ export default function BerandaScreen() {
   };
 
   const [refreshing, setRefreshing] = useState(false);
+  const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, number>>({});
   const [selectedFlyer, setSelectedFlyer] = useState<Flyer | null>(null);
 
   const onRefresh = useCallback(async () => {
@@ -409,13 +410,28 @@ export default function BerandaScreen() {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
             {flyers.length > 0 ? (
-              flyers.map((f) => (
-                <Pressable key={f.id} onPress={() => setSelectedFlyer(f)}>
-                  <View style={[styles.flyerCard, { borderColor: colors.border }]}>
-                    <Image source={{ uri: f.image_url }} style={styles.flyerImage} contentFit="contain" />
-                  </View>
-                </Pressable>
-              ))
+              flyers.map((f) => {
+                const ratio = imageAspectRatios[f.id] || 16 / 9; // Default landscape jika belum load
+                return (
+                  <Pressable key={f.id} onPress={() => setSelectedFlyer(f)}>
+                    <View style={[styles.flyerCard, { borderColor: colors.border, aspectRatio: ratio }]}>
+                      <Image 
+                        source={{ uri: f.image_url }} 
+                        style={styles.flyerImage} 
+                        contentFit="fill"
+                        onLoad={(e) => {
+                          if (e.source.width && e.source.height) {
+                            setImageAspectRatios(prev => ({
+                              ...prev,
+                              [f.id]: e.source.width / e.source.height
+                            }));
+                          }
+                        }}
+                      />
+                    </View>
+                  </Pressable>
+                );
+              })
             ) : (
               <View style={[styles.flyerCard, { borderColor: colors.border, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.02)" }]}>
                 <Feather name="image" size={32} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
@@ -802,11 +818,10 @@ const styles = StyleSheet.create({
   // Flyers
   flyerCard: {
     width: 280,
-    aspectRatio: 16 / 9,
     borderRadius: 12,
     borderWidth: 1,
     overflow: "hidden",
-    backgroundColor: "rgba(0,0,0,0.05)",
+    backgroundColor: "rgba(0,0,0,0.02)",
   },
   flyerImage: {
     width: "100%",

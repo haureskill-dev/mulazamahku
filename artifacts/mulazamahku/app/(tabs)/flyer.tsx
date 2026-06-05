@@ -38,6 +38,7 @@ export default function FlyerScreen() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, number>>({});
 
   // State form upload
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -228,7 +229,17 @@ export default function FlyerScreen() {
 
   const renderFlyerItem = ({ item }: { item: Flyer }) => (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Image source={{ uri: item.image_url }} style={styles.cardImage} resizeMode="contain" />
+      <Image 
+        source={{ uri: item.image_url }} 
+        style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 16 / 9, height: undefined }]} 
+        resizeMode="stretch"
+        onLoad={(e) => {
+          const { width, height } = e.nativeEvent.source;
+          if (width && height) {
+            setImageAspectRatios(prev => ({ ...prev, [item.id]: width / height }));
+          }
+        }}
+      />
       <View style={styles.cardBody}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <View style={{ flex: 1 }}>
@@ -487,7 +498,7 @@ const styles = StyleSheet.create({
   },
   uploadBtnText: { color: "#FFFFFF", fontFamily: "Inter_600SemiBold", fontSize: 15 },
   card: { borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 16 },
-  cardImage: { width: "100%", height: 200, backgroundColor: "rgba(0,0,0,0.05)" },
+  cardImage: { width: "100%", backgroundColor: "rgba(0,0,0,0.05)" },
   cardBody: { padding: 14 },
   cardTitle: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 4 },
   cardDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 8 },
