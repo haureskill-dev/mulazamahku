@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { DUMMY_KAJIAN } from "./dummyData";
 import { KajianTambahanService } from "./kajianTambahanService";
+import { Flyer } from "@/types";
 import { Kajian } from "../types";
 
 if (Platform.OS !== "web") {
@@ -97,7 +98,12 @@ function getLocalDateString(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-function isKajianActiveOnDate(kajianHari: string, date: Date): boolean {
+function isKajianActiveOnDate(kajianHari: string, kajianId: string, date: Date, flyers: Flyer[] = []): boolean {
+  // Cek apakah ada flyer (reschedule) yang tanggal berlakunya cocok dengan date ini
+  const dateStr = getLocalDateString(date);
+  const hasReschedule = flyers.some(f => f.kajian_id === kajianId && f.tanggal_berlaku === dateStr);
+  if (hasReschedule) return true;
+
   const DAYS_ID = ["ahad", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
   const dateWeekday = DAYS_ID[date.getDay()];
   
@@ -131,6 +137,7 @@ export async function scheduleAllKajianReminders(): Promise<void> {
 
   // Jadwalkan notifikasi secara dinamis untuk 14 hari ke depan
   let allKajian: Kajian[] = [...DUMMY_KAJIAN];
+  let flyersList: Flyer[] = [];
   
   try {
     const customKajianData = await KajianTambahanService.getAll();
@@ -151,12 +158,19 @@ export async function scheduleAllKajianReminders(): Promise<void> {
     // Abaikan jika gagal memuat custom kajian
   }
 
+  try {
+    const FlyerService = require("./flyerService").FlyerService;
+    flyersList = await FlyerService.getAllFlyers();
+  } catch (e) {
+    // Abaikan
+  }
+
   for (let offset = 0; offset < 14; offset++) {
     const date = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
     const dateStr = getLocalDateString(date);
 
     for (const kajian of allKajian) {
-      if (!isKajianActiveOnDate(kajian.hari, date)) continue;
+      if (!isKajianActiveOnDate(kajian.hari, kajian.id, date, flyersList)) continue;
 
       const waktuLabel = extractWaktuLabel(kajian.waktu);
       const pekanMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
@@ -182,6 +196,31 @@ export async function scheduleAllKajianReminders(): Promise<void> {
               trigger: {
                 type: Notifications.SchedulableTriggerInputTypes.DATE,
                 date: h3Time,
+              },
+            });
+          } catch {
+            // Lewati jika error
+          }
+        }
+
+        // ── Reminder H-30 menit (30 menit sebelum kajian dimulai) ──────────────
+        const h30mTime = new Date(date.getTime());
+        h30mTime.setHours(startTime.hour, startTime.minute, 0, 0);
+        h30mTime.setMinutes(h30mTime.getMinutes() - 30); // Kurangi 30 menit
+
+        if (h30mTime.getTime() > Date.now()) {
+          try {
+            await Notifications.scheduleNotificationAsync({
+              identifier: `kajian-h30m-${kajian.id}-${dateStr}`,
+              content: {
+                title: "⏳ Kajian 30 Menit Lagi!",
+                body: `"${kajian.judul}"${pekanLabel} segera dimulai di ${kajian.lokasi}${waktuLabel}. Segera merapat!`,
+                data: { kajianId: kajian.id, reminderType: "h30m", dateStr },
+                sound: true,
+              },
+              trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: h30mTime,
               },
             });
           } catch {
