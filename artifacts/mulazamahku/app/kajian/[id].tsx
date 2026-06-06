@@ -418,139 +418,85 @@ export default function KajianDetailScreen() {
           )}
         </View>
 
-        {kajian.status !== "online" && (
-          <View style={styles.actionButtonsRow}>
+        <View style={styles.actionBar}>
+          {kajian.status !== "online" && (
+            <>
+              <ActionIcon 
+                icon="map" 
+                label="Rute" 
+                color={colors.primary} 
+                bgColor="rgba(201,162,39,0.15)" 
+                onPress={openMaps} 
+              />
+              <ActionIcon 
+                icon="navigation" 
+                label="Ojek" 
+                color="#3A6EA8" 
+                bgColor="rgba(58,110,168,0.15)" 
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setOjekModalVisible(true);
+                }} 
+              />
+            </>
+          )}
+
+          <ActionIcon 
+            icon="whatsapp" 
+            isFontAwesome 
+            label="Tanya CP" 
+            color="#25D366" 
+            bgColor="rgba(37,211,102,0.15)" 
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              openAdminWhatsApp();
+            }} 
+          />
+
+          {(user?.role === "pengajar" || user?.role === "admin") && (
+            <ActionIcon 
+              icon="alert-triangle" 
+              label="Batal/Udzur" 
+              color="#F59E0B" 
+              bgColor="rgba(245,158,11,0.15)" 
+              onPress={() => setBatalModalVisible(true)} 
+            />
+          )}
+        </View>
+
+        {(user?.role === "pengajar" || user?.role === "admin") && kajian.is_custom && (
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 16, paddingHorizontal: 20 }}>
             <Pressable
-              onPress={openMaps}
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/kajian/edit/${kajian.id}`);
+              }}
               style={({ pressed }) => [
                 styles.actionBtn,
-                {
-                  backgroundColor: colors.primary,
-                  opacity: pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                },
+                { backgroundColor: "#4B5563", opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.97 : 1 }], flex: 1 },
               ]}
             >
-              <Feather name="map" size={20} color="#FFFFFF" />
-              <Text style={styles.actionBtnText}>Rute Lokasi</Text>
+              <Feather name="edit-2" size={20} color="#FFFFFF" />
+              <Text style={styles.actionBtnText}>Edit</Text>
             </Pressable>
 
             <Pressable
               onPress={() => {
                 if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setOjekModalVisible(true);
+                handleDeleteCustom();
               }}
+              disabled={isDeleting}
               style={({ pressed }) => [
                 styles.actionBtn,
-                {
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 1.5,
-                  borderColor: colors.primary,
-                  opacity: pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                },
+                { backgroundColor: "#EF4444", opacity: pressed || isDeleting ? 0.7 : 1, transform: [{ scale: pressed ? 0.97 : 1 }], flex: 1 },
               ]}
             >
-              <Feather name="navigation" size={20} color={colors.primary} />
-              <Text style={[styles.actionBtnText, { color: colors.primary }]}>Ojek Muslimah</Text>
-            </Pressable>
-          </View>
-        )}
-
-        {/* Tampilkan CP untuk semua user agar murid bisa bertanya */}
-        <View style={{ marginTop: 8, paddingHorizontal: 20, alignItems: "center" }}>
-          <Pressable
-            onPress={() => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              openAdminWhatsApp();
-            }}
-            style={({ pressed }) => [
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#25D366", // Warna hijau khas WhatsApp
-                paddingVertical: 12,
-                paddingHorizontal: 24,
-                borderRadius: 24,
-                gap: 10,
-                opacity: pressed ? 0.85 : 1,
-                transform: [{ scale: pressed ? 0.97 : 1 }],
-              },
-            ]}
-          >
-            <FontAwesome name="whatsapp" size={20} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontSize: 14, fontFamily: "Inter_600SemiBold" }}>
-              Hubungi CP Kajian
-            </Text>
-          </Pressable>
-        </View>
-
-        {(user?.role === "pengajar" || user?.role === "admin") && (
-          <View style={{ marginTop: 8 }}>
-            {kajian.is_custom && (
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                <Pressable
-                  onPress={() => {
-                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/kajian/edit/${kajian.id}`);
-                  }}
-                  style={({ pressed }) => [
-                    styles.actionBtn,
-                    {
-                      backgroundColor: "#4B5563",
-                      opacity: pressed ? 0.7 : 1,
-                      transform: [{ scale: pressed ? 0.97 : 1 }],
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  <Feather name="edit-2" size={20} color="#FFFFFF" />
-                  <Text style={styles.actionBtnText}>Edit</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => {
-                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    handleDeleteCustom();
-                  }}
-                  disabled={isDeleting}
-                  style={({ pressed }) => [
-                    styles.actionBtn,
-                    {
-                      backgroundColor: "#EF4444",
-                      opacity: pressed || isDeleting ? 0.7 : 1,
-                      transform: [{ scale: pressed ? 0.97 : 1 }],
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  {isDeleting ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <>
-                      <Feather name="trash-2" size={20} color="#FFFFFF" />
-                      <Text style={styles.actionBtnText}>Hapus</Text>
-                    </>
-                  )}
-                </Pressable>
-              </View>
-            )}
-
-            <Pressable
-              onPress={() => setBatalModalVisible(true)}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                {
-                  backgroundColor: "#F59E0B",
-                  opacity: pressed ? 0.7 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                  marginTop: 8,
-                },
-              ]}
-            >
-              <Feather name="alert-triangle" size={20} color="#FFFFFF" />
-              <Text style={styles.actionBtnText}>Info Kajian Batal/Udzur</Text>
+              {isDeleting ? <ActivityIndicator size="small" color="#FFF" /> : (
+                <>
+                  <Feather name="trash-2" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionBtnText}>Hapus</Text>
+                </>
+              )}
             </Pressable>
           </View>
         )}
@@ -614,6 +560,28 @@ export default function KajianDetailScreen() {
         </View>
       )}
     </View>
+  );
+}
+
+// ── Helper Components ────────────────────────────────────────────────────
+
+function ActionIcon({ icon, isFontAwesome, label, color, bgColor, onPress }: any) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        { alignItems: "center", opacity: pressed ? 0.7 : 1, width: 75 }
+      ]}
+    >
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: bgColor, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+        {isFontAwesome ? (
+          <FontAwesome name={icon} size={24} color={color} />
+        ) : (
+          <Feather name={icon} size={24} color={color} />
+        )}
+      </View>
+      <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: color, textAlign: "center", lineHeight: 14 }}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -773,26 +741,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
   },
-  actionButtonsRow: {
+  actionBar: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 40,
+    justifyContent: "space-evenly",
+    alignItems: "flex-start",
+    paddingHorizontal: 10,
+    marginTop: 24,
+    marginBottom: 8,
   },
   actionBtn: {
-    flex: 1,
-    flexDirection: "column",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
     gap: 8,
-    height: 72,
-    borderRadius: 14,
   },
   actionBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
-    textAlign: "center",
   },
   onlineInfo: {
     flexDirection: "row",
