@@ -138,6 +138,14 @@ export async function scheduleAllKajianReminders(): Promise<void> {
   // Jadwalkan notifikasi secara dinamis untuk 14 hari ke depan
   let allKajian: Kajian[] = [...DUMMY_KAJIAN];
   let flyersList: Flyer[] = [];
+  let batalList: any[] = [];
+  
+  try {
+    const KajianBatalService = require("./kajianBatalService").KajianBatalService;
+    batalList = await KajianBatalService.getAll();
+  } catch (e) {
+    // Abaikan jika gagal memuat kajian batal
+  }
   
   try {
     const customKajianData = await KajianTambahanService.getAll();
@@ -176,8 +184,14 @@ export async function scheduleAllKajianReminders(): Promise<void> {
       const pekanMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
       const pekanLabel = pekanMatch ? ` (${kajian.hari.split("·")[1]?.trim() ?? ""})` : "";
 
-      // ── Reminder H-3 jam (3 jam sebelum kajian dimulai) ──────────────────
-      const startTime = extractStartHour(kajian.waktu);
+      const batalInfo = batalList.find(b => b.kajian_id === kajian.id && b.tanggal === dateStr);
+
+      // Jika kajian dibatalkan, jangan jadwalkan reminder H-3jam & H-30m
+      // Namun, kita jadwalkan notifikasi "Info Update" pada H-1 agar murid tahu
+      
+      if (!batalInfo) {
+        // ── Reminder H-3 jam (3 jam sebelum kajian dimulai) ──────────────────
+        const startTime = extractStartHour(kajian.waktu);
       if (startTime) {
         const h3Time = new Date(date.getTime());
         h3Time.setHours(startTime.hour, startTime.minute, 0, 0);
@@ -227,6 +241,7 @@ export async function scheduleAllKajianReminders(): Promise<void> {
             // Lewati jika error
           }
         }
+        }
       }
 
       // ── Reminder H-1 (sehari sebelumnya, jam 20:00) ─────────────────────
@@ -238,9 +253,11 @@ export async function scheduleAllKajianReminders(): Promise<void> {
           await Notifications.scheduleNotificationAsync({
             identifier: `kajian-h1-${kajian.id}-${dateStr}`,
             content: {
-              title: "📚 Pengingat Kajian Besok",
-              body: `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
-              data: { kajianId: kajian.id, reminderType: "h1", dateStr },
+              title: batalInfo ? "⚠️ Info Update Kajian" : "📚 Pengingat Kajian Besok",
+              body: batalInfo 
+                ? `Kajian "${kajian.judul}" besok DIBATALKAN karena: ${batalInfo.alasan}`
+                : `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
+              data: { kajianId: kajian.id, reminderType: "h1", dateStr, isCancelled: !!batalInfo },
               sound: true,
             },
             trigger: {

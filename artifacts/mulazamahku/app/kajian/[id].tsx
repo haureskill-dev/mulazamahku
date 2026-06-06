@@ -10,6 +10,7 @@ import { useColors } from "@/hooks/useColors";
 import { DUMMY_KAJIAN, PENGAJAR_PROFILES, ADMIN_KAJIAN_CONTACTS } from "@/services/dummyData";
 import { OjekMuslimahModal } from "@/components/OjekMuslimahModal";
 import { KajianTambahanService } from "@/services/kajianTambahanService";
+import { KajianBatalService, KajianBatal } from "@/services/kajianBatalService";
 import { Kajian } from "@/types";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -40,6 +41,15 @@ export default function KajianDetailScreen() {
   const [savedProgress, setSavedProgress] = useState("");
   const [ojekModalVisible, setOjekModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [batalList, setBatalList] = useState<KajianBatal[]>([]);
+  const [batalModalVisible, setBatalModalVisible] = useState(false);
+  const [batalDate, setBatalDate] = useState(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  });
+  const [batalAlasan, setBatalAlasan] = useState("");
+  const [isSubmittingBatal, setIsSubmittingBatal] = useState(false);
 
   const PROGRESS_KEY = `@mulazamahku_progress_${id}`;
 
@@ -80,6 +90,14 @@ export default function KajianDetailScreen() {
     }
   }, [id, kajian]);
 
+  useEffect(() => {
+    if (id) {
+      KajianBatalService.getAll().then((data) => {
+        setBatalList(data.filter(d => d.kajian_id === id));
+      });
+    }
+  }, [id]);
+
   const handleSaveProgress = async () => {
     setIsSaving(true);
     await StorageService.set(PROGRESS_KEY, progress);
@@ -105,6 +123,46 @@ export default function KajianDetailScreen() {
           }
         }
       }
+    ]);
+  };
+
+  const handleBatalSubmit = async () => {
+    if (!batalDate || !batalAlasan) return;
+    
+    // Parse DD/MM/YYYY to YYYY-MM-DD for Supabase
+    const parts = batalDate.split("/");
+    if (parts.length !== 3) {
+      Alert.alert("Format Salah", "Gunakan format tanggal DD/MM/YYYY (contoh: 10/06/2026)");
+      return;
+    }
+    const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+    setIsSubmittingBatal(true);
+    const success = await KajianBatalService.insert({
+      kajian_id: id as string,
+      tanggal: isoDate,
+      alasan: batalAlasan
+    });
+    setIsSubmittingBatal(false);
+    if (success) {
+      setBatalModalVisible(false);
+      setBatalAlasan("");
+      const newData = await KajianBatalService.getAll();
+      setBatalList(newData.filter(d => d.kajian_id === id));
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Alert.alert("Error", "Gagal menambahkan info pembatalan.");
+    }
+  };
+
+  const handleDeleteBatal = async (batalId: string) => {
+    Alert.alert("Hapus Info", "Hapus info pembatalan ini?", [
+      { text: "Batal", style: "cancel" },
+      { text: "Hapus", style: "destructive", onPress: async () => {
+        await KajianBatalService.delete(batalId);
+        const newData = await KajianBatalService.getAll();
+        setBatalList(newData.filter(d => d.kajian_id === id));
+      }}
     ]);
   };
 
@@ -235,6 +293,37 @@ export default function KajianDetailScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {batalList.map(b => {
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          if (new Date(b.tanggal) < today) return null;
+          
+          // Format YYYY-MM-DD to DD/MM/YYYY
+          const dateParts = b.tanggal.split("-");
+          const displayDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : b.tanggal;
+
+          return (
+            <View key={b.id} style={{ backgroundColor: "#FEF2F2", padding: 16, borderBottomWidth: 1, borderBottomColor: "#FEE2E2" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                  <Feather name="alert-circle" size={20} color="#EF4444" />
+                  <Text style={{ fontFamily: "Inter_700Bold", color: "#EF4444", fontSize: 15, flex: 1 }}>
+                    Dibatalkan pada {displayDate}
+                  </Text>
+                </View>
+                {(user?.role === "admin" || user?.role === "pengajar") && (
+                  <Pressable onPress={() => handleDeleteBatal(b.id)} hitSlop={10}>
+                    <Feather name="x" size={20} color="#EF4444" />
+                  </Pressable>
+                )}
+              </View>
+              <Text style={{ fontFamily: "Inter_500Medium", color: "#991B1B", marginTop: 4, marginLeft: 28 }}>
+                Alasan: {b.alasan}
+              </Text>
+            </View>
+          );
+        })}
+
         <View style={[styles.heroSection, { backgroundColor: colors.primary }]}>
           <View style={styles.heroTop}>
             <View style={[styles.statusBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
@@ -447,6 +536,22 @@ export default function KajianDetailScreen() {
                 </Pressable>
               </View>
             )}
+
+            <Pressable
+              onPress={() => setBatalModalVisible(true)}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                {
+                  backgroundColor: "#F59E0B",
+                  opacity: pressed ? 0.7 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                  marginTop: 8,
+                },
+              ]}
+            >
+              <Feather name="alert-triangle" size={20} color="#FFFFFF" />
+              <Text style={styles.actionBtnText}>Info Kajian Batal/Udzur</Text>
+            </Pressable>
           </View>
         )}
 
@@ -465,6 +570,49 @@ export default function KajianDetailScreen() {
         onClose={() => setOjekModalVisible(false)}
         defaultTujuan={kajian.lokasi}
       />
+
+      {batalModalVisible && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 20 }]}>
+          <View style={{ backgroundColor: colors.card, padding: 24, borderRadius: 16, width: "100%", maxWidth: 400 }}>
+            <Text style={{ fontFamily: "Inter_700Bold", fontSize: 18, color: colors.foreground, marginBottom: 16 }}>Info Pembatalan Kajian</Text>
+            
+            <Text style={{ fontFamily: "Inter_500Medium", fontSize: 14, color: colors.foreground, marginBottom: 8 }}>Tanggal (DD/MM/YYYY)</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, color: colors.foreground, fontFamily: "Inter_400Regular", marginBottom: 16 }}
+              value={batalDate}
+              onChangeText={setBatalDate}
+              placeholder="Contoh: 10/06/2026"
+              placeholderTextColor={colors.mutedForeground}
+            />
+
+            <Text style={{ fontFamily: "Inter_500Medium", fontSize: 14, color: colors.foreground, marginBottom: 8 }}>Alasan Batal / Udzur</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, color: colors.foreground, fontFamily: "Inter_400Regular", marginBottom: 24, minHeight: 80, textAlignVertical: "top" }}
+              value={batalAlasan}
+              onChangeText={setBatalAlasan}
+              placeholder="Contoh: Ustadzah sedang safar"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+            />
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <Pressable
+                onPress={() => setBatalModalVisible(false)}
+                style={{ flex: 1, padding: 14, borderRadius: 8, backgroundColor: colors.highlight, alignItems: "center" }}
+              >
+                <Text style={{ fontFamily: "Inter_600SemiBold", color: colors.foreground }}>Tutup</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleBatalSubmit}
+                disabled={isSubmittingBatal || !batalDate || !batalAlasan}
+                style={{ flex: 1, padding: 14, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", opacity: isSubmittingBatal || !batalDate || !batalAlasan ? 0.5 : 1 }}
+              >
+                {isSubmittingBatal ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={{ fontFamily: "Inter_600SemiBold", color: "#FFF" }}>Simpan Info</Text>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

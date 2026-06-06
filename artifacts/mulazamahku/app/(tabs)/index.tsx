@@ -187,6 +187,7 @@ export default function BerandaScreen() {
   const { notes } = useNotes();
 
   const [customKajian, setCustomKajian] = useState<Kajian[]>([]);
+  const [batalList, setBatalList] = useState<any[]>([]);
   
   const fetchCustomKajian = useCallback(async () => {
     const data = await KajianTambahanService.getAll();
@@ -225,11 +226,18 @@ export default function BerandaScreen() {
     setFlyers(data);
   }, []);
 
+  const fetchBatal = useCallback(async () => {
+    const KajianBatalService = require("@/services/kajianBatalService").KajianBatalService;
+    const data = await KajianBatalService.getAll();
+    setBatalList(data);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       fetchFlyers();
       fetchCustomKajian();
-    }, [fetchFlyers, fetchCustomKajian])
+      fetchBatal();
+    }, [fetchFlyers, fetchCustomKajian, fetchBatal])
   );
 
   const greeting = () => {
@@ -496,6 +504,15 @@ export default function BerandaScreen() {
                 <View style={styles.bentoContent}>
                   {items.map((kajian, idx) => {
                     const isLast = idx === items.length - 1;
+                    // Cek apakah jadwal ini dibatalkan di masa depan terdekat
+                    const isBatal = batalList.some(b => {
+                      if (b.kajian_id !== kajian.id) return false;
+                      const today = new Date();
+                      today.setHours(0,0,0,0);
+                      const bDate = new Date(b.tanggal);
+                      return bDate >= today;
+                    });
+                    
                     const isConfirm = kajian.waktu.includes("konfirmasi");
                     const timeStr = isConfirm ? "Confirm" : kajian.waktu.replace("WIB", "").split("-")[0].trim();
                     const pekanStr = kajian.hari.includes("·") ? kajian.hari.split("·")[1].replace(/pekan/i, "Pk.").trim() : "";
@@ -530,11 +547,15 @@ export default function BerandaScreen() {
                             )}
                           </View>
                         </View>
-                        <Text style={[styles.bentoTitle, { color: colors.foreground }]} numberOfLines={2}>
+                        <Text style={[styles.bentoTitle, { color: isBatal ? colors.mutedForeground : colors.foreground, textDecorationLine: isBatal ? "line-through" : "none" }]} numberOfLines={2}>
                           {kajian.judul}
                         </Text>
-                        <Text style={[styles.bentoLoc, { color: colors.mutedForeground }]} numberOfLines={1}>
-                          <Feather name="map-pin" size={10} /> {kajian.lokasi}
+                        <Text style={[styles.bentoLoc, { color: isBatal ? "#EF4444" : colors.mutedForeground }]} numberOfLines={1}>
+                          {isBatal ? (
+                            <><Feather name="alert-circle" size={10} /> Dibatalkan</>
+                          ) : (
+                            <><Feather name="map-pin" size={10} /> {kajian.lokasi}</>
+                          )}
                         </Text>
                       </Pressable>
                     );
