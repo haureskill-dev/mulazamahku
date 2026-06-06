@@ -405,7 +405,6 @@ export default function BerandaScreen() {
                 styles.highlightCard,
                 {
                   backgroundColor: colors.primary,
-                  borderColor: colors.gold,
                   opacity: pressed ? 0.92 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 },
@@ -766,7 +765,6 @@ const styles = StyleSheet.create({
   // Highlight card
   highlightCard: {
     borderRadius: 16,
-    borderWidth: 1.5,
     marginBottom: 30,
     overflow: "hidden",
   },
