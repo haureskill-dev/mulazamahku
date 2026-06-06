@@ -11,6 +11,7 @@ import { DUMMY_KAJIAN, PENGAJAR_PROFILES, ADMIN_KAJIAN_CONTACTS } from "@/servic
 import { OjekMuslimahModal } from "@/components/OjekMuslimahModal";
 import { KajianTambahanService } from "@/services/kajianTambahanService";
 import { KajianBatalService, KajianBatal } from "@/services/kajianBatalService";
+import { ProgressService } from "@/services/progressService";
 import { Kajian } from "@/types";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -51,15 +52,15 @@ export default function KajianDetailScreen() {
   const [batalAlasan, setBatalAlasan] = useState("");
   const [isSubmittingBatal, setIsSubmittingBatal] = useState(false);
 
-  const PROGRESS_KEY = `@mulazamahku_progress_${id}`;
-
   useEffect(() => {
-    StorageService.get<string>(PROGRESS_KEY).then((v) => {
-      if (v) {
-        setProgress(v);
-        setSavedProgress(v);
-      }
-    });
+    if (id) {
+      ProgressService.get(id as string).then((v) => {
+        if (v) {
+          setProgress(v);
+          setSavedProgress(v);
+        }
+      });
+    }
   }, [id]);
 
   useEffect(() => {
@@ -100,7 +101,7 @@ export default function KajianDetailScreen() {
 
   const handleSaveProgress = async () => {
     setIsSaving(true);
-    await StorageService.set(PROGRESS_KEY, progress);
+    await ProgressService.set(id as string, progress);
     setSavedProgress(progress);
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsSaving(false);
