@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { KajianTambahanService, KajianTambahan } from "@/services/kajianTambahanService";
+import { DUMMY_KAJIAN } from "@/services/dummyData";
 
 export default function EditJadwalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,7 +31,7 @@ export default function EditJadwalScreen() {
   useEffect(() => {
     async function loadData() {
       const data = await KajianTambahanService.getAll();
-      const found = data.find(d => d.id === id);
+      const found = data.find(d => d.id === id) || DUMMY_KAJIAN.find(d => d.id === id);
       if (found) {
         setForm({
           judul: found.judul,
@@ -58,10 +59,29 @@ export default function EditJadwalScreen() {
     }
 
     setLoading(true);
-    const { success, error } = await KajianTambahanService.update(id as string, {
-      ...form,
-      ustadz: "Ustadzah Rubeya Litiloly",
-    });
+    const data = await KajianTambahanService.getAll();
+    const isCustomExists = data.some(d => d.id === id);
+
+    let success, error;
+    if (!isCustomExists) {
+      // Create new with specific ID
+      const res = await KajianTambahanService.create({
+        id: id as string,
+        ...form,
+        ustadz: "Ustadzah Rubeya Litiloly",
+        created_by_email: user?.email || "",
+        created_by_role: user?.role || "",
+      } as any);
+      success = res.success;
+      error = res.error;
+    } else {
+      const res = await KajianTambahanService.update(id as string, {
+        ...form,
+        ustadz: "Ustadzah Rubeya Litiloly",
+      });
+      success = res.success;
+      error = res.error;
+    }
     setLoading(false);
 
     if (success) {

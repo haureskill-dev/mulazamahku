@@ -465,7 +465,7 @@ export default function KajianDetailScreen() {
           )}
         </View>
 
-        {(user?.role === "pengajar" || user?.role === "admin") && kajian.is_custom && (
+        {(user?.role === "pengajar" || user?.role === "admin") && (
           <View style={{ flexDirection: "row", gap: 8, marginTop: 16, paddingHorizontal: 20 }}>
             <Pressable
               onPress={() => {

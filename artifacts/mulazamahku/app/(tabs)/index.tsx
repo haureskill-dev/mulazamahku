@@ -189,15 +189,21 @@ export default function BerandaScreen() {
   const [customKajian, setCustomKajian] = useState<Kajian[]>([]);
   const [batalList, setBatalList] = useState<any[]>([]);
   
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
+
   const fetchCustomKajian = useCallback(async () => {
     const data = await KajianTambahanService.getAll();
     
-    // Murid hanya boleh melihat yang is_public = true (meskipun sudah dijaga di RLS Supabase)
+    // Simpan ID yang sudah dihapus
+    const deleted = data.filter(d => d.is_deleted).map(d => d.id);
+    setDeletedIds(deleted);
+    
+    // Murid hanya boleh melihat yang is_public = true
     const filteredData = (user?.role === "pengajar" || user?.role === "admin") 
       ? data 
       : data.filter(d => d.is_public);
       
-    const mapped: Kajian[] = filteredData.map(d => ({
+    const mapped: Kajian[] = filteredData.filter(d => !d.is_deleted).map(d => ({
       id: d.id,
       judul: d.judul,
       ustadz: d.ustadz,
@@ -214,7 +220,11 @@ export default function BerandaScreen() {
     setCustomKajian(mapped);
   }, [user?.role]);
 
-  const allKajianList = useMemo(() => [...DUMMY_KAJIAN, ...customKajian], [customKajian]);
+  const allKajianList = useMemo(() => {
+    const customIds = customKajian.map(c => c.id);
+    const filteredDummy = DUMMY_KAJIAN.filter(d => !customIds.includes(d.id) && !deletedIds.includes(d.id));
+    return [...filteredDummy, ...customKajian];
+  }, [customKajian, deletedIds]);
   const grouped = useMemo(() => groupByDay(allKajianList), [allKajianList]);
   
   const [flyers, setFlyers] = useState<Flyer[]>([]);

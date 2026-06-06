@@ -12,6 +12,7 @@ export interface KajianTambahan {
   cp_nama?: string;
   cp_telepon?: string;
   is_public?: boolean;
+  is_deleted?: boolean;
   created_by_email: string;
   created_by_role: string;
   created_at: string;
@@ -57,7 +58,7 @@ export const KajianTambahanService = {
   },
 
   async delete(id: string): Promise<{ success: boolean; error?: string }> {
-    const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
+    const { error } = await supabase.from(TABLE_NAME).upsert({ id, is_deleted: true }, { onConflict: 'id' });
     if (error) return { success: false, error: error.message };
     return { success: true };
   },
