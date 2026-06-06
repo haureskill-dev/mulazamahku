@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
 import { PENGAJAR_PROFILES, DUMMY_KAJIAN } from "@/services/dummyData";
 
 export default function PengajarDetailScreen() {
@@ -26,6 +27,26 @@ export default function PengajarDetailScreen() {
   const kajianAktif = DUMMY_KAJIAN.filter(
     (k) => k.status === "aktif" && k.ustadz.includes(pengajar?.nama ?? "___"),
   ).length;
+
+  const { user } = useAuth();
+
+  if (user?.role !== "admin" && user?.role !== "pengajar") {
+    return (
+      <View style={[styles.notFound, { backgroundColor: colors.background }]}>
+        <Text style={[styles.notFoundText, { color: colors.foreground, textAlign: "center", paddingHorizontal: 20 }]}>
+          Maaf, profil pengajar hanya dapat diakses oleh Admin dan Pengajar untuk menjaga privasi ustadzah.
+        </Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={[styles.backBtnLarge, { backgroundColor: colors.primary, marginTop: 16 }]}
+        >
+          <Text style={{ color: "#FFF", fontFamily: "Inter_600SemiBold" }}>
+            Kembali
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   if (!pengajar) {
     return (

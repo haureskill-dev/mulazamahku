@@ -247,11 +247,14 @@ export default function KajianDetailScreen() {
           <Text style={styles.heroJudul}>{kajian.judul}</Text>
           <Pressable
             onPress={() => {
+              if (user?.role !== "admin" && user?.role !== "pengajar") return;
               const p = PENGAJAR_PROFILES.find((pr) => kajian.ustadz.includes(pr.nama));
               if (p) router.push(`/pengajar/${p.id}`);
             }}
           >
-            <Text style={[styles.heroUstadz, { textDecorationLine: "underline" }]}>{kajian.ustadz}</Text>
+            <Text style={[styles.heroUstadz, (user?.role === "admin" || user?.role === "pengajar") && { textDecorationLine: "underline" }]}>
+              {kajian.ustadz}
+            </Text>
           </Pressable>
         </View>
 
