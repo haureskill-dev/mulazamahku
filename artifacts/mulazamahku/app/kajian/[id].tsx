@@ -326,13 +326,43 @@ export default function KajianDetailScreen() {
         })}
 
         <View style={[styles.heroSection, { backgroundColor: colors.primary }]}>
-          <View style={styles.heroTop}>
-            <View style={[styles.statusBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-              <Text style={styles.statusText}>{STATUS_LABEL[kajian.status]}</Text>
+          <View style={[styles.heroTop, { justifyContent: "space-between" }]}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={[styles.statusBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+                <Text style={styles.statusText}>{STATUS_LABEL[kajian.status]}</Text>
+              </View>
+              <View style={[styles.kategori, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+                <Text style={styles.kategoriText}>{kajian.kategori}</Text>
+              </View>
             </View>
-            <View style={[styles.kategori, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-              <Text style={styles.kategoriText}>{kajian.kategori}</Text>
-            </View>
+
+            {(user?.role === "pengajar" || user?.role === "admin") && (
+              <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
+                <Pressable
+                  onPress={() => {
+                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/kajian/edit/${kajian.id}`);
+                  }}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  hitSlop={8}
+                >
+                  <Feather name="edit-2" size={20} color="#FFFFFF" />
+                </Pressable>
+
+                <Pressable
+                  onPress={handleDeleteCustom}
+                  style={({ pressed }) => [{ opacity: pressed || isDeleting ? 0.6 : 1 }]}
+                  disabled={isDeleting}
+                  hitSlop={8}
+                >
+                  {isDeleting ? (
+                    <ActivityIndicator size="small" color="#FF6B6B" />
+                  ) : (
+                    <Feather name="trash-2" size={20} color="#FF6B6B" />
+                  )}
+                </Pressable>
+              </View>
+            )}
           </View>
           <Text style={styles.heroJudul}>{kajian.judul}</Text>
           <Pressable
@@ -349,7 +379,8 @@ export default function KajianDetailScreen() {
         </View>
 
         <View style={styles.infoSection}>
-          <InfoRow icon="clock" label="Hari & Waktu" value={`${kajian.hari} · ${kajian.waktu}`} colors={colors} />
+          <InfoRow icon="calendar" label="Hari" value={kajian.hari} colors={colors} />
+          <InfoRow icon="clock" label="Waktu" value={kajian.waktu} colors={colors} />
           <InfoRow icon="map-pin" label="Lokasi" value={kajian.lokasi} colors={colors} />
           <InfoRow icon="tag" label="Kategori" value={kajian.kategori} colors={colors} />
         </View>
@@ -465,42 +496,7 @@ export default function KajianDetailScreen() {
           )}
         </View>
 
-        {(user?.role === "pengajar" || user?.role === "admin") && (
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 16, paddingHorizontal: 20 }}>
-            <Pressable
-              onPress={() => {
-                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(`/kajian/edit/${kajian.id}`);
-              }}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                { backgroundColor: "#4B5563", opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.97 : 1 }], flex: 1 },
-              ]}
-            >
-              <Feather name="edit-2" size={20} color="#FFFFFF" />
-              <Text style={styles.actionBtnText}>Edit</Text>
-            </Pressable>
 
-            <Pressable
-              onPress={() => {
-                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                handleDeleteCustom();
-              }}
-              disabled={isDeleting}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                { backgroundColor: "#EF4444", opacity: pressed || isDeleting ? 0.7 : 1, transform: [{ scale: pressed ? 0.97 : 1 }], flex: 1 },
-              ]}
-            >
-              {isDeleting ? <ActivityIndicator size="small" color="#FFF" /> : (
-                <>
-                  <Feather name="trash-2" size={20} color="#FFFFFF" />
-                  <Text style={styles.actionBtnText}>Hapus</Text>
-                </>
-              )}
-            </Pressable>
-          </View>
-        )}
 
         {kajian.status === "online" && (
           <View style={[styles.onlineInfo, { backgroundColor: colors.highlight, borderColor: colors.primary }]}>
