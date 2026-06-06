@@ -342,18 +342,20 @@ export default function BerandaScreen() {
             <Text style={[styles.nameText, { marginTop: 2 }]}>{user?.nama ?? "Muslimah"}</Text>
           </View>
 
-          <Pressable
-            onPress={() => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              if (PENGAJAR_PROFILES.length > 0) {
-                router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
-              }
-            }}
-            style={styles.headerRightBtn}
-          >
-            <Feather name="users" size={20} color="#FFFFFF" />
-            <Text style={styles.headerRightBtnText}>Pengajar</Text>
-          </Pressable>
+          {(user?.role === "admin" || user?.role === "pengajar") && (
+            <Pressable
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (PENGAJAR_PROFILES.length > 0) {
+                  router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
+                }
+              }}
+              style={styles.headerRightBtn}
+            >
+              <Feather name="users" size={20} color="#FFFFFF" />
+              <Text style={styles.headerRightBtnText}>Pengajar</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* Statistik */}
