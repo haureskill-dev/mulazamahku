@@ -379,8 +379,7 @@ export default function KajianDetailScreen() {
         </View>
 
         <View style={styles.infoSection}>
-          <InfoRow icon="calendar" label="Hari" value={kajian.hari} colors={colors} />
-          <InfoRow icon="clock" label="Waktu" value={kajian.waktu} colors={colors} />
+          <InfoRow icon="clock" label="Hari & Waktu" value={`${kajian.hari} · ${kajian.waktu}`} colors={colors} />
           <InfoRow icon="map-pin" label="Lokasi" value={kajian.lokasi} colors={colors} />
           <InfoRow icon="tag" label="Kategori" value={kajian.kategori} colors={colors} />
         </View>
