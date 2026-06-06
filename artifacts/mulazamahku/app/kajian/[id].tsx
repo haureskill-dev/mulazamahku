@@ -594,7 +594,7 @@ interface InfoRowProps {
 
 function InfoRow({ icon, label, value, colors }: InfoRowProps) {
   return (
-    <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+    <View style={[styles.infoRow]}>
       <View style={[styles.infoIcon, { backgroundColor: colors.highlight }]}>
         <Feather name={icon} size={15} color={colors.primary} />
       </View>
@@ -682,7 +682,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
-    borderBottomWidth: 1,
     gap: 14,
   },
   infoIcon: {
