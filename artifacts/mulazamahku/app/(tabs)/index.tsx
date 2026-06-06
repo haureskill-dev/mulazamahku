@@ -387,18 +387,28 @@ export default function BerandaScreen() {
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Kajian Terdekat</Text>
         </View>
 
-        <Pressable
-          onPress={() => router.push(`/kajian/${highlight.id}`)}
-          style={({ pressed }) => [
-            styles.highlightCard,
-            {
-              backgroundColor: colors.primary,
-              borderColor: colors.gold,
-              opacity: pressed ? 0.92 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            },
-          ]}
-        >
+        {(() => {
+          const batalHighlightInfo = batalList.find(b => {
+            if (b.kajian_id !== highlight.id) return false;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const bDate = new Date(b.tanggal);
+            return bDate >= today;
+          });
+
+          return (
+            <Pressable
+              onPress={() => router.push(`/kajian/${highlight.id}`)}
+              style={({ pressed }) => [
+                styles.highlightCard,
+                {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.gold,
+                  opacity: pressed ? 0.92 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}
+            >
           <View style={[styles.highlightTopBar, { backgroundColor: colors.gold }]} />
           <View style={styles.highlightInner}>
             <View style={styles.highlightTop}>
@@ -409,20 +419,33 @@ export default function BerandaScreen() {
                 {highlight.waktu}
               </Text>
             </View>
-            <Text style={[styles.highlightJudul, { color: "#FFFFFF" }]}>
+            <Text style={[styles.highlightJudul, { color: batalHighlightInfo ? "rgba(255,255,255,0.5)" : "#FFFFFF", textDecorationLine: batalHighlightInfo ? "line-through" : "none" }]}>
               {highlight.judul}
             </Text>
             <Text style={[styles.highlightUstadz, { color: "rgba(255,255,255,0.7)" }]}>
               {highlight.ustadz}
             </Text>
             <View style={styles.highlightMeta}>
-              <Feather name="map-pin" size={13} color={colors.gold} />
-              <Text style={[styles.highlightLoc, { color: colors.gold }]}>
-                {highlight.lokasi}
-              </Text>
+              {batalHighlightInfo ? (
+                <>
+                  <Feather name="alert-circle" size={13} color="#EF4444" />
+                  <Text style={[styles.highlightLoc, { color: "#EF4444", fontFamily: "Inter_600SemiBold" }]}>
+                    Dibatalkan: {batalHighlightInfo.alasan}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Feather name="map-pin" size={13} color={colors.gold} />
+                  <Text style={[styles.highlightLoc, { color: colors.gold }]}>
+                    {highlight.lokasi}
+                  </Text>
+                </>
+              )}
             </View>
           </View>
         </Pressable>
+        );
+      })()}
 
         {/* Flyer / Poster Kajian */}
         <View style={{ marginBottom: 24 }}>
