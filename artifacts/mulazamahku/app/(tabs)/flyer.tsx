@@ -175,7 +175,7 @@ export default function FlyerScreen() {
     if (success) {
       Alert.alert("Berhasil ✓", editingFlyerId ? "Flyer berhasil diperbarui." : "Flyer berhasil diupload.");
       fetchFlyers();
-      if (Platform.OS !== "web") scheduleAllKajianReminders().catch(() => {});
+      if (Platform.OS !== "web") scheduleAllKajianReminders(user?.role).catch(() => {});
     } else {
       Alert.alert("Gagal", error || "Terjadi kesalahan.");
     }
@@ -210,7 +210,7 @@ export default function FlyerScreen() {
       if (success) {
         if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         fetchFlyers();
-        if (Platform.OS !== "web") scheduleAllKajianReminders().catch(() => {});
+        if (Platform.OS !== "web") scheduleAllKajianReminders(user?.role).catch(() => {});
       } else {
         if (Platform.OS === "web") {
           window.alert(error || "Gagal menghapus flyer.");

@@ -247,7 +247,8 @@ export default function BerandaScreen() {
       fetchFlyers();
       fetchCustomKajian();
       fetchBatal();
-    }, [fetchFlyers, fetchCustomKajian, fetchBatal])
+      if (Platform.OS !== "web") scheduleAllKajianReminders(user?.role).catch(() => {});
+    }, [fetchFlyers, fetchCustomKajian, fetchBatal, user?.role])
   );
 
   const greeting = () => {
@@ -289,7 +290,7 @@ export default function BerandaScreen() {
       window.location.reload();
     } else {
       // Sinkronkan notifikasi dengan kajian terbaru dari database
-      scheduleAllKajianReminders().catch(() => {});
+      scheduleAllKajianReminders(user?.role).catch(() => {});
       
       try {
         const update = await Updates.checkForUpdateAsync();

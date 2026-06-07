@@ -52,7 +52,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   // Jadwalkan ulang notifikasi H-1 saat user masuk
   useEffect(() => {
     if (user) {
-      scheduleAllKajianReminders();
+      scheduleAllKajianReminders(user.role);
     }
   }, [user]);
 

@@ -123,7 +123,7 @@ function isKajianActiveOnDate(kajianHari: string, kajianId: string, date: Date, 
   return pekanSpecs.includes(String(weekNum));
 }
 
-export async function scheduleAllKajianReminders(): Promise<void> {
+export async function scheduleAllKajianReminders(userRole?: string): Promise<void> {
   if (Platform.OS === "web") return;
 
   const granted = await requestNotificationPermission();
@@ -150,7 +150,7 @@ export async function scheduleAllKajianReminders(): Promise<void> {
   try {
     const customKajianData = await KajianTambahanService.getAll();
     const publicCustomKajian = customKajianData
-      .filter(d => d.is_public)
+      .filter(d => d.is_public || userRole === "admin" || userRole === "pengajar")
       .map(d => ({
         id: d.id,
         judul: d.judul,
