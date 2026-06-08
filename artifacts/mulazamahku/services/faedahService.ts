@@ -157,8 +157,27 @@ export const FaedahService = {
    * Hapus faedah
    */
   async deleteFaedah(id: string): Promise<{ success: boolean; error?: string }> {
-    const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    try {
+      // Dapatkan data faedah untuk mengambil nama file
+      const { data: faedah } = await supabase
+        .from(TABLE_NAME)
+        .select("image_url")
+        .eq("id", id)
+        .single();
+        
+      if (faedah && faedah.image_url) {
+        const urlParts = faedah.image_url.split("/");
+        const fileName = urlParts[urlParts.length - 1];
+        if (fileName) {
+          await supabase.storage.from(BUCKET_NAME).remove([`uploads/${fileName}`]);
+        }
+      }
+
+      const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
   },
 };
