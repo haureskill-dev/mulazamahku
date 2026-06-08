@@ -147,15 +147,23 @@ export default function FaedahScreen() {
     setEditingFaedahId(null);
 
     if (success) {
-      Alert.alert(
-        "Berhasil ✓",
-        editingFaedahId 
-          ? "Desain faedah berhasil diperbarui." 
-          : "Desain Anda telah berhasil dikirim dan sedang menunggu pengecekan pengajar."
-      );
+      const msg = editingFaedahId 
+        ? "Desain faedah berhasil diperbarui." 
+        : "Desain Anda telah berhasil dikirim dan sedang menunggu pengecekan pengajar.";
+        
+      if (Platform.OS === "web") {
+        window.alert(msg);
+      } else {
+        Alert.alert("Berhasil ✓", msg);
+      }
       fetchFaedah();
     } else {
-      Alert.alert("Gagal Kirim", error || "Terjadi kesalahan saat mengirim.");
+      const msg = error || "Terjadi kesalahan saat mengirim.";
+      if (Platform.OS === "web") {
+        window.alert("Gagal Kirim: " + msg);
+      } else {
+        Alert.alert("Gagal Kirim", msg);
+      }
     }
   };
 
