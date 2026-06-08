@@ -206,9 +206,14 @@ export default function FaedahScreen() {
       const { success, error } = await FaedahService.deleteFaedah(id);
       setUploading(false);
       if (success) {
+        if (Platform.OS === "web") {
+          window.alert("Faedah berhasil dihapus.");
+        }
         fetchFaedah();
       } else {
-        Alert.alert("Gagal Menghapus", error || "Terjadi kesalahan.");
+        const msg = error || "Terjadi kesalahan.";
+        if (Platform.OS === "web") window.alert("Gagal Menghapus: " + msg);
+        else Alert.alert("Gagal Menghapus", msg);
       }
     };
 

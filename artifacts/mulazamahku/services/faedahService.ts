@@ -173,8 +173,9 @@ export const FaedahService = {
         }
       }
 
-      const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
+      const { data, error } = await supabase.from(TABLE_NAME).delete().eq("id", id).select();
       if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: "Faedah gagal dihapus. RLS (Izin Keamanan Database) memblokir akses atau data tidak ditemukan." };
       return { success: true };
     } catch (e: any) {
       return { success: false, error: e.message };
