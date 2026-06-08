@@ -236,7 +236,8 @@ export default function FaedahScreen() {
   const renderFaedahItem = ({ item }: { item: FaedahItem }) => {
     const badge = getStatusBadge(item.status);
     return (
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={{ paddingHorizontal: 20 }}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Pressable onPress={() => setViewImageUri(item.image_url || null)}>
           <Image
             source={{ uri: item.image_url || 'https://placehold.co/600x400/png' }}
@@ -316,100 +317,111 @@ export default function FaedahScreen() {
             </Pressable>
           )}
         </View>
+        </View>
       </View>
     );
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Faedah Kajian</Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Kumpulan desain faedah yang dibuat dari materi kajian.
-        </Text>
-      </View>
+      <FlatList
+        data={faedahList.filter(f => f.status !== "disetujui")}
+        keyExtractor={(item) => item.id}
+        renderItem={renderFaedahItem}
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: colors.foreground }]}>Faedah Kajian</Text>
+              <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                Kumpulan desain faedah yang dibuat dari materi kajian.
+              </Text>
+            </View>
 
-      {/* Tombol Pilih Gambar untuk Murid & Admin */}
-      {(user?.role === "murid" || user?.role === "admin") && (
-        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.uploadBtn,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
-            ]}
-            onPress={pickImage}
-          >
-            <Feather name="image" size={18} color="#FFFFFF" />
-            <Text style={styles.uploadBtnText}>Pilih Desain dari Galeri</Text>
-          </Pressable>
-        </View>
-      )}
+            {/* Tombol Pilih Gambar untuk Murid & Admin */}
+            {(user?.role === "murid" || user?.role === "admin") && (
+              <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.uploadBtn,
+                    { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                  onPress={pickImage}
+                >
+                  <Feather name="image" size={18} color="#FFFFFF" />
+                  <Text style={styles.uploadBtnText}>Pilih Desain dari Galeri</Text>
+                </Pressable>
+              </View>
+            )}
 
-      {/* Carousel faedah yang sudah disetujui */}
-      {faedahList.filter(f => f.status === "disetujui").length > 0 && (
-        <View style={{ marginBottom: 20 }}>
-          <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Faedah Terbaru</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-            {faedahList.filter(f => f.status === "disetujui").map((f) => (
-              <Pressable key={f.id} onPress={() => setViewImageUri(f.image_url || null)}>
-                <View style={[styles.carouselCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                  <Image
-                    source={{ uri: f.image_url || 'https://placehold.co/300x400/png' }}
-                    style={[styles.carouselImage, { aspectRatio: imageAspectRatios[f.id] || 4 / 5, height: undefined }]}
-                    contentFit="contain"
-                    onLoad={(e) => {
-                      const { width, height } = e.source;
-                      if (width && height) {
-                        setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
-                      }
-                    }}
-                  />
-                  <View style={styles.carouselMeta}>
-                    <Text style={[styles.carouselName, { color: colors.foreground }]} numberOfLines={1}>
-                      {f.uploader_name}
-                    </Text>
-                    <Text style={[styles.carouselDate, { color: colors.mutedForeground }]}>
-                      {formatDate(f.created_at)}
-                    </Text>
-                  </View>
+            {/* Carousel faedah yang sudah disetujui */}
+            {faedahList.filter(f => f.status === "disetujui").length > 0 && (
+              <View style={{ marginBottom: 20 }}>
+                <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Faedah Terbaru</Text>
                 </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {loading ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
-            Memuat faedah...
-          </Text>
-        </View>
-      ) : faedahList.length === 0 ? (
-        <View style={styles.centerContent}>
-          <Feather name="image" size={48} color={colors.primary} style={{ opacity: 0.5, marginBottom: 16 }} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            Belum ada desain faedah yang dibagikan.
-          </Text>
-          <Text style={[styles.emptySubtext, { color: colors.mutedForeground }]}>
-            Tarik ke bawah untuk memuat ulang.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={faedahList.filter(f => f.status !== "disetujui")}
-          keyExtractor={(item) => item.id}
-          renderItem={renderFaedahItem}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
-          }
-        />
-      )}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+                  {faedahList.filter(f => f.status === "disetujui").map((f) => (
+                    <Pressable key={f.id} onPress={() => setViewImageUri(f.image_url || null)}>
+                      <View style={[styles.carouselCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                        <Image
+                          source={{ uri: f.image_url || 'https://placehold.co/300x400/png' }}
+                          style={[styles.carouselImage, { aspectRatio: imageAspectRatios[f.id] || 4 / 5, height: undefined }]}
+                          contentFit="contain"
+                          onLoad={(e) => {
+                            const { width, height } = e.source;
+                            if (width && height) {
+                              setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
+                            }
+                          }}
+                        />
+                        <View style={styles.carouselMeta}>
+                          <Text style={[styles.carouselName, { color: colors.foreground }]} numberOfLines={1}>
+                            {f.uploader_name}
+                          </Text>
+                          <Text style={[styles.carouselDate, { color: colors.mutedForeground }]}>
+                            {formatDate(f.created_at)}
+                          </Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={[styles.centerContent, { marginTop: 40 }]}>
+              <ActivityIndicator color={colors.primary} size="large" />
+              <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+                Memuat faedah...
+              </Text>
+            </View>
+          ) : faedahList.length === 0 ? (
+            <View style={[styles.centerContent, { marginTop: 40 }]}>
+              <Feather name="image" size={48} color={colors.primary} style={{ opacity: 0.5, marginBottom: 16 }} />
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                Belum ada desain faedah yang dibagikan.
+              </Text>
+              <Text style={[styles.emptySubtext, { color: colors.mutedForeground }]}>
+                Tarik ke bawah untuk memuat ulang.
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.centerContent, { marginTop: 40 }]}>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                Belum ada faedah yang menunggu pengecekan.
+              </Text>
+            </View>
+          )
+        }
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+        }
+      />
 
       {/* ── Modal Preview sebelum kirim ─────────────────────── */}
       <Modal
