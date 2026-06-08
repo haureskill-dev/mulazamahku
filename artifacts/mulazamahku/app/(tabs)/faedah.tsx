@@ -352,7 +352,7 @@ export default function FaedahScreen() {
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Faedah Terbaru</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-            {faedahList.filter(f => f.status === "disetujui").slice(0, 10).map((f) => (
+            {faedahList.filter(f => f.status === "disetujui").map((f) => (
               <Pressable key={f.id} onPress={() => setViewImageUri(f.image_url || null)}>
                 <View style={[styles.carouselCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
                   <Image
@@ -400,7 +400,7 @@ export default function FaedahScreen() {
         </View>
       ) : (
         <FlatList
-          data={faedahList}
+          data={faedahList.filter(f => f.status !== "disetujui")}
           keyExtractor={(item) => item.id}
           renderItem={renderFaedahItem}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100 }}
