@@ -106,7 +106,11 @@ export default function FaedahScreen() {
 
     if (result.canceled) return;
 
-    if (editId) setEditingFaedahId(editId);
+    if (editId && typeof editId === "string") {
+      setEditingFaedahId(editId);
+    } else {
+      setEditingFaedahId(null);
+    }
     setPreviewUri(result.assets[0].uri);
     setShowPreview(true);
   };
