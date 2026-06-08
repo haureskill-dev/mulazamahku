@@ -82,6 +82,48 @@ export const FaedahService = {
   },
 
   /**
+   * Update gambar faedah yang sudah ada
+   */
+  async updateFaedahImage(
+    id: string,
+    imageUri: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      const fileName = `faedah_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      const filePath = `uploads/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, decode(base64), { contentType: "image/jpeg", upsert: false });
+
+      if (uploadError) return { success: false, error: uploadError.message };
+
+      const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase.from(TABLE_NAME).update({
+        image_url: urlData.publicUrl,
+        status: "menunggu",
+        // catatan: null, // Dihapus agar feedback sebelumnya tetap tersimpan sebagai arsip
+      }).eq("id", id);
+
+      if (updateError) return { success: false, error: updateError.message };
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message || "Gagal mengupdate gambar" };
+    }
+  },
+
+  /**
    * Ambil semua faedah (untuk semua peran)
    */
   async getAllFaedah(): Promise<FaedahItem[]> {

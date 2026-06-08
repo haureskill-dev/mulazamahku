@@ -41,6 +41,7 @@ export default function FaedahScreen() {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [keterangan, setKeterangan] = useState("");
+  const [editingFaedahId, setEditingFaedahId] = useState<string | null>(null);
 
   // State untuk feedback pengajar
   const [feedbackItem, setFeedbackItem] = useState<FaedahItem | null>(null);
@@ -84,7 +85,7 @@ export default function FaedahScreen() {
   };
 
   // Langkah 1: Pilih gambar → tampilkan preview
-  const pickImage = async () => {
+  const pickImage = async (editId?: string) => {
     if (Platform.OS !== "web")
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -105,7 +106,7 @@ export default function FaedahScreen() {
 
     if (result.canceled) return;
 
-    // Tampilkan preview dulu, belum upload
+    if (editId) setEditingFaedahId(editId);
     setPreviewUri(result.assets[0].uri);
     setShowPreview(true);
   };
@@ -119,21 +120,34 @@ export default function FaedahScreen() {
 
     setUploading(true);
 
-    const { success, error } = await FaedahService.uploadFaedah(
-      previewUri,
-      user?.nama ?? "Anonim",
-      user?.email ?? "",
-      user?.role ?? "murid"
-    );
+    let success, error;
+    
+    if (editingFaedahId) {
+      const res = await FaedahService.updateFaedahImage(editingFaedahId, previewUri);
+      success = res.success;
+      error = res.error;
+    } else {
+      const res = await FaedahService.uploadFaedah(
+        previewUri,
+        user?.nama ?? "Anonim",
+        user?.email ?? "",
+        user?.role ?? "murid"
+      );
+      success = res.success;
+      error = res.error;
+    }
 
     setUploading(false);
     setShowPreview(false);
     setPreviewUri(null);
+    setEditingFaedahId(null);
 
     if (success) {
       Alert.alert(
         "Berhasil ✓",
-        "Desain Anda telah berhasil dikirim dan sedang menunggu pengecekan pengajar."
+        editingFaedahId 
+          ? "Desain faedah berhasil diperbarui." 
+          : "Desain Anda telah berhasil dikirim dan sedang menunggu pengecekan pengajar."
       );
       fetchFaedah();
     } else {
@@ -146,6 +160,7 @@ export default function FaedahScreen() {
     setShowPreview(false);
     setPreviewUri(null);
     setKeterangan("");
+    setEditingFaedahId(null);
   };
 
   const handleApprove = (item: FaedahItem) => {
@@ -303,18 +318,33 @@ export default function FaedahScreen() {
             </View>
           )}
 
-          {/* Tombol Hapus untuk pengupload atau admin */}
+          {/* Tombol Hapus & Edit untuk pengupload atau admin */}
           {(user?.role === "admin" || user?.email === item.uploader_email) && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.deleteBtn,
-                { opacity: pressed ? 0.7 : 1 }
-              ]}
-              onPress={() => handleDelete(item.id)}
-            >
-              <Feather name="trash-2" size={14} color="#EF4444" />
-              <Text style={styles.deleteBtnText}>Hapus</Text>
-            </Pressable>
+            <View style={[styles.actionRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)" }]}>
+              {user?.email === item.uploader_email && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionBtn,
+                    { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                  ]}
+                  onPress={() => pickImage(item.id)}
+                >
+                  <Feather name="edit-2" size={14} color={colors.foreground} />
+                  <Text style={[styles.actionBtnText, { color: colors.foreground }]}>Edit Gambar</Text>
+                </Pressable>
+              )}
+              
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionBtn,
+                  { backgroundColor: "#EF4444", opacity: pressed ? 0.7 : 1 }
+                ]}
+                onPress={() => handleDelete(item.id)}
+              >
+                <Feather name="trash-2" size={14} color="#FFFFFF" />
+                <Text style={styles.actionBtnText}>Hapus</Text>
+              </Pressable>
+            </View>
           )}
         </View>
         </View>
