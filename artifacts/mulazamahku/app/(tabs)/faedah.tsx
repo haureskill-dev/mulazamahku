@@ -235,26 +235,12 @@ export default function FaedahScreen() {
 
   const renderFaedahItem = ({ item }: { item: FaedahItem }) => {
     const badge = getStatusBadge(item.status);
-    const isPending = item.status === "menunggu";
-    const isTeacher = user?.role === "pengajar" || user?.role === "admin";
-    
-    const pendingStyle = (isPending && isTeacher) ? {
-      borderColor: "#F59E0B",
-      borderWidth: 2,
-    } : { borderColor: colors.border };
-
     return (
-      <View style={[styles.card, { backgroundColor: colors.card }, pendingStyle]}>
-        {(isPending && isTeacher) && (
-          <View style={{ backgroundColor: "#F59E0B", paddingVertical: 8, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text style={{ color: "#FFF", fontFamily: "Inter_700Bold", fontSize: 12 }}>MEMBUTUHKAN PERSETUJUAN ANDA</Text>
-            <Feather name="alert-circle" size={16} color="#FFF" />
-          </View>
-        )}
-        <Pressable onPress={() => setViewImageUri(item.image_url || null)} style={{ backgroundColor: "#111827" }}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Pressable onPress={() => setViewImageUri(item.image_url || null)}>
           <Image
             source={{ uri: item.image_url || 'https://placehold.co/600x400/png' }}
-            style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 4 / 5, height: undefined, backgroundColor: "transparent" }]}
+            style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 4 / 5, height: undefined }]}
             contentFit="contain"
             onLoad={(e) => {
               const { width, height } = e.source;
