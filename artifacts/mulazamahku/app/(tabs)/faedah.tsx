@@ -201,23 +201,26 @@ export default function FaedahScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert("Hapus Desain", "Apakah Anda yakin ingin menghapus desain ini?", [
-      { text: "Batal", style: "cancel" },
-      {
-        text: "Hapus",
-        style: "destructive",
-        onPress: async () => {
-          setUploading(true);
-          const { success, error } = await FaedahService.deleteFaedah(id);
-          setUploading(false);
-          if (success) {
-            fetchFaedah();
-          } else {
-            Alert.alert("Gagal Menghapus", error || "Terjadi kesalahan.");
-          }
-        }
+    const doDelete = async () => {
+      setUploading(true);
+      const { success, error } = await FaedahService.deleteFaedah(id);
+      setUploading(false);
+      if (success) {
+        fetchFaedah();
+      } else {
+        Alert.alert("Gagal Menghapus", error || "Terjadi kesalahan.");
       }
-    ]);
+    };
+
+    if (Platform.OS === "web") {
+      const ok = window.confirm("Apakah Anda yakin ingin menghapus desain ini?");
+      if (ok) doDelete();
+    } else {
+      Alert.alert("Hapus Desain", "Apakah Anda yakin ingin menghapus desain ini?", [
+        { text: "Batal", style: "cancel" },
+        { text: "Hapus", style: "destructive", onPress: doDelete }
+      ]);
+    }
   };
 
   const getStatusBadge = (status: string) => {
