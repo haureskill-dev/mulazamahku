@@ -431,6 +431,12 @@ export default function FaedahScreen() {
                           <Text style={[styles.carouselDate, { color: colors.mutedForeground }]}>
                             {formatDate(f.created_at)}
                           </Text>
+                          {!!f.catatan && (
+                            <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border, marginTop: 8, padding: 8 }]}>
+                              <Text style={[styles.feedbackLabel, { color: colors.primary, fontSize: 11 }]}>Catatan Pengajar:</Text>
+                              <Text style={[styles.feedbackTextContent, { color: colors.foreground, fontSize: 12 }]} numberOfLines={3}>{f.catatan}</Text>
+                            </View>
+                          )}
                         </View>
                       </View>
                     </Pressable>
