@@ -173,11 +173,16 @@ export default function FlyerScreen() {
     setOriginalImageUrl(null);
 
     if (success) {
-      Alert.alert("Berhasil ✓", editingFlyerId ? "Flyer berhasil diperbarui." : "Flyer berhasil diupload.");
+      const msg = editingFlyerId ? "Flyer berhasil diperbarui." : "Flyer berhasil diupload.";
+      if (Platform.OS === "web") window.alert(msg);
+      else Alert.alert("Berhasil ✓", msg);
+      
       fetchFlyers();
       if (Platform.OS !== "web") scheduleAllKajianReminders(user?.role).catch(() => {});
     } else {
-      Alert.alert("Gagal", error || "Terjadi kesalahan.");
+      const msg = error || "Terjadi kesalahan.";
+      if (Platform.OS === "web") window.alert("Gagal: " + msg);
+      else Alert.alert("Gagal", msg);
     }
   };
 
