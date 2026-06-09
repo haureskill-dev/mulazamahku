@@ -265,9 +265,14 @@ export default function FlyerScreen() {
               {getKajianTitle(item.kajian_id)}
             </Text>
             {item.keterangan ? (
-              <Text selectable={true} selectionColor={colors.primary} style={[styles.cardDesc, { color: colors.mutedForeground }]}>
-                {item.keterangan}
-              </Text>
+              <TextInput
+                value={item.keterangan}
+                editable={true}
+                showSoftInputOnFocus={false}
+                multiline={true}
+                scrollEnabled={false}
+                style={[styles.cardDesc, { color: colors.mutedForeground, padding: 0, margin: 0 }]}
+              />
             ) : null}
           </View>
           {user?.role === "admin" && (
