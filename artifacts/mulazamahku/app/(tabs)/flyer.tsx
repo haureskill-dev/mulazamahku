@@ -41,6 +41,8 @@ export default function FlyerScreen() {
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, number>>({});
+  const [copyTextModalVisible, setCopyTextModalVisible] = useState(false);
+  const [copyTextContent, setCopyTextContent] = useState("");
 
   // State form upload
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -265,14 +267,20 @@ export default function FlyerScreen() {
               {getKajianTitle(item.kajian_id)}
             </Text>
             {item.keterangan ? (
-              <TextInput
-                value={item.keterangan}
-                editable={true}
-                showSoftInputOnFocus={false}
-                multiline={true}
-                scrollEnabled={false}
-                style={[styles.cardDesc, { color: colors.mutedForeground, padding: 0, margin: 0 }]}
-              />
+              <Pressable
+                onPress={() => {
+                  setCopyTextContent(item.keterangan || "");
+                  setCopyTextModalVisible(true);
+                }}
+                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Text style={[styles.cardDesc, { color: colors.mutedForeground }]}>
+                  {item.keterangan}
+                </Text>
+                <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontWeight: "500" }}>
+                  Ketuk untuk menyalin teks
+                </Text>
+              </Pressable>
             ) : null}
           </View>
           {user?.role === "admin" && (
@@ -502,6 +510,35 @@ export default function FlyerScreen() {
             </View>
           </Modal>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal khusus untuk menyeleksi dan menyalin teks dengan leluasa */}
+      <Modal
+        visible={copyTextModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCopyTextModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View style={{ width: "100%", maxHeight: "70%", backgroundColor: colors.background, borderRadius: 16, overflow: "hidden", elevation: 10 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>Pilih Teks untuk Disalin</Text>
+              <Pressable onPress={() => setCopyTextModalVisible(false)} style={{ padding: 4 }}>
+                <Feather name="x" size={20} color={colors.foreground} />
+              </Pressable>
+            </View>
+            <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 24 }}>
+              <TextInput
+                value={copyTextContent}
+                editable={true}
+                showSoftInputOnFocus={false}
+                multiline={true}
+                scrollEnabled={false}
+                style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 24, padding: 0, margin: 0 }}
+              />
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </View>
   );
