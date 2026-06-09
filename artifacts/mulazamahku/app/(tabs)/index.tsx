@@ -15,6 +15,7 @@ import {
   Modal,
   Animated,
   Image as RNImage,
+  TextInput,
 } from "react-native";
 import * as Updates from "expo-updates";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -611,22 +612,27 @@ export default function BerandaScreen() {
             <Feather name="x" size={24} color="#FFF" />
           </Pressable>
           
-          <ScrollView contentContainerStyle={styles.modalScrollContent} style={{ width: "100%" }}>
+          <View style={[styles.modalScrollContent, { width: "100%", flex: 1 }]}>
             {selectedFlyer && (
               <>
                 <Image 
                   source={{ uri: selectedFlyer.image_url }} 
-                  style={{ width: "100%", aspectRatio: 3/4, borderRadius: 12, backgroundColor: "#000" }} 
+                  style={{ width: "100%", height: "55%", borderRadius: 12, backgroundColor: "#000", marginBottom: 16 }} 
                   contentFit="contain" 
                 />
                 {selectedFlyer.keterangan ? (
-                  <View style={styles.modalTextContainer}>
-                    <Text style={styles.modalText}>{selectedFlyer.keterangan}</Text>
+                  <View style={[styles.modalTextContainer, { flex: 1, padding: 0, overflow: 'hidden' }]}>
+                    <TextInput
+                      value={selectedFlyer.keterangan}
+                      editable={true}
+                      multiline={true}
+                      style={[styles.modalText, { flex: 1, padding: 16, margin: 0, textAlignVertical: "top" }]}
+                    />
                   </View>
                 ) : null}
               </>
             )}
-          </ScrollView>
+          </View>
         </View>
       </Modal>
     </WebPullToRefresh>

@@ -17,7 +17,6 @@ import {
   Image as RNImage,
 } from "react-native";
 import { Image } from "expo-image";
-import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
@@ -527,16 +526,15 @@ export default function FlyerScreen() {
                 <Feather name="x" size={20} color={colors.foreground} />
               </Pressable>
             </View>
-            <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 24 }}>
+            <View style={{ padding: 16, paddingBottom: 24, flexShrink: 1 }}>
               <TextInput
                 value={copyTextContent}
                 onChangeText={setCopyTextContent}
                 editable={true}
                 multiline={true}
-                scrollEnabled={false}
-                style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 24, padding: 0, margin: 0, minHeight: 100 }}
+                style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 24, padding: 0, margin: 0, minHeight: 100, textAlignVertical: "top" }}
               />
-            </ScrollView>
+            </View>
           </View>
         </View>
       </Modal>
