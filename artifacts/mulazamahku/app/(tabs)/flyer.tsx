@@ -17,6 +17,7 @@ import {
   Image as RNImage,
 } from "react-native";
 import { Image } from "expo-image";
+import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
