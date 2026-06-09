@@ -434,7 +434,7 @@ export default function FaedahScreen() {
                           {!!f.catatan && (
                             <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border, marginTop: 8, padding: 8 }]}>
                               <Text style={[styles.feedbackLabel, { color: colors.primary, fontSize: 11 }]}>Catatan Pengajar:</Text>
-                              <Text style={[styles.feedbackTextContent, { color: colors.foreground, fontSize: 12 }]} numberOfLines={3}>{f.catatan}</Text>
+                              <Text style={[styles.feedbackTextContent, { color: colors.foreground, fontSize: 12 }]}>{f.catatan}</Text>
                             </View>
                           )}
                         </View>

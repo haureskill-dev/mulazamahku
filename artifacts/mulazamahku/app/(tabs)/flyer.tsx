@@ -528,14 +528,9 @@ export default function FlyerScreen() {
               </Pressable>
             </View>
             <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 24 }}>
-              <TextInput
-                value={copyTextContent}
-                editable={true}
-                showSoftInputOnFocus={false}
-                multiline={true}
-                scrollEnabled={false}
-                style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 24, padding: 0, margin: 0 }}
-              />
+              <Text selectable={true} selectionColor={colors.primary} style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 24 }}>
+                {copyTextContent}
+              </Text>
             </ScrollView>
           </View>
         </View>
