@@ -8,7 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -23,7 +23,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotesProvider } from "@/context/NotesContext";
 import { MudzakarahProvider } from "@/context/MudzakarahContext";
-import { scheduleAllKajianReminders } from "@/services/notificationService";
+import { UpdateChecker } from "@/components/UpdateChecker";
+import { scheduleAllKajianReminders, registerBackgroundNotificationTask } from "@/services/notificationService";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,10 +50,23 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, segments]);
 
-  // Jadwalkan ulang notifikasi H-1 saat user masuk
+  // Jadwalkan notifikasi & daftarkan background task saat user masuk
+  const hasScheduled = useRef(false);
   useEffect(() => {
-    if (user) {
-      scheduleAllKajianReminders(user.role);
+    if (user && !hasScheduled.current) {
+      hasScheduled.current = true;
+      // Jadwalkan notifikasi 30 hari ke depan
+      scheduleAllKajianReminders(user.role).catch(e => 
+        console.warn("[Layout] Gagal jadwalkan notifikasi:", e)
+      );
+      // Daftarkan background task agar tetap jalan walau app ditutup
+      registerBackgroundNotificationTask().catch(e =>
+        console.warn("[Layout] Gagal daftarkan background task:", e)
+      );
+    }
+    // Reset flag saat user logout
+    if (!user) {
+      hasScheduled.current = false;
     }
   }, [user]);
 
@@ -71,6 +85,7 @@ function RootLayoutNav() {
       >
         <AuthGuard>
           <Slot />
+          <UpdateChecker />
         </AuthGuard>
       </View>
     </View>

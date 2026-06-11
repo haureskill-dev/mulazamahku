@@ -42,7 +42,8 @@
           "color": "#1B5B8D",
           "sounds": []
         }
-      ]
+      ],
+      "expo-task-manager"
     ],
     "updates": {
       "url": "https://u.expo.dev/6443bfa2-2a27-4d9e-b6c3-93e464ebbab1"

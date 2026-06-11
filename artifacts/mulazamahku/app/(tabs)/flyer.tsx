@@ -526,15 +526,11 @@ export default function FlyerScreen() {
                 <Feather name="x" size={20} color={colors.foreground} />
               </Pressable>
             </View>
-            <View style={{ padding: 16, paddingBottom: 24, flexShrink: 1 }}>
-              <TextInput
-                value={copyTextContent}
-                onChangeText={setCopyTextContent}
-                editable={true}
-                multiline={true}
-                style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 24, padding: 0, margin: 0, minHeight: 100, textAlignVertical: "top" }}
-              />
-            </View>
+            <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 24 }}>
+              <Text selectable={true} selectionColor={colors.primary} style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 24 }}>
+                {copyTextContent}
+              </Text>
+            </ScrollView>
           </View>
         </View>
       </Modal>

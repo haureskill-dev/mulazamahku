@@ -10,6 +10,8 @@ import { useMudzakarah } from "@/context/MudzakarahContext";
 import { useColors } from "@/hooks/useColors";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
 import * as Updates from "expo-updates";
+import { debugListScheduledNotifications, scheduleAllKajianReminders } from "@/services/notificationService";
+
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", {
@@ -279,6 +281,48 @@ export default function ProfileScreen() {
               <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
             </View>
           </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>NOTIFIKASI</Text>
+        <View style={[styles.settingGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <SettingItem
+            icon="bell"
+            label="Cek Notifikasi Terjadwal"
+            onPress={async () => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              const result = await debugListScheduledNotifications();
+              if (Platform.OS === "web") {
+                window.alert(result);
+              } else {
+                Alert.alert("Notifikasi Terjadwal", result);
+              }
+            }}
+          />
+          <SettingItem
+            icon="refresh-cw"
+            label="Sinkron Ulang Notifikasi"
+            onPress={async () => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                await scheduleAllKajianReminders(user?.role);
+                const msg = "Notifikasi berhasil disinkronkan!";
+                if (Platform.OS === "web") {
+                  window.alert(msg);
+                } else {
+                  Alert.alert("Berhasil", msg);
+                }
+              } catch (e) {
+                const msg = "Gagal menyinkronkan notifikasi.";
+                if (Platform.OS === "web") {
+                  window.alert(msg);
+                } else {
+                  Alert.alert("Gagal", msg);
+                }
+              }
+            }}
+          />
         </View>
       </View>
 

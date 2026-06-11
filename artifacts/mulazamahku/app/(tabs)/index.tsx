@@ -248,8 +248,9 @@ export default function BerandaScreen() {
       fetchFlyers();
       fetchCustomKajian();
       fetchBatal();
-      if (Platform.OS !== "web") scheduleAllKajianReminders(user?.role).catch(() => {});
-    }, [fetchFlyers, fetchCustomKajian, fetchBatal, user?.role])
+      // Notifikasi dijadwalkan di _layout.tsx + background task, tidak perlu di sini
+      // agar tidak terus cancel & reschedule setiap kali Beranda difokuskan
+    }, [fetchFlyers, fetchCustomKajian, fetchBatal])
   );
 
   const greeting = () => {
@@ -364,7 +365,7 @@ export default function BerandaScreen() {
               }}
               style={styles.headerRightBtn}
             >
-              <Feather name="users" size={20} color="#FFFFFF" />
+              <Feather name="user" size={20} color="#FFFFFF" />
               <Text style={styles.headerRightBtnText}>Pengajar</Text>
             </Pressable>
           )}
@@ -622,12 +623,15 @@ export default function BerandaScreen() {
                 />
                 {selectedFlyer.keterangan ? (
                   <View style={[styles.modalTextContainer, { flex: 1, padding: 0, overflow: 'hidden' }]}>
-                    <TextInput
-                      value={selectedFlyer.keterangan}
-                      editable={true}
-                      multiline={true}
-                      style={[styles.modalText, { flex: 1, padding: 16, margin: 0, textAlignVertical: "top" }]}
-                    />
+                    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+                      <Text 
+                        selectable={Platform.OS !== "web"} 
+                        selectionColor={colors.primary} 
+                        style={[styles.modalText, { margin: 0 }, Platform.OS === "web" && { userSelect: "text" as any }]}
+                      >
+                        {selectedFlyer.keterangan}
+                      </Text>
+                    </ScrollView>
                   </View>
                 ) : null}
               </>

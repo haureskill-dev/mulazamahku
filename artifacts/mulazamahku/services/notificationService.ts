@@ -5,6 +5,19 @@ import { KajianTambahanService } from "./kajianTambahanService";
 import { Flyer } from "@/types";
 import { Kajian } from "../types";
 
+// Import opsional — module ini butuh native build baru, jadi harus graceful
+let BackgroundFetch: any = null;
+let TaskManager: any = null;
+try {
+  TaskManager = require("expo-task-manager");
+  BackgroundFetch = require("expo-background-fetch");
+} catch {
+  console.log("[NotifService] expo-task-manager / expo-background-fetch belum tersedia di build ini.");
+}
+
+const BACKGROUND_TASK_NAME = "KAJIAN_NOTIFICATION_SCHEDULER";
+const LOG_PREFIX = "[NotifService]";
+
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -28,10 +41,6 @@ const HARI_TO_WEEKDAY: Record<string, number> = {
   sabtu: 7,
 };
 
-function prevDay(weekday: number): number {
-  return weekday === 1 ? 7 : weekday - 1;
-}
-
 function extractHari(hariStr: string): string | null {
   const lower = hariStr.toLowerCase();
   for (const h of Object.keys(HARI_TO_WEEKDAY)) {
@@ -52,25 +61,6 @@ function extractWaktuLabel(waktu: string): string {
   const match = waktu.match(/(\d{2})[.:](\d{2})/);
   if (match) return ` pukul ${match[1]}.${match[2]}`;
   return "";
-}
-
-/**
- * Hitung jam & menit untuk reminder H-3 jam sebelum kajian.
- * Jika hasilnya negatif (misal kajian jam 02.00), maka reminder
- * dijadwalkan di hari sebelumnya.
- */
-function threeHoursBefore(
-  startHour: number,
-  startMinute: number,
-  kajianWeekday: number,
-): { weekday: number; hour: number; minute: number } | null {
-  let totalMinutes = startHour * 60 + startMinute - 180; // 3 jam = 180 menit
-  let weekday = kajianWeekday;
-  if (totalMinutes < 0) {
-    totalMinutes += 24 * 60;
-    weekday = prevDay(weekday);
-  }
-  return { weekday, hour: Math.floor(totalMinutes / 60), minute: totalMinutes % 60 };
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
@@ -123,19 +113,28 @@ function isKajianActiveOnDate(kajianHari: string, kajianId: string, date: Date, 
   return pekanSpecs.includes(String(weekNum));
 }
 
+/**
+ * Jadwalkan notifikasi secara cerdas:
+ * - TIDAK menghapus semua notifikasi lalu jadwalkan ulang (ini penyebab bug lama)
+ * - Bandingkan notifikasi yang sudah terjadwal dengan yang seharusnya
+ * - Hanya tambah/hapus yang berbeda
+ * - Memperluas window menjadi 30 hari ke depan
+ */
 export async function scheduleAllKajianReminders(userRole?: string): Promise<void> {
   if (Platform.OS === "web") return;
 
   const granted = await requestNotificationPermission();
-  if (!granted) return;
+  if (!granted) {
+    console.log(LOG_PREFIX, "Izin notifikasi tidak diberikan");
+    return;
+  }
 
-  // Batalkan semua notifikasi lama sebelum menjadwalkan ulang
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  console.log(LOG_PREFIX, "Mulai menjadwalkan notifikasi kajian...");
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Jadwalkan notifikasi secara dinamis untuk 14 hari ke depan
+  // ── Kumpulkan data kajian ──────────────────────────────────────────────
   let allKajian: Kajian[] = [...DUMMY_KAJIAN];
   let flyersList: Flyer[] = [];
   let batalList: any[] = [];
@@ -144,7 +143,7 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
     const KajianBatalService = require("./kajianBatalService").KajianBatalService;
     batalList = await KajianBatalService.getAll();
   } catch (e) {
-    // Abaikan jika gagal memuat kajian batal
+    console.log(LOG_PREFIX, "Gagal memuat kajian batal:", e);
   }
   
   try {
@@ -163,17 +162,28 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
       
     allKajian = [...allKajian, ...publicCustomKajian];
   } catch (e) {
-    // Abaikan jika gagal memuat custom kajian
+    console.log(LOG_PREFIX, "Gagal memuat custom kajian:", e);
   }
 
   try {
     const FlyerService = require("./flyerService").FlyerService;
     flyersList = await FlyerService.getAllFlyers();
   } catch (e) {
-    // Abaikan
+    console.log(LOG_PREFIX, "Gagal memuat flyers:", e);
   }
 
-  for (let offset = 0; offset < 14; offset++) {
+  // ── Ambil notifikasi yang sudah terjadwal ──────────────────────────────
+  const existingNotifs = await Notifications.getAllScheduledNotificationsAsync();
+  const existingIds = new Set(existingNotifs.map(n => n.identifier));
+  console.log(LOG_PREFIX, `Notifikasi terjadwal saat ini: ${existingIds.size}`);
+
+  // ── Hitung notifikasi yang seharusnya dijadwalkan ──────────────────────
+  const desiredNotifs = new Map<string, {
+    content: Notifications.NotificationContentInput;
+    triggerDate: Date;
+  }>();
+
+  for (let offset = 0; offset < 30; offset++) {
     const date = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
     const dateStr = getLocalDateString(date);
 
@@ -186,61 +196,44 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
 
       const batalInfo = batalList.find(b => b.kajian_id === kajian.id && b.tanggal === dateStr);
 
-      // Jika kajian dibatalkan, jangan jadwalkan reminder H-3jam & H-30m
-      // Namun, kita jadwalkan notifikasi "Info Update" pada H-1 agar murid tahu
-      
       if (!batalInfo) {
-        // ── Reminder H-3 jam (3 jam sebelum kajian dimulai) ──────────────────
+        // ── Reminder H-3 jam ─────────────────────────────────────────────
         const startTime = extractStartHour(kajian.waktu);
-      if (startTime) {
-        const h3Time = new Date(date.getTime());
-        h3Time.setHours(startTime.hour, startTime.minute, 0, 0);
-        h3Time.setMinutes(h3Time.getMinutes() - 180); // Kurangi 3 jam
+        if (startTime) {
+          const h3Time = new Date(date.getTime());
+          h3Time.setHours(startTime.hour, startTime.minute, 0, 0);
+          h3Time.setMinutes(h3Time.getMinutes() - 180);
 
-        if (h3Time.getTime() > Date.now()) {
-          try {
-            await Notifications.scheduleNotificationAsync({
-              identifier: `kajian-h3jam-${kajian.id}-${dateStr}`,
+          if (h3Time.getTime() > Date.now()) {
+            const id = `kajian-h3jam-${kajian.id}-${dateStr}`;
+            desiredNotifs.set(id, {
               content: {
                 title: "⏰ Kajian 3 Jam Lagi!",
                 body: `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Jangan lupa hadir!`,
                 data: { kajianId: kajian.id, reminderType: "h3jam", dateStr },
                 sound: true,
               },
-              trigger: {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: h3Time,
-              },
+              triggerDate: h3Time,
             });
-          } catch {
-            // Lewati jika error
           }
-        }
 
-        // ── Reminder H-30 menit (30 menit sebelum kajian dimulai) ──────────────
-        const h30mTime = new Date(date.getTime());
-        h30mTime.setHours(startTime.hour, startTime.minute, 0, 0);
-        h30mTime.setMinutes(h30mTime.getMinutes() - 30); // Kurangi 30 menit
+          // ── Reminder H-30 menit ──────────────────────────────────────────
+          const h30mTime = new Date(date.getTime());
+          h30mTime.setHours(startTime.hour, startTime.minute, 0, 0);
+          h30mTime.setMinutes(h30mTime.getMinutes() - 30);
 
-        if (h30mTime.getTime() > Date.now()) {
-          try {
-            await Notifications.scheduleNotificationAsync({
-              identifier: `kajian-h30m-${kajian.id}-${dateStr}`,
+          if (h30mTime.getTime() > Date.now()) {
+            const id = `kajian-h30m-${kajian.id}-${dateStr}`;
+            desiredNotifs.set(id, {
               content: {
                 title: "⏳ Kajian 30 Menit Lagi!",
                 body: `"${kajian.judul}"${pekanLabel} segera dimulai di ${kajian.lokasi}${waktuLabel}. Segera merapat!`,
                 data: { kajianId: kajian.id, reminderType: "h30m", dateStr },
                 sound: true,
               },
-              trigger: {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: h30mTime,
-              },
+              triggerDate: h30mTime,
             });
-          } catch {
-            // Lewati jika error
           }
-        }
         }
       }
 
@@ -249,28 +242,58 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
       h1Time.setHours(20, 0, 0, 0);
 
       if (h1Time.getTime() > Date.now()) {
-        try {
-          await Notifications.scheduleNotificationAsync({
-            identifier: `kajian-h1-${kajian.id}-${dateStr}`,
-            content: {
-              title: batalInfo ? "⚠️ Info Update Kajian" : "📚 Pengingat Kajian Besok",
-              body: batalInfo 
-                ? `Kajian "${kajian.judul}" besok DIBATALKAN karena: ${batalInfo.alasan}`
-                : `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
-              data: { kajianId: kajian.id, reminderType: "h1", dateStr, isCancelled: !!batalInfo },
-              sound: true,
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              date: h1Time,
-            },
-          });
-        } catch {
-          // Lewati jika error
-        }
+        const id = `kajian-h1-${kajian.id}-${dateStr}`;
+        desiredNotifs.set(id, {
+          content: {
+            title: batalInfo ? "⚠️ Info Update Kajian" : "📚 Pengingat Kajian Besok",
+            body: batalInfo 
+              ? `Kajian "${kajian.judul}" besok DIBATALKAN karena: ${batalInfo.alasan}`
+              : `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
+            data: { kajianId: kajian.id, reminderType: "h1", dateStr, isCancelled: !!batalInfo },
+            sound: true,
+          },
+          triggerDate: h1Time,
+        });
       }
     }
   }
+
+  console.log(LOG_PREFIX, `Notifikasi yang seharusnya dijadwalkan: ${desiredNotifs.size}`);
+
+  // ── Hapus notifikasi yang sudah tidak diperlukan ───────────────────────
+  let cancelledCount = 0;
+  for (const existingId of existingIds) {
+    // Hanya kelola notifikasi kajian (yang dimulai dengan "kajian-")
+    if (existingId.startsWith("kajian-") && !desiredNotifs.has(existingId)) {
+      await Notifications.cancelScheduledNotificationAsync(existingId);
+      cancelledCount++;
+    }
+  }
+  console.log(LOG_PREFIX, `Notifikasi dibatalkan: ${cancelledCount}`);
+
+  // ── Jadwalkan notifikasi baru yang belum ada ──────────────────────────
+  let scheduledCount = 0;
+  let errorCount = 0;
+  for (const [id, notif] of desiredNotifs) {
+    if (!existingIds.has(id)) {
+      try {
+        await Notifications.scheduleNotificationAsync({
+          identifier: id,
+          content: notif.content,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: notif.triggerDate,
+          },
+        });
+        scheduledCount++;
+      } catch (e) {
+        errorCount++;
+        console.warn(LOG_PREFIX, `Gagal jadwalkan notifikasi ${id}:`, e);
+      }
+    }
+  }
+  
+  console.log(LOG_PREFIX, `Selesai! Baru dijadwalkan: ${scheduledCount}, Error: ${errorCount}, Total aktif: ${desiredNotifs.size}`);
 }
 
 export async function cancelAllKajianReminders(): Promise<void> {
@@ -278,3 +301,81 @@ export async function cancelAllKajianReminders(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
+// ── Debug: Lihat semua notifikasi yang sudah terjadwal ─────────────────
+export async function debugListScheduledNotifications(): Promise<string> {
+  if (Platform.OS === "web") return "Web: notifikasi tidak didukung";
+  
+  const notifs = await Notifications.getAllScheduledNotificationsAsync();
+  if (notifs.length === 0) return "Tidak ada notifikasi terjadwal.";
+  
+  const lines = notifs
+    .sort((a, b) => {
+      const dateA = (a.trigger as any)?.value ?? 0;
+      const dateB = (b.trigger as any)?.value ?? 0;
+      return dateA - dateB;
+    })
+    .map(n => {
+      const triggerDate = (n.trigger as any)?.value 
+        ? new Date((n.trigger as any).value).toLocaleString("id-ID") 
+        : "unknown";
+      return `• ${n.identifier}\n  → ${n.content.title}\n  → ${triggerDate}`;
+    });
+  
+  return `Total: ${notifs.length} notifikasi\n\n${lines.join("\n\n")}`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BACKGROUND TASK — Agar notifikasi tetap dijadwalkan walau app tidak dibuka
+// Hanya aktif jika native module tersedia (setelah build ulang)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Definisikan background task (opsional)
+if (Platform.OS !== "web" && TaskManager && BackgroundFetch) {
+  try {
+    TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
+      try {
+        console.log(LOG_PREFIX, "[Background] Menjalankan penjadwalan ulang notifikasi...");
+        await scheduleAllKajianReminders();
+        console.log(LOG_PREFIX, "[Background] Selesai.");
+        return BackgroundFetch.BackgroundFetchResult.NewData;
+      } catch (e) {
+        console.error(LOG_PREFIX, "[Background] Error:", e);
+        return BackgroundFetch.BackgroundFetchResult.Failed;
+      }
+    });
+  } catch (e) {
+    console.log(LOG_PREFIX, "Tidak bisa mendefinisikan background task:", e);
+  }
+}
+
+/**
+ * Daftarkan background task untuk menjadwalkan notifikasi secara berkala.
+ * Panggil SEKALI saat app pertama kali dibuka (misal di _layout.tsx).
+ * Graceful degradation: jika native module belum tersedia, fungsi ini tidak error.
+ */
+export async function registerBackgroundNotificationTask(): Promise<void> {
+  if (Platform.OS === "web") return;
+  
+  if (!TaskManager || !BackgroundFetch) {
+    console.log(LOG_PREFIX, "Background task tidak tersedia (butuh build ulang). Notifikasi tetap berjalan saat app dibuka.");
+    return;
+  }
+
+  try {
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
+    if (isRegistered) {
+      console.log(LOG_PREFIX, "Background task sudah terdaftar.");
+      return;
+    }
+
+    await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
+      minimumInterval: 60 * 60,
+      stopOnTerminate: false,
+      startOnBoot: true,
+    });
+    
+    console.log(LOG_PREFIX, "Background task berhasil didaftarkan!");
+  } catch (e) {
+    console.warn(LOG_PREFIX, "Gagal mendaftarkan background task:", e);
+  }
+}

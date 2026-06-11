@@ -14,6 +14,7 @@ import {
   TextInput,
   ScrollView,
   Image as RNImage,
+  Share,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,6 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { FaedahService, FaedahItem } from "@/services/faedahService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -50,6 +52,54 @@ export default function FaedahScreen() {
 
   // State untuk full screen image viewer
   const [viewImageUri, setViewImageUri] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadImage = async (imageUrl: string) => {
+    if (!imageUrl) return;
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDownloading(true);
+
+    try {
+      if (Platform.OS === "web") {
+        // Web: buka di tab baru
+        const link = document.createElement("a");
+        link.href = imageUrl;
+        link.target = "_blank";
+        link.download = `faedah_${Date.now()}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setDownloading(false);
+        return;
+      }
+
+      // Native: download lalu share
+      const filename = `faedah_${Date.now()}.jpg`;
+      const fileUri = FileSystem.cacheDirectory + filename;
+      
+      const downloadResult = await FileSystem.downloadAsync(imageUrl, fileUri);
+      
+      if (downloadResult.status === 200) {
+        // Gunakan Share API bawaan Android untuk simpan / kirim
+        await Share.share({
+          url: downloadResult.uri,
+          title: "Faedah Kajian",
+          message: "Faedah Kajian - Mulazamahku",
+        });
+      } else {
+        Alert.alert("Gagal", "Tidak dapat mengunduh gambar.");
+      }
+    } catch (e: any) {
+      // User batal share = bukan error
+      if (e?.message?.includes("cancel") || e?.message?.includes("dismiss")) {
+        // Abaikan
+      } else {
+        Alert.alert("Gagal", "Terjadi kesalahan saat mengunduh.");
+      }
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const fetchFaedah = useCallback(async () => {
     const data = await FaedahService.getAllFaedah();
@@ -425,12 +475,37 @@ export default function FaedahScreen() {
                           }}
                         />
                         <View style={styles.carouselMeta}>
-                          <Text style={[styles.carouselName, { color: colors.foreground }]} numberOfLines={1}>
-                            {f.uploader_name}
-                          </Text>
-                          <Text style={[styles.carouselDate, { color: colors.mutedForeground }]}>
-                            {formatDate(f.created_at)}
-                          </Text>
+                          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                            <View style={{ flex: 1, paddingRight: 8 }}>
+                              <Text style={[styles.carouselName, { color: colors.foreground }]} numberOfLines={1}>
+                                {f.uploader_name}
+                              </Text>
+                              <Text style={[styles.carouselDate, { color: colors.mutedForeground }]}>
+                                {formatDate(f.created_at)}
+                              </Text>
+                            </View>
+                            <Pressable
+                              style={({ pressed }) => [
+                                { 
+                                  backgroundColor: "rgba(0,0,0,0.05)", 
+                                  width: 32, 
+                                  height: 32, 
+                                  borderRadius: 16, 
+                                  alignItems: "center", 
+                                  justifyContent: "center", 
+                                  opacity: pressed || downloading ? 0.6 : 1 
+                                },
+                              ]}
+                              onPress={() => downloadImage(f.image_url || "")}
+                              disabled={downloading}
+                            >
+                              {downloading ? (
+                                <ActivityIndicator size={14} color={colors.primary} />
+                              ) : (
+                                <Feather name="download" size={16} color={colors.primary} />
+                              )}
+                            </Pressable>
+                          </View>
                           {!!f.catatan && (
                             <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border, marginTop: 8, padding: 8 }]}>
                               <Text style={[styles.feedbackLabel, { color: colors.primary, fontSize: 11 }]}>Catatan Pengajar:</Text>
@@ -669,12 +744,27 @@ export default function FaedahScreen() {
         onRequestClose={() => setViewImageUri(null)}
       >
         <View style={styles.fullScreenOverlay}>
-          <Pressable 
-            style={[styles.closeFullScreenBtn, { top: insets.top + 16 }]} 
-            onPress={() => setViewImageUri(null)}
-          >
-            <Feather name="x" size={28} color="#FFFFFF" />
-          </Pressable>
+          <View style={{ position: "absolute", top: insets.top + 16, left: 0, right: 0, zIndex: 10, flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20 }}>
+            <Pressable 
+              style={styles.closeFullScreenBtn}
+              onPress={() => setViewImageUri(null)}
+            >
+              <Feather name="x" size={28} color="#FFFFFF" />
+            </Pressable>
+            {faedahList.find(f => f.image_url === viewImageUri)?.status === "disetujui" && (
+              <Pressable
+                style={[styles.closeFullScreenBtn, { backgroundColor: "rgba(0,0,0,0.5)" }]}
+                onPress={() => viewImageUri && downloadImage(viewImageUri)}
+                disabled={downloading}
+              >
+                {downloading ? (
+                  <ActivityIndicator size={22} color="#FFFFFF" />
+                ) : (
+                  <Feather name="download" size={24} color="#FFFFFF" />
+                )}
+              </Pressable>
+            )}
+          </View>
           {!!viewImageUri && (
             <Image 
               source={{ uri: viewImageUri }} 
