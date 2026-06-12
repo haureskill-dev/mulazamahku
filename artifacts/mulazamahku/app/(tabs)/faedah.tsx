@@ -61,14 +61,23 @@ export default function FaedahScreen() {
 
     try {
       if (Platform.OS === "web") {
-        // Web: buka di tab baru
-        const link = document.createElement("a");
-        link.href = imageUrl;
-        link.target = "_blank";
-        link.download = `faedah_${Date.now()}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          
+          const link = document.createElement("a");
+          link.href = blobUrl;
+          link.download = `faedah_${Date.now()}.jpg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+          console.error("Gagal mendownload gambar web:", err);
+          // Fallback buka tab baru jika fetch gagal (misal kena CORS)
+          window.open(imageUrl, '_blank');
+        }
         setDownloading(false);
         return;
       }
