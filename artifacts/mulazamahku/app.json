@@ -21,7 +21,12 @@
       "bundleIdentifier": "com.mulazamahku.app"
     },
     "android": {
-      "package": "com.mulazamahku.app"
+      "package": "com.mulazamahku.app",
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"

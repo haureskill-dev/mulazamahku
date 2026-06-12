@@ -67,7 +67,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   if (Platform.OS === "web") return false;
 
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
+    await Notifications.setNotificationChannelAsync("kajian-reminders-v2", {
       name: "Jadwal Kajian",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
@@ -148,8 +148,12 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
   
   try {
     const customKajianData = await KajianTambahanService.getAll();
+    
+    // Simpan ID yang sudah dihapus
+    const deletedIds = customKajianData.filter(d => d.is_deleted).map(d => d.id);
+    
     const publicCustomKajian = customKajianData
-      .filter(d => d.is_public || userRole === "admin" || userRole === "pengajar")
+      .filter(d => !d.is_deleted && (d.is_public || userRole === "admin" || userRole === "pengajar"))
       .map(d => ({
         id: d.id,
         judul: d.judul,
@@ -160,7 +164,10 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
         status: "aktif",
       } as Kajian));
       
-    allKajian = [...allKajian, ...publicCustomKajian];
+    const customIds = publicCustomKajian.map(c => c.id);
+    const filteredDummy = allKajian.filter(d => !customIds.includes(d.id) && !deletedIds.includes(d.id));
+    
+    allKajian = [...filteredDummy, ...publicCustomKajian];
   } catch (e) {
     console.log(LOG_PREFIX, "Gagal memuat custom kajian:", e);
   }
@@ -212,6 +219,7 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
                 body: `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Jangan lupa hadir!`,
                 data: { kajianId: kajian.id, reminderType: "h3jam", dateStr },
                 sound: true,
+                channelId: "kajian-reminders-v2",
               },
               triggerDate: h3Time,
             });
@@ -230,6 +238,7 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
                 body: `"${kajian.judul}"${pekanLabel} segera dimulai di ${kajian.lokasi}${waktuLabel}. Segera merapat!`,
                 data: { kajianId: kajian.id, reminderType: "h30m", dateStr },
                 sound: true,
+                channelId: "kajian-reminders-v2",
               },
               triggerDate: h30mTime,
             });
@@ -251,6 +260,7 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
               : `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
             data: { kajianId: kajian.id, reminderType: "h1", dateStr, isCancelled: !!batalInfo },
             sound: true,
+            channelId: "kajian-reminders-v2",
           },
           triggerDate: h1Time,
         });

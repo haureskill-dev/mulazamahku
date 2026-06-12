@@ -284,50 +284,28 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>NOTIFIKASI</Text>
-        <View style={[styles.settingGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <SettingItem
-            icon="bell"
-            label="Cek Notifikasi Terjadwal"
-            onPress={async () => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              const result = await debugListScheduledNotifications();
-              if (Platform.OS === "web") {
-                window.alert(result);
-              } else {
-                Alert.alert("Notifikasi Terjadwal", result);
-              }
-            }}
-          />
-          <SettingItem
-            icon="refresh-cw"
-            label="Sinkron Ulang Notifikasi"
-            onPress={async () => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              try {
-                await scheduleAllKajianReminders(user?.role);
-                const msg = "Notifikasi berhasil disinkronkan!";
-                if (Platform.OS === "web") {
-                  window.alert(msg);
-                } else {
-                  Alert.alert("Berhasil", msg);
-                }
-              } catch (e) {
-                const msg = "Gagal menyinkronkan notifikasi.";
-                if (Platform.OS === "web") {
-                  window.alert(msg);
-                } else {
-                  Alert.alert("Gagal", msg);
-                }
-              }
-            }}
-          />
-        </View>
-      </View>
 
       <View style={styles.section}>
         <View style={[styles.settingGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <SettingItem
+            icon="bell"
+            label="Test Notif 5 Detik (Debug)"
+            onPress={async () => {
+              if (Platform.OS !== "web") {
+                const Notifications = require("expo-notifications");
+                await Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: "Test Notifikasi Berhasil!",
+                    body: "Jika banner ini muncul dan berbunyi, berarti sistem notifikasi HP Anda sudah 100% normal.",
+                    sound: true,
+                    channelId: "kajian-reminders-v2",
+                  },
+                  trigger: { seconds: 5 },
+                });
+                alert("Tutup aplikasi sekarang! Notifikasi akan muncul dalam 5 detik.");
+              }
+            }}
+          />
           <SettingItem
             icon="log-out"
             label="Keluar"

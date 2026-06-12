@@ -14,7 +14,6 @@ import {
   TextInput,
   ScrollView,
   Image as RNImage,
-  Share,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,6 +23,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { FaedahService, FaedahItem } from "@/services/faedahService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -80,12 +80,17 @@ export default function FaedahScreen() {
       const downloadResult = await FileSystem.downloadAsync(imageUrl, fileUri);
       
       if (downloadResult.status === 200) {
-        // Gunakan Share API bawaan Android untuk simpan / kirim
-        await Share.share({
-          url: downloadResult.uri,
-          title: "Faedah Kajian",
-          message: "Faedah Kajian - Mulazamahku",
-        });
+        // Gunakan expo-sharing untuk menyimpan atau membagikan gambar sebenarnya
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: "image/jpeg",
+            dialogTitle: "Unduh atau Bagikan Faedah",
+            UTI: "public.jpeg"
+          });
+        } else {
+          Alert.alert("Gagal", "Fitur berbagi tidak tersedia di perangkat ini.");
+        }
       } else {
         Alert.alert("Gagal", "Tidak dapat mengunduh gambar.");
       }
