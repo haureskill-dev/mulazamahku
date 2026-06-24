@@ -62,7 +62,8 @@ function shortPekan(pekanStr: string): string {
 
 /** Cek apakah kajian aktif pada tanggal tertentu (cocok hari + pekan) */
 function isKajianOnDate(kajian: Kajian, date: Date, flyers: Flyer[] = []): boolean {
-  if (kajian.status !== "aktif") return false;
+  // Termasuk status 'akan_datang' agar kajian yang belum rutin tetap ditampilkan
+  if (kajian.status === "nonaktif" || kajian.status === "selesai") return false;
 
   // Cek apakah ada flyer (reschedule) yang tanggal berlakunya cocok dengan date ini
   const dateStr = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
@@ -97,16 +98,55 @@ function isKajianPassedToday(waktu: string): boolean {
   return now.getTime() > end.getTime();
 }
 
-/** Cari kajian terdekat dalam 14 hari ke depan */
+/** Ambil waktu mulai dari flyer keterangan jika ada (misal: "08.30 - 09.30 WIB") */
+function extractTimeFromFlyer(kajian: Kajian, date: Date, flyers: Flyer[]): string | null {
+  const dateStr = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+  const matchingFlyer = flyers.find(f => f.kajian_id === kajian.id && f.tanggal_berlaku === dateStr);
+  if (matchingFlyer?.keterangan) {
+    // Coba ekstrak waktu dari keterangan flyer (format: "08.30 - 09.30 WIB" atau mengandung waktu)
+    const timeMatch = matchingFlyer.keterangan.match(/(\d{2})[.:]\s*(\d{2})/);
+    if (timeMatch) return matchingFlyer.keterangan;
+  }
+  return null;
+}
+
+/** Ambil jam mulai numerik dari string waktu untuk pengurutan */
+function getStartMinutes(waktu: string): number {
+  if (!waktu || waktu.includes("konfirmasi")) return 9999;
+  const match = waktu.match(/(\d{2})[.:]\s*(\d{2})/);
+  if (match) return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  return 9999;
+}
+
+/** Cari kajian terdekat dalam 14 hari ke depan — memprioritaskan yang paling awal waktunya */
 function findNearestKajian(allKajian: Kajian[], flyers: Flyer[] = []): Kajian {
   const now = new Date();
   for (let offset = 0; offset < 14; offset++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+
+    // Kumpulkan SEMUA kajian yang aktif pada tanggal ini
+    const candidates: { kajian: Kajian; effectiveWaktu: string; startMinutes: number }[] = [];
+    
     for (const k of allKajian) {
-      if (isKajianOnDate(k, date, flyers)) {
-        if (offset === 0 && isKajianPassedToday(k.waktu)) continue;
-        return k;
+      if (!isKajianOnDate(k, date, flyers)) continue;
+      
+      // Gunakan waktu dari flyer jika ada reschedule, kalau tidak pakai waktu asli
+      const flyerWaktu = extractTimeFromFlyer(k, date, flyers);
+      const effectiveWaktu = flyerWaktu || k.waktu;
+      const startMinutes = getStartMinutes(effectiveWaktu);
+      
+      // Kalau hari ini, skip jika waktunya sudah lewat
+      if (offset === 0) {
+        if (isKajianPassedToday(effectiveWaktu)) continue;
       }
+      
+      candidates.push({ kajian: k, effectiveWaktu, startMinutes });
+    }
+    
+    if (candidates.length > 0) {
+      // Urutkan berdasarkan waktu mulai (paling awal duluan)
+      candidates.sort((a, b) => a.startMinutes - b.startMinutes);
+      return candidates[0].kajian;
     }
   }
   return allKajian.find((k) => k.status === "aktif") ?? allKajian[0];
@@ -230,6 +270,40 @@ export default function BerandaScreen() {
   
   const [flyers, setFlyers] = useState<Flyer[]>([]);
   const highlight = useMemo(() => findNearestKajian(allKajianList, flyers), [allKajianList, flyers]);
+  
+  // Cek apakah highlight punya flyer reschedule hari ini/besok untuk menampilkan waktu yang benar
+  const highlightEffectiveInfo = useMemo(() => {
+    if (!highlight) return null;
+    // Cari tanggal kapan kajian ini dijadwalkan terdekat
+    const now = new Date();
+    for (let offset = 0; offset < 14; offset++) {
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+      if (isKajianOnDate(highlight, date, flyers)) {
+        if (offset === 0 && isKajianPassedToday(highlight.waktu)) {
+          // Cek flyer time juga
+          const flyerWaktu = extractTimeFromFlyer(highlight, date, flyers);
+          if (flyerWaktu && !isKajianPassedToday(flyerWaktu)) {
+            // Flyer time belum lewat
+          } else {
+            continue;
+          }
+        }
+        const dateStr = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+        const matchingFlyer = flyers.find(f => f.kajian_id === highlight.id && f.tanggal_berlaku === dateStr);
+        if (matchingFlyer?.keterangan) {
+          // Parse waktu dan lokasi dari keterangan
+          const waktuMatch = matchingFlyer.keterangan.match(/(\d{2}[.:]\s*\d{2}\s*-\s*\d{2}[.:]\s*\d{2}\s*(?:WIB)?)/i);
+          return {
+            waktu: waktuMatch ? waktuMatch[1].trim() : null,
+            keterangan: matchingFlyer.keterangan,
+            isRescheduled: true,
+          };
+        }
+        return null;
+      }
+    }
+    return null;
+  }, [highlight, flyers, allKajianList]);
 
 
   const fetchFlyers = useCallback(async () => {
@@ -431,9 +505,14 @@ export default function BerandaScreen() {
                 <Text style={[styles.highlightBadgeText, { color: colors.gold }]}>{highlight.hari}</Text>
               </View>
               <Text style={[styles.highlightTime, { color: "rgba(255,255,255,0.75)" }]}>
-                {highlight.waktu}
+                {highlightEffectiveInfo?.waktu || highlight.waktu}
               </Text>
             </View>
+            {highlightEffectiveInfo?.isRescheduled && (
+              <View style={{ backgroundColor: "rgba(234,179,8,0.2)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, alignSelf: "flex-start", marginBottom: 4 }}>
+                <Text style={{ color: colors.gold, fontSize: 10, fontFamily: "Inter_600SemiBold" }}>📌 Jadwal Diperbarui</Text>
+              </View>
+            )}
             <Text style={[styles.highlightJudul, { color: batalHighlightInfo ? "rgba(255,255,255,0.5)" : "#FFFFFF", textDecorationLine: batalHighlightInfo ? "line-through" : "none" }]}>
               {highlight.judul}
             </Text>

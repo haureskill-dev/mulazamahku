@@ -22,9 +22,17 @@ import { useAuth } from "@/context/AuthContext";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { FaedahService, FaedahItem } from "@/services/faedahService";
+
+// Import opsional — butuh native build baru
+let MediaLibrary: any = null;
+try {
+  MediaLibrary = require("expo-media-library");
+} catch {
+  console.log("[Faedah] expo-media-library belum tersedia.");
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -84,22 +92,57 @@ export default function FaedahScreen() {
 
       // Native: download lalu share
       const filename = `faedah_${Date.now()}.jpg`;
-      const fileUri = FileSystem.cacheDirectory + filename;
+      const fileUri = FileSystem.documentDirectory + filename;
       
       const downloadResult = await FileSystem.downloadAsync(imageUrl, fileUri);
       
       if (downloadResult.status === 200) {
-        // Gunakan expo-sharing untuk menyimpan atau membagikan gambar sebenarnya
-        const isAvailable = await Sharing.isAvailableAsync();
-        if (isAvailable) {
-          await Sharing.shareAsync(downloadResult.uri, {
-            mimeType: "image/jpeg",
-            dialogTitle: "Unduh atau Bagikan Faedah",
-            UTI: "public.jpeg"
+        const options: any[] = [];
+        
+        // Tombol 'Simpan ke Galeri' hanya muncul jika expo-media-library tersedia
+        if (MediaLibrary) {
+          options.push({
+            text: "Simpan ke Galeri",
+            onPress: async () => {
+              try {
+                const { status } = await MediaLibrary.requestPermissionsAsync();
+                if (status === "granted") {
+                  await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
+                  Alert.alert("Sukses", "Gambar berhasil disimpan ke Galeri HP Anda!");
+                } else {
+                  Alert.alert("Gagal", "Izin akses galeri ditolak.");
+                }
+              } catch (err) {
+                Alert.alert("Gagal", "Gagal menyimpan ke galeri.");
+                console.log("MediaLibrary Error:", err);
+              }
+            }
           });
-        } else {
-          Alert.alert("Gagal", "Fitur berbagi tidak tersedia di perangkat ini.");
         }
+        
+        options.push({
+          text: "Bagikan",
+          onPress: async () => {
+            const isAvailable = await Sharing.isAvailableAsync();
+            if (isAvailable) {
+              await Sharing.shareAsync(downloadResult.uri, {
+                mimeType: "image/jpeg",
+                dialogTitle: "Bagikan Faedah",
+                UTI: "public.jpeg"
+              });
+            } else {
+              Alert.alert("Gagal", "Fitur berbagi tidak tersedia di perangkat ini.");
+            }
+          }
+        });
+        
+        options.push({ text: "Batal", style: "cancel" });
+        
+        Alert.alert(
+          "Pilih Tindakan",
+          "Apa yang ingin Anda lakukan dengan gambar ini?",
+          options
+        );
       } else {
         Alert.alert("Gagal", "Tidak dapat mengunduh gambar.");
       }
@@ -108,7 +151,8 @@ export default function FaedahScreen() {
       if (e?.message?.includes("cancel") || e?.message?.includes("dismiss")) {
         // Abaikan
       } else {
-        Alert.alert("Gagal", "Terjadi kesalahan saat mengunduh.");
+        Alert.alert("Gagal Mengunduh", e?.message || "Terjadi kesalahan yang tidak diketahui.");
+        console.log("Download Error:", e);
       }
     } finally {
       setDownloading(false);
