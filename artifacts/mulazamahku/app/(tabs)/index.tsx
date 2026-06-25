@@ -704,7 +704,7 @@ export default function BerandaScreen() {
                   <View style={[styles.modalTextContainer, { flex: 1, padding: 0, overflow: 'hidden' }]}>
                     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
                       <Text 
-                        selectable={Platform.OS !== "web"} 
+                        selectable={true} 
                         selectionColor={colors.primary} 
                         style={[styles.modalText, { margin: 0 }, Platform.OS === "web" && { userSelect: "text" as any }]}
                       >

@@ -402,21 +402,22 @@ export default function KajianDetailScreen() {
               <Text style={[styles.descText, { color: colors.mutedForeground, marginBottom: 12 }]}>
                 Catat sampai mana materi atau halaman kitab yang telah diajarkan pada kajian ini.
               </Text>
-              <TextInput
-                value={progress}
-                onChangeText={setProgress}
-                placeholder="Contoh: Bab Thaharah, Halaman 45"
-                placeholderTextColor={colors.mutedForeground}
-                style={[
-                  styles.progressInput,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.foreground,
-                  },
-                ]}
-                multiline
-              />
+                <TextInput
+                  value={progress}
+                  onChangeText={setProgress}
+                  placeholder="Contoh: Bab Thaharah, Halaman 45"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    styles.progressInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.foreground,
+                    },
+                  ]}
+                  multiline
+                  scrollEnabled={false}
+                />
               <Pressable
                 onPress={handleSaveProgress}
                 disabled={isSaving || progress === savedProgress}
