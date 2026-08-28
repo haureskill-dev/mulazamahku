@@ -541,14 +541,22 @@ export default function BerandaScreen() {
         );
       })()}
 
-        {/* Flyer / Poster Kajian */}
-        <View style={{ marginBottom: 24 }}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Info & Poster Kajian</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-            {flyers.length > 0 ? (
-              flyers.map((f) => {
+      {/* Flyer / Poster Kajian */}
+      <View style={{ marginBottom: 24 }}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Info & Poster Kajian</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+          {(() => {
+            // Urutkan flyer agar flyer milik highlight ada di urutan pertama
+            const sortedFlyers = [...flyers].sort((a, b) => {
+              if (highlight && a.kajian_id === highlight.id && b.kajian_id !== highlight.id) return -1;
+              if (highlight && b.kajian_id === highlight.id && a.kajian_id !== highlight.id) return 1;
+              return 0; // pertahankan urutan aslinya (berdasarkan created_at)
+            });
+
+            if (sortedFlyers.length > 0) {
+              return sortedFlyers.map((f) => {
                 const ratio = imageAspectRatios[f.id] || 16 / 9; // Default landscape jika belum load
                 return (
                   <Pressable key={f.id} onPress={() => setSelectedFlyer(f)}>
@@ -569,15 +577,18 @@ export default function BerandaScreen() {
                     </View>
                   </Pressable>
                 );
-              })
-            ) : (
-              <View style={[styles.flyerCard, { borderColor: colors.border, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.02)" }]}>
-                <Feather name="image" size={32} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
-                <Text style={{ color: colors.mutedForeground, marginTop: 8, fontSize: 12, fontFamily: "Inter_500Medium" }}>Belum ada poster</Text>
-              </View>
-            )}
-          </ScrollView>
-        </View>
+              });
+            } else {
+              return (
+                <View style={[styles.flyerCard, { borderColor: colors.border, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.02)" }]}>
+                  <Feather name="image" size={32} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+                  <Text style={{ color: colors.mutedForeground, marginTop: 8, fontSize: 12, fontFamily: "Inter_500Medium" }}>Belum ada poster</Text>
+                </View>
+              );
+            }
+          })()}
+        </ScrollView>
+      </View>
 
         {/* Tabel Jadwal Kajian - Desain Bento */}
         <View style={[styles.sectionHeader, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
@@ -655,13 +666,19 @@ export default function BerandaScreen() {
                             {kajian.waktu.includes("konfirmasi") ? "Confirm" : kajian.waktu.split("-")[0].trim()}
                           </Text>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                            {kajian.hari.includes("·") && (
-                              <View style={[styles.bentoPekanBadge, { backgroundColor: colors.highlight }]}>
-                                <Text style={[styles.bentoPekanText, { color: colors.mutedForeground }]}>
-                                  {kajian.hari.split("·")[1].trim()}
-                                </Text>
-                              </View>
-                            )}
+                            {(() => {
+                              const pMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
+                              if (pMatch) {
+                                return (
+                                  <View style={[styles.bentoPekanBadge, { backgroundColor: colors.highlight }]}>
+                                    <Text style={[styles.bentoPekanText, { color: colors.mutedForeground }]}>
+                                      Pekan {pMatch[1].trim()}
+                                    </Text>
+                                  </View>
+                                );
+                              }
+                              return null;
+                            })()}
                           </View>
                         </View>
                         <Text style={[styles.bentoTitle, { color: isBatal ? colors.mutedForeground : colors.foreground, textDecorationLine: isBatal ? "line-through" : "none" }]} numberOfLines={2}>

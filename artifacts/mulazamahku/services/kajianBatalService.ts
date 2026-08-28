@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { sendPushToAllUsers } from "./pushTokenService";
 
 export interface KajianBatal {
   id: string;
@@ -29,6 +30,14 @@ export const KajianBatalService = {
       console.error("Error inserting kajian batal:", error.message);
       return false;
     }
+
+    // Kirim push notification ke semua user
+    sendPushToAllUsers(
+      "⚠️ Kajian Dibatalkan",
+      `Kajian tanggal ${data.tanggal} dibatalkan. Alasan: ${data.alasan}`,
+      { kajianId: data.kajian_id, type: "batal" }
+    ).catch(e => console.warn("[KajianBatal] Gagal kirim push:", e));
+
     return true;
   },
 

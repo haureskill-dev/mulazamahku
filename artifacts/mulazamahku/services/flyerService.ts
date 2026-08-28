@@ -2,15 +2,92 @@ import { supabase } from "./supabase";
 import { decode } from "base64-arraybuffer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Flyer } from "@/types";
+import { sendPushToAllUsers } from "./pushTokenService";
 
 const BUCKET_NAME = "flyers";
 const TABLE_NAME = "flyers";
 const FLYER_CACHE_KEY = "@mulazamahku_flyers_cache";
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const LOG_PREFIX = "[FlyerService]";
+
+/**
+ * Helper: konversi image URI ke base64 dengan validasi ukuran.
+ * Throws jika file terlalu besar.
+ */
+async function imageUriToBase64(imageUri: string): Promise<{ base64: string; sizeBytes: number }> {
+  const response = await fetch(imageUri);
+  const blob = await response.blob();
+
+  if (blob.size > MAX_FILE_SIZE_BYTES) {
+    throw new Error(`Ukuran gambar terlalu besar (${(blob.size / 1024 / 1024).toFixed(1)}MB). Maksimal 5MB.`);
+  }
+
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+  return { base64, sizeBytes: blob.size };
+}
+
+/**
+ * Helper: upload base64 ke Supabase Storage dan return public URL.
+ */
+async function uploadToStorage(base64: string): Promise<{ publicUrl: string; filePath: string }> {
+  const fileName = `flyer_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+  const filePath = `uploads/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(filePath, decode(base64), {
+      contentType: "image/jpeg",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const { data: urlData } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(filePath);
+
+  return { publicUrl: urlData.publicUrl, filePath };
+}
+
+/**
+ * Helper: hapus file lama dari Supabase Storage berdasarkan public URL.
+ * Best-effort — tidak throw error.
+ */
+async function cleanupOldImage(oldImageUrl: string): Promise<void> {
+  try {
+    // Extract path dari public URL
+    // Format: https://<ref>.supabase.co/storage/v1/object/public/flyers/uploads/filename.jpg
+    const match = oldImageUrl.match(/\/storage\/v1\/object\/public\/flyers\/(.+)$/);
+    if (!match) return;
+
+    const oldPath = match[1];
+    const { error } = await supabase.storage.from(BUCKET_NAME).remove([oldPath]);
+    if (error) {
+      console.warn(LOG_PREFIX, "Gagal hapus gambar lama:", error.message);
+    } else {
+      console.log(LOG_PREFIX, "Gambar lama berhasil dihapus:", oldPath);
+    }
+  } catch (e: any) {
+    console.warn(LOG_PREFIX, "Error cleanup gambar lama:", e?.message);
+  }
+}
 
 export const FlyerService = {
   /**
-   * Upload flyer (gambar poster) ke Supabase Storage dan simpan metadata
-   * Hanya Admin yang bisa upload flyer
+   * Upload flyer (gambar poster) ke Supabase Storage dan simpan metadata.
+   * Hanya Admin yang bisa upload flyer.
+   * Push notification dikirim dan hasilnya dikembalikan.
    */
   async uploadFlyer(
     imageUri: string,
@@ -18,43 +95,18 @@ export const FlyerService = {
     keterangan: string,
     tanggalBerlaku: string,
     uploaderName: string
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean; error?: string; pushResult?: { sent: number; errors: number } }> {
     try {
-      // Cross-platform: gunakan fetch + FileReader (works on web & native)
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+      // Validasi ukuran file
+      const { base64 } = await imageUriToBase64(imageUri);
 
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result.split(',')[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      // Upload ke Storage
+      const { publicUrl } = await uploadToStorage(base64);
 
-      const fileName = `flyer_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-      const filePath = `uploads/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, decode(base64), {
-          contentType: "image/jpeg",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        return { success: false, error: uploadError.message };
-      }
-
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-
+      // Insert metadata ke database
       const { error: insertError } = await supabase.from(TABLE_NAME).insert({
         kajian_id: kajianId,
-        image_url: urlData.publicUrl,
+        image_url: publicUrl,
         keterangan,
         tanggal_berlaku: tanggalBerlaku || null,
         dibuat_oleh: uploaderName,
@@ -64,7 +116,24 @@ export const FlyerService = {
         return { success: false, error: insertError.message };
       }
 
-      return { success: true };
+      // Kirim push notification — await, bukan fire-and-forget
+      let pushResult = { sent: 0, errors: 0 };
+      try {
+        const result = await sendPushToAllUsers(
+          "📢 Info Kajian Terbaru",
+          keterangan
+            ? keterangan.substring(0, 120) + (keterangan.length > 120 ? "..." : "")
+            : "Ada flyer kajian baru yang diupload.",
+          { kajianId, type: "flyer" }
+        );
+        pushResult = { sent: result.sent, errors: result.errors };
+        console.log(LOG_PREFIX, `Push result: ${result.sent} terkirim, ${result.errors} gagal`);
+      } catch (e: any) {
+        console.warn(LOG_PREFIX, "Push notification gagal:", e?.message);
+        pushResult = { sent: 0, errors: -1 }; // -1 = unknown error
+      }
+
+      return { success: true, pushResult };
     } catch (e: any) {
       return { success: false, error: e.message || "Upload gagal" };
     }
@@ -92,7 +161,8 @@ export const FlyerService = {
   },
 
   /**
-   * Update metadata flyer (dan opsional ganti gambar)
+   * Update metadata flyer (dan opsional ganti gambar).
+   * Gambar lama di-cleanup dari Storage saat diganti.
    */
   async updateFlyer(
     id: string,
@@ -108,46 +178,31 @@ export const FlyerService = {
         tanggal_berlaku: tanggalBerlaku || null,
       };
 
-      // Jika ada gambar baru, upload dulu
+      // Jika ada gambar baru, upload dulu dan cleanup gambar lama
       if (newImageUri) {
-        const response = await fetch(newImageUri);
-        const blob = await response.blob();
+        // Ambil URL gambar lama untuk cleanup nanti
+        const { data: oldRecord } = await supabase
+          .from(TABLE_NAME)
+          .select("image_url")
+          .eq("id", id)
+          .single();
 
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            resolve(result.split(',')[1]);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
+        // Validasi dan upload gambar baru
+        const { base64 } = await imageUriToBase64(newImageUri);
+        const { publicUrl } = await uploadToStorage(base64);
+        updateData.image_url = publicUrl;
 
-        const fileName = `flyer_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-        const filePath = `uploads/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(filePath, decode(base64), {
-            contentType: "image/jpeg",
-            upsert: false,
-          });
-
-        if (uploadError) {
-          return { success: false, error: uploadError.message };
+        // Cleanup gambar lama (best-effort, tidak blocking)
+        if (oldRecord?.image_url) {
+          cleanupOldImage(oldRecord.image_url);
         }
-
-        const { data: urlData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(filePath);
-
-        updateData.image_url = urlData.publicUrl;
       }
 
       const { error } = await supabase
         .from(TABLE_NAME)
         .update(updateData)
         .eq("id", id);
+
       if (error) return { success: false, error: error.message };
       return { success: true };
     } catch (e: any) {
@@ -178,11 +233,29 @@ export const FlyerService = {
   },
 
   /**
-   * Hapus flyer
+   * Hapus flyer (termasuk cleanup gambar dari Storage)
    */
   async deleteFlyer(id: string): Promise<{ success: boolean; error?: string }> {
-    const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    try {
+      // Ambil image_url sebelum hapus record
+      const { data: record } = await supabase
+        .from(TABLE_NAME)
+        .select("image_url")
+        .eq("id", id)
+        .single();
+
+      const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
+      if (error) return { success: false, error: error.message };
+
+      // Cleanup gambar dari Storage (best-effort)
+      if (record?.image_url) {
+        cleanupOldImage(record.image_url);
+      }
+
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message || "Hapus gagal" };
+    }
   },
 };
+

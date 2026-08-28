@@ -1,3 +1,6 @@
+// ⚠️ HARUS di paling atas — defineTask() wajib dipanggil sebelum komponen React
+import "@/services/backgroundTaskSetup";
+
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -25,6 +28,8 @@ import { NotesProvider } from "@/context/NotesContext";
 import { MudzakarahProvider } from "@/context/MudzakarahContext";
 import { UpdateChecker } from "@/components/UpdateChecker";
 import { scheduleAllKajianReminders, registerBackgroundNotificationTask } from "@/services/notificationService";
+import { registerPushToken } from "@/services/pushTokenService";
+import * as Notifications from "expo-notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -50,12 +55,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, segments]);
 
-  // Jadwalkan notifikasi & daftarkan background task saat user masuk
+  // Jadwalkan notifikasi, daftarkan background task, & daftarkan push token saat user masuk
   const hasScheduled = useRef(false);
   useEffect(() => {
     if (user && !hasScheduled.current) {
       hasScheduled.current = true;
-      // Jadwalkan notifikasi 30 hari ke depan
+      // Jadwalkan notifikasi lokal 30 hari ke depan
       scheduleAllKajianReminders(user.role).catch(e => 
         console.warn("[Layout] Gagal jadwalkan notifikasi:", e)
       );
@@ -63,12 +68,65 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       registerBackgroundNotificationTask().catch(e =>
         console.warn("[Layout] Gagal daftarkan background task:", e)
       );
+      // Daftarkan Expo Push Token ke Supabase untuk push notifikasi dari server
+      registerPushToken(user.role, user.nama).then(token => {
+        if (token) {
+          console.log("[Layout] Push token terdaftar:", token);
+        } else {
+          console.warn("[Layout] Push token gagal didaftarkan — cek izin notifikasi dan build type.");
+        }
+      }).catch(e =>
+        console.warn("[Layout] Gagal daftarkan push token:", e)
+      );
     }
     // Reset flag saat user logout
     if (!user) {
       hasScheduled.current = false;
     }
   }, [user]);
+
+  // Handler notifikasi push yang diterima saat app di foreground
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log("[Layout] Push notification diterima:", notification.request.content.title);
+      console.log("[Layout] Data:", JSON.stringify(notification.request.content.data));
+    });
+
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      console.log("[Layout] Notifikasi diklik. Data:", JSON.stringify(data));
+
+      try {
+        const type = data?.type as string | undefined;
+        const kajianId = data?.kajianId as string | undefined;
+        const reminderType = data?.reminderType as string | undefined;
+
+        if (type === "flyer") {
+          // Notifikasi flyer → buka tab flyer
+          router.push("/(tabs)/flyer");
+        } else if (type === "batal" && kajianId) {
+          // Notifikasi kajian batal → buka detail kajian
+          router.push(`/kajian/${kajianId}`);
+        } else if (kajianId && kajianId !== "test") {
+          // Notifikasi reminder kajian (h1/h3jam/h30m) → buka detail kajian
+          router.push(`/kajian/${kajianId}`);
+        } else {
+          // Fallback: buka tab utama
+          router.push("/(tabs)");
+        }
+      } catch (e) {
+        console.warn("[Layout] Error navigasi dari notifikasi:", e);
+        router.push("/(tabs)");
+      }
+    });
+
+    return () => {
+      subscription.remove();
+      responseSubscription.remove();
+    };
+  }, []);
 
   return <>{children}</>;
 }

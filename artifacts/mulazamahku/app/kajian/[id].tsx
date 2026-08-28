@@ -40,6 +40,7 @@ export default function KajianDetailScreen() {
   const [progress, setProgress] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [savedProgress, setSavedProgress] = useState("");
+  const [inputHeight, setInputHeight] = useState(80);
   const [ojekModalVisible, setOjekModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -413,10 +414,16 @@ export default function KajianDetailScreen() {
                       backgroundColor: colors.background,
                       borderColor: colors.border,
                       color: colors.foreground,
+                      height: Platform.OS === "web" ? Math.max(80, inputHeight) : undefined,
                     },
                   ]}
                   multiline
-                  scrollEnabled={false}
+                  scrollEnabled={Platform.OS === "web" ? true : false}
+                  onContentSizeChange={(e) => {
+                    if (Platform.OS === "web") {
+                      setInputHeight(e.nativeEvent.contentSize.height);
+                    }
+                  }}
                 />
               <Pressable
                 onPress={handleSaveProgress}
@@ -444,7 +451,7 @@ export default function KajianDetailScreen() {
               </Pressable>
             </>
           ) : (
-            <Text style={[styles.descText, { color: savedProgress ? colors.foreground : colors.mutedForeground, fontStyle: savedProgress ? "normal" : "italic" }]}>
+            <Text style={[styles.descText, { color: savedProgress ? colors.foreground : colors.mutedForeground, fontStyle: savedProgress ? "normal" : "italic" }, Platform.OS === "web" && { whiteSpace: "pre-wrap" } as any]}>
               {savedProgress || "Belum ada informasi progres materi."}
             </Text>
           )}

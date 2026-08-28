@@ -18,10 +18,17 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mulazamahku.app"
+      "bundleIdentifier": "com.mulazamahku.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch", "remote-notification"]
+      }
     },
     "android": {
       "package": "com.mulazamahku.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo_rounded.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "permissions": [
         "SCHEDULE_EXACT_ALARM",
         "USE_EXACT_ALARM",
@@ -48,7 +55,8 @@
           "sounds": []
         }
       ],
-      "expo-task-manager"
+      "expo-task-manager",
+      "expo-background-fetch"
     ],
     "updates": {
       "url": "https://u.expo.dev/6443bfa2-2a27-4d9e-b6c3-93e464ebbab1"

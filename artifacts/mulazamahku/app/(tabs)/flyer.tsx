@@ -91,7 +91,7 @@ export default function FlyerScreen() {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: false,
       quality: 0.8,
     });
@@ -123,8 +123,15 @@ export default function FlyerScreen() {
 
     setUploading(true);
 
+    // Simpan ke variable lokal SEBELUM async — state bisa berubah kapan saja
+    const isEditing = !!editingFlyerId;
+    const currentEditingId = editingFlyerId;
+
     let success = false;
     let error: string | undefined = undefined;
+    let pushResult: { sent: number; errors: number } | undefined = undefined;
+
+    console.log("[Flyer Upload] Starting...", { editingFlyerId: currentEditingId, selectedKajian, previewUri: previewUri?.substring(0, 80) });
 
     const parseTanggal = (input: string) => {
       if (!input.trim()) return new Date().toISOString().split("T")[0];
@@ -141,11 +148,11 @@ export default function FlyerScreen() {
 
     const finalTanggal = parseTanggal(tanggalBerlaku);
 
-    if (editingFlyerId) {
+    if (currentEditingId) {
       // Cek apakah gambar diganti (URI berbeda dari original)
       const newImageUri = (previewUri && previewUri !== originalImageUrl) ? previewUri : undefined;
       const res = await FlyerService.updateFlyer(
-        editingFlyerId,
+        currentEditingId,
         selectedKajian,
         keterangan,
         finalTanggal,
@@ -154,7 +161,10 @@ export default function FlyerScreen() {
       success = res.success;
       error = res.error;
     } else {
-      if (!previewUri) return;
+      if (!previewUri) {
+        setUploading(false);
+        return;
+      }
       const res = await FlyerService.uploadFlyer(
         previewUri,
         selectedKajian,
@@ -164,25 +174,44 @@ export default function FlyerScreen() {
       );
       success = res.success;
       error = res.error;
+      pushResult = res.pushResult;
     }
 
     setUploading(false);
-    setShowUploadForm(false);
-    setPreviewUri(null);
-    setSelectedKajian("");
-    setKeterangan("");
-    setEditingFlyerId(null);
-    setOriginalImageUrl(null);
 
     if (success) {
-      const msg = editingFlyerId ? "Flyer berhasil diperbarui." : "Flyer berhasil diupload.";
+      // Reset form HANYA setelah sukses — jangan buang data user kalau gagal
+      setShowUploadForm(false);
+      setPreviewUri(null);
+      setSelectedKajian("");
+      setKeterangan("");
+      setTanggalBerlaku("");
+      setEditingFlyerId(null);
+      setOriginalImageUrl(null);
+
+      const action = isEditing ? "diperbarui" : "diupload";
+      let msg = `Flyer berhasil ${action}.`;
+
+      // Tampilkan info push notification ke admin
+      if (pushResult && !isEditing) {
+        if (pushResult.sent > 0) {
+          msg += `\n\n📨 Notifikasi terkirim ke ${pushResult.sent} perangkat.`;
+        }
+        if (pushResult.errors > 0) {
+          msg += `\n⚠️ ${pushResult.errors} notifikasi gagal terkirim.`;
+        }
+      }
+
+      console.log("[Flyer Upload] Success:", msg);
       if (Platform.OS === "web") window.alert(msg);
       else Alert.alert("Berhasil ✓", msg);
       
       fetchFlyers();
       if (Platform.OS !== "web") scheduleAllKajianReminders(user?.role).catch(() => {});
     } else {
+      // JANGAN reset form — biarkan user coba lagi tanpa isi ulang
       const msg = error || "Terjadi kesalahan.";
+      console.error("[Flyer Upload] Failed:", msg);
       if (Platform.OS === "web") window.alert("Gagal: " + msg);
       else Alert.alert("Gagal", msg);
     }
@@ -261,8 +290,8 @@ export default function FlyerScreen() {
       />
       <View style={styles.cardBody}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+          <View style={{ flex: 1, alignItems: "flex-start" }}>
+            <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "left" }]}>
               {getKajianTitle(item.kajian_id)}
             </Text>
             {item.keterangan ? (
@@ -271,12 +300,12 @@ export default function FlyerScreen() {
                   setCopyTextContent(item.keterangan || "");
                   setCopyTextModalVisible(true);
                 }}
-                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1, alignItems: "flex-start" }]}
               >
-                <Text style={[styles.cardDesc, { color: colors.mutedForeground }]}>
+                <Text style={[styles.cardDesc, { color: colors.mutedForeground, textAlign: "left" }]}>
                   {item.keterangan}
                 </Text>
-                <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontWeight: "500" }}>
+                <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontWeight: "500", textAlign: "left" }}>
                   Ketuk untuk menyalin teks
                 </Text>
               </Pressable>
@@ -307,9 +336,9 @@ export default function FlyerScreen() {
             </View>
           )}
         </View>
-        <View style={styles.cardMeta}>
+        <View style={[styles.cardMeta, { justifyContent: "flex-start" }]}>
           <Feather name="user" size={11} color={colors.mutedForeground} />
-          <Text style={[styles.cardMetaText, { color: colors.mutedForeground }]}>
+          <Text style={[styles.cardMetaText, { color: colors.mutedForeground, textAlign: "left" }]}>
             {item.dibuat_oleh} · {formatDate(item.created_at)}
           </Text>
         </View>
@@ -541,8 +570,8 @@ export default function FlyerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
-  title: { fontSize: 28, fontFamily: "Inter_700Bold", marginBottom: 4 },
-  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  title: { fontSize: 28, fontFamily: "Inter_700Bold", marginBottom: 4, textAlign: "left" },
+  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "left" },
   centerContent: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   loadingText: { marginTop: 12, fontSize: 14, fontFamily: "Inter_400Regular" },
   emptyText: { fontSize: 14, fontFamily: "Inter_500Medium", textAlign: "center" },
@@ -556,8 +585,8 @@ const styles = StyleSheet.create({
   cardBody: { padding: 14 },
   cardTitle: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 4, textAlign: "left" },
   cardDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 8, textAlign: "left" },
-  cardMeta: { flexDirection: "row", alignItems: "center", gap: 5 },
-  cardMetaText: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  cardMeta: { flexDirection: "row", alignItems: "center", gap: 5, justifyContent: "flex-start" },
+  cardMetaText: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "left" },
   deleteBtn: {
     width: 32, height: 32, borderRadius: 8, borderWidth: 1,
     alignItems: "center", justifyContent: "center", marginLeft: 8,

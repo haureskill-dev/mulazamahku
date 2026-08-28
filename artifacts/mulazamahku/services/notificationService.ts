@@ -1,21 +1,13 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import * as BackgroundFetch from "expo-background-fetch";
+import * as TaskManager from "expo-task-manager";
 import { DUMMY_KAJIAN } from "./dummyData";
 import { KajianTambahanService } from "./kajianTambahanService";
 import { Flyer } from "@/types";
 import { Kajian } from "../types";
+import { BACKGROUND_TASK_NAME } from "./backgroundTaskSetup";
 
-// Import opsional — module ini butuh native build baru, jadi harus graceful
-let BackgroundFetch: any = null;
-let TaskManager: any = null;
-try {
-  TaskManager = require("expo-task-manager");
-  BackgroundFetch = require("expo-background-fetch");
-} catch {
-  console.log("[NotifService] expo-task-manager / expo-background-fetch belum tersedia di build ini.");
-}
-
-const BACKGROUND_TASK_NAME = "KAJIAN_NOTIFICATION_SCHEDULER";
 const LOG_PREFIX = "[NotifService]";
 
 if (Platform.OS !== "web") {
@@ -190,6 +182,9 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
     triggerDate: Date;
   }>();
 
+  // Notifikasi yang waktunya baru saja lewat — kirim langsung
+  const immediateNotifs: { id: string; content: Notifications.NotificationContentInput }[] = [];
+
   for (let offset = 0; offset < 30; offset++) {
     const date = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
     const dateStr = getLocalDateString(date);
@@ -250,20 +245,27 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
       const h1Time = new Date(date.getTime() - 24 * 60 * 60 * 1000);
       h1Time.setHours(20, 0, 0, 0);
 
-      if (h1Time.getTime() > Date.now()) {
-        const id = `kajian-h1-${kajian.id}-${dateStr}`;
-        desiredNotifs.set(id, {
-          content: {
-            title: batalInfo ? "⚠️ Info Update Kajian" : "📚 Pengingat Kajian Besok",
-            body: batalInfo 
-              ? `Kajian "${kajian.judul}" besok DIBATALKAN karena: ${batalInfo.alasan}`
-              : `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
-            data: { kajianId: kajian.id, reminderType: "h1", dateStr, isCancelled: !!batalInfo },
-            sound: true,
-            channelId: "kajian-reminders-v2",
-          },
-          triggerDate: h1Time,
-        });
+      const h1Content: Notifications.NotificationContentInput = {
+        title: batalInfo ? "⚠️ Info Update Kajian" : "📚 Pengingat Kajian Besok",
+        body: batalInfo 
+          ? `Kajian "${kajian.judul}" besok DIBATALKAN karena: ${batalInfo.alasan}`
+          : `"${kajian.judul}"${pekanLabel} di ${kajian.lokasi}${waktuLabel}. Siapkan diri untuk menuntut ilmu!`,
+        data: { kajianId: kajian.id, reminderType: "h1", dateStr, isCancelled: !!batalInfo },
+        sound: true,
+        channelId: "kajian-reminders-v2",
+      };
+
+      const h1Id = `kajian-h1-${kajian.id}-${dateStr}`;
+      const h1Diff = h1Time.getTime() - Date.now();
+
+      if (h1Diff > 0) {
+        // Waktu masih di masa depan → jadwalkan normal
+        desiredNotifs.set(h1Id, { content: h1Content, triggerDate: h1Time });
+      } else if (h1Diff > -4 * 60 * 60 * 1000 && !existingIds.has(h1Id)) {
+        // Waktu sudah lewat tapi masih malam yang sama (≤4 jam = sampai jam 00:00)
+        // & belum pernah dikirim → Kirim langsung agar user tetap dapat notifikasi
+        console.log(LOG_PREFIX, `H-1 terlewat ${Math.round(-h1Diff / 60000)} menit lalu, kirim langsung: ${kajian.judul}`);
+        immediateNotifs.push({ id: h1Id, content: h1Content });
       }
     }
   }
@@ -303,7 +305,23 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
     }
   }
   
-  console.log(LOG_PREFIX, `Selesai! Baru dijadwalkan: ${scheduledCount}, Error: ${errorCount}, Total aktif: ${desiredNotifs.size}`);
+  // ── Kirim notifikasi yang waktunya baru lewat (immediate) ─────────────
+  let immediateCount = 0;
+  for (const imm of immediateNotifs) {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        identifier: imm.id,
+        content: imm.content,
+        trigger: null, // null = kirim langsung
+      });
+      immediateCount++;
+    } catch (e) {
+      errorCount++;
+      console.warn(LOG_PREFIX, `Gagal kirim immediate notifikasi ${imm.id}:`, e);
+    }
+  }
+
+  console.log(LOG_PREFIX, `Selesai! Dijadwalkan: ${scheduledCount}, Immediate: ${immediateCount}, Error: ${errorCount}, Total aktif: ${desiredNotifs.size}`);
 }
 
 export async function cancelAllKajianReminders(): Promise<void> {
@@ -334,42 +352,61 @@ export async function debugListScheduledNotifications(): Promise<string> {
   return `Total: ${notifs.length} notifikasi\n\n${lines.join("\n\n")}`;
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// BACKGROUND TASK — Agar notifikasi tetap dijadwalkan walau app tidak dibuka
-// Hanya aktif jika native module tersedia (setelah build ulang)
-// ══════════════════════════════════════════════════════════════════════════
+/**
+ * Kirim notifikasi test langsung (muncul dalam 3 detik).
+ * Untuk verifikasi apakah sistem notifikasi berfungsi.
+ */
+export async function sendTestNotification(): Promise<boolean> {
+  if (Platform.OS === "web") return false;
 
-// Definisikan background task (opsional)
-if (Platform.OS !== "web" && TaskManager && BackgroundFetch) {
   try {
-    TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
-      try {
-        console.log(LOG_PREFIX, "[Background] Menjalankan penjadwalan ulang notifikasi...");
-        await scheduleAllKajianReminders();
-        console.log(LOG_PREFIX, "[Background] Selesai.");
-        return BackgroundFetch.BackgroundFetchResult.NewData;
-      } catch (e) {
-        console.error(LOG_PREFIX, "[Background] Error:", e);
-        return BackgroundFetch.BackgroundFetchResult.Failed;
-      }
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      console.log(LOG_PREFIX, "Test notif: izin tidak diberikan");
+      return false;
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: "test-notif-" + Date.now(),
+      content: {
+        title: "🔔 Test Notifikasi Berhasil!",
+        body: "Alhamdulillah, notifikasi berfungsi dengan baik di perangkat ini.",
+        sound: true,
+        channelId: "kajian-reminders-v2",
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(Date.now() + 3000), // 3 detik dari sekarang
+      },
     });
+
+    console.log(LOG_PREFIX, "Test notifikasi dijadwalkan (3 detik lagi)");
+    return true;
   } catch (e) {
-    console.log(LOG_PREFIX, "Tidak bisa mendefinisikan background task:", e);
+    console.error(LOG_PREFIX, "Gagal kirim test notifikasi:", e);
+    return false;
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// BACKGROUND FETCH REGISTRATION
+// defineTask() sudah dipanggil di backgroundTaskSetup.ts (top-level).
+// Fungsi ini hanya mendaftarkan task ke BackgroundFetch scheduler.
+// ══════════════════════════════════════════════════════════════════════════
 
 /**
  * Daftarkan background task untuk menjadwalkan notifikasi secara berkala.
  * Panggil SEKALI saat app pertama kali dibuka (misal di _layout.tsx).
- * Graceful degradation: jika native module belum tersedia, fungsi ini tidak error.
+ *
+ * Interval: 6 jam (21600 detik)
+ * - Cukup sering untuk menangkap perubahan jadwal kajian
+ * - Cukup jarang agar tidak di-throttle oleh Android Doze / iOS Background App Refresh
+ *
+ * stopOnTerminate: false → Task tetap terdaftar walau app di-force-close
+ * startOnBoot: true → Task didaftarkan ulang setelah device restart
  */
 export async function registerBackgroundNotificationTask(): Promise<void> {
   if (Platform.OS === "web") return;
-  
-  if (!TaskManager || !BackgroundFetch) {
-    console.log(LOG_PREFIX, "Background task tidak tersedia (butuh build ulang). Notifikasi tetap berjalan saat app dibuka.");
-    return;
-  }
 
   try {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
@@ -379,12 +416,12 @@ export async function registerBackgroundNotificationTask(): Promise<void> {
     }
 
     await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-      minimumInterval: 60 * 60,
-      stopOnTerminate: false,
-      startOnBoot: true,
+      minimumInterval: 6 * 60 * 60, // 6 jam — ramah baterai, tidak di-throttle OS
+      stopOnTerminate: false,        // Tetap jalan walau app ditutup
+      startOnBoot: true,             // Jalan ulang setelah HP restart
     });
     
-    console.log(LOG_PREFIX, "Background task berhasil didaftarkan!");
+    console.log(LOG_PREFIX, "Background task berhasil didaftarkan! (interval: 6 jam)");
   } catch (e) {
     console.warn(LOG_PREFIX, "Gagal mendaftarkan background task:", e);
   }

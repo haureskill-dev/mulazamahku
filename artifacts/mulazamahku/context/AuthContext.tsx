@@ -4,6 +4,7 @@ import { StorageService } from "@/services/storage";
 import { UserProfile, UserRole } from "@/types";
 import { logUserLogin } from "@/services/userLogger";
 import { supabase } from "@/services/supabase";
+import { unregisterPushToken } from "@/services/pushTokenService";
 
 interface AuthContextValue {
   user: UserProfile | null;
@@ -54,6 +55,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Hapus push token dari Supabase sebelum logout
+    try {
+      await unregisterPushToken();
+    } catch (e) {
+      console.warn("[Auth] Gagal menghapus push token:", e);
+    }
+
     try {
       await supabase.auth.signOut();
     } catch (e) {}

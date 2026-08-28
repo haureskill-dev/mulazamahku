@@ -250,11 +250,13 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.brandArea}>
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          <View style={[styles.logoContainer, { borderColor: colors.gold }]}>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={[styles.appName, { color: colors.primary }]}>Mulazamahku</Text>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 4, marginBottom: 8, paddingHorizontal: 20 }}>
             <View style={{ height: 1, backgroundColor: colors.border, flex: 1 }} />
@@ -522,10 +524,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 36,
   },
-  logoImage: {
+  logoContainer: {
     width: 100,
     height: 100,
+    borderRadius: 50,
+    borderWidth: 2.5,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
     marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  logoImage: {
+    width: "88%",
+    height: "88%",
+    borderRadius: 44,
   },
   appName: {
     fontSize: 26,
