@@ -12,7 +12,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/splash_icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
@@ -25,10 +25,6 @@
     },
     "android": {
       "package": "com.mulazamahku.app",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo_rounded.png",
-        "backgroundColor": "#FFFFFF"
-      },
       "permissions": [
         "SCHEDULE_EXACT_ALARM",
         "USE_EXACT_ALARM",
