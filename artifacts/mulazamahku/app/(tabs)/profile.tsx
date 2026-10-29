@@ -10,8 +10,7 @@ import { useMudzakarah } from "@/context/MudzakarahContext";
 import { useColors } from "@/hooks/useColors";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
 import * as Updates from "expo-updates";
-import { debugListScheduledNotifications, scheduleAllKajianReminders } from "@/services/notificationService";
-import { getPushTokenStatus, sendPushToAllUsers, registerPushToken } from "@/services/pushTokenService";
+import { useThemeState, setThemeMode } from "@/services/themeStore";
 
 
 function formatDate(iso: string) {
@@ -64,6 +63,7 @@ export default function ProfileScreen() {
   const { user, signOut, updateProfile } = useAuth();
   const { notes } = useNotes();
   const { topics } = useMudzakarah();
+  const themeState = useThemeState();
 
   const topInset = insets.top;
   const bottomInset = insets.bottom;
@@ -146,7 +146,7 @@ export default function ProfileScreen() {
           { backgroundColor: colors.primary, paddingTop: topInset + 16 },
         ]}
       >
-        <View style={[styles.logoContainer, { borderColor: colors.gold }]}>
+        <View style={styles.logoContainer}>
           <Image
             source={require("@/assets/images/logo.png")}
             style={styles.headerLogo}
@@ -234,9 +234,9 @@ export default function ProfileScreen() {
           />
           <SettingItem
             icon="image"
-            label="Desain Faedah"
-            value="0 desain"
-            onPress={() => router.push("/(tabs)/faedah")}
+            label="Pojok Baca & Faedah"
+            value="Buka"
+            onPress={() => router.push("/(tabs)/pojok-baca" as any)}
           />
           {user?.role !== "pengajar" && (
             <SettingItem
@@ -289,139 +289,30 @@ export default function ProfileScreen() {
 
 
       <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>NOTIFIKASI & DEBUG</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>TAMPILAN</Text>
         <View style={[styles.settingGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SettingItem
-            icon="bell"
-            label="Test Notif 5 Detik"
-            onPress={async () => {
-              if (Platform.OS !== "web") {
-                const Notifications = require("expo-notifications");
-                try {
-                  await Notifications.scheduleNotificationAsync({
-                    content: {
-                      title: "✅ Test Notifikasi Berhasil!",
-                      body: "Jika banner ini muncul dan berbunyi, berarti sistem notifikasi HP Anda sudah 100% normal.",
-                      sound: true,
-                      channelId: "kajian-reminders-v2",
-                      data: { type: "test" },
-                    },
-                    trigger: {
-                      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-                      seconds: 5,
-                      repeats: false,
-                    },
-                  });
-                  Alert.alert("Berhasil", "Notifikasi akan muncul dalam 5 detik. Tutup aplikasi sekarang untuk melihat hasilnya!");
-                } catch (e: any) {
-                  Alert.alert("Gagal", `Error: ${e?.message || e}`);
-                }
-              } else {
-                Alert.alert("Info", "Notifikasi tidak tersedia di web.");
-              }
+            icon={themeState.mode === "auto" ? "clock" : themeState.scheme === "dark" ? "moon" : "sun"}
+            label="Mode Tampilan"
+            value={
+              themeState.mode === "auto"
+                ? `Otomatis (${themeState.scheme === "dark" ? "Malam" : "Siang"})`
+                : themeState.mode === "dark"
+                ? "Selalu Gelap"
+                : "Selalu Terang"
+            }
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              const next = themeState.mode === "auto" ? "light" : themeState.mode === "light" ? "dark" : "auto";
+              setThemeMode(next);
             }}
           />
-          <SettingItem
-            icon="search"
-            label="Cek Push Token"
-            onPress={async () => {
-              if (Platform.OS === "web") {
-                Alert.alert("Info", "Push token tidak tersedia di web.");
-                return;
-              }
-              try {
-                const status = await getPushTokenStatus();
-                const lines = [
-                  `Platform: ${status.platform}`,
-                  `Izin Notifikasi: ${status.permissionStatus}`,
-                  `Project ID: ${status.projectId ? "✅ Ada" : "❌ Tidak ada"}`,
-                  `Expo Token: ${status.expoToken ? "✅ " + status.expoToken.substring(0, 30) + "..." : "❌ Belum ada"}`,
-                  `Terdaftar di Supabase: ${status.isRegisteredInSupabase ? "✅ Ya" : "❌ Belum"}`,
-                  `Total device terdaftar: ${status.totalTokensInSupabase}`,
-                  status.error ? `\n⚠️ Error: ${status.error}` : "",
-                ];
-                Alert.alert("Status Push Token", lines.filter(Boolean).join("\n"));
-              } catch (e: any) {
-                Alert.alert("Error", e?.message || "Gagal cek status");
-              }
-            }}
-          />
-          <SettingItem
-            icon="refresh-cw"
-            label="Daftarkan Ulang Push Token"
-            onPress={async () => {
-              if (Platform.OS === "web") return;
-              try {
-                const token = await registerPushToken(user?.role || "murid", user?.nama);
-                if (token) {
-                  Alert.alert("Berhasil", `Token berhasil didaftarkan:\n${token.substring(0, 40)}...`);
-                } else {
-                  Alert.alert("Gagal", "Token tidak bisa didaftarkan. Cek log konsol untuk detail.");
-                }
-              } catch (e: any) {
-                Alert.alert("Error", e?.message || "Gagal daftarkan token");
-              }
-            }}
-          />
-          <SettingItem
-            icon="list"
-            label="Cek Notifikasi Terjadwal"
-            onPress={async () => {
-              try {
-                const result = await debugListScheduledNotifications();
-                Alert.alert("Notifikasi Terjadwal", result);
-              } catch (e: any) {
-                Alert.alert("Error", e?.message || "Gagal cek notifikasi");
-              }
-            }}
-          />
-          <SettingItem
-            icon="calendar"
-            label="Jadwalkan Ulang Notifikasi"
-            onPress={async () => {
-              try {
-                await scheduleAllKajianReminders(user?.role);
-                const result = await debugListScheduledNotifications();
-                Alert.alert("Berhasil", `Notifikasi dijadwalkan ulang!\n\n${result.substring(0, 200)}...`);
-              } catch (e: any) {
-                Alert.alert("Error", e?.message || "Gagal jadwalkan ulang");
-              }
-            }}
-          />
-          {user?.role === "admin" && (
-            <SettingItem
-              icon="send"
-              label="Test Push ke Semua Device"
-              onPress={async () => {
-                Alert.alert(
-                  "Kirim Test Push",
-                  "Ini akan mengirim notifikasi ke SEMUA device yang terdaftar. Lanjutkan?",
-                  [
-                    { text: "Batal", style: "cancel" },
-                    {
-                      text: "Kirim",
-                      onPress: async () => {
-                        try {
-                          const result = await sendPushToAllUsers(
-                            "🔔 Test Push Notification",
-                            "Ini adalah test push dari admin. Jika Anda melihat ini, push notification berfungsi!",
-                            { type: "test" }
-                          );
-                          Alert.alert(
-                            "Hasil",
-                            `Terkirim: ${result.sent}\nError: ${result.errors}\nToken invalid dibersihkan: ${result.invalidTokensCleaned}`
-                          );
-                        } catch (e: any) {
-                          Alert.alert("Error", e?.message || "Gagal kirim push");
-                        }
-                      },
-                    },
-                  ]
-                );
-              }}
-            />
-          )}
         </View>
+        <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 6, marginHorizontal: 4, lineHeight: 16 }}>
+          {themeState.mode === "auto"
+            ? "Otomatis: Terang di siang hari (06.00 – 18.00), Gelap saat malam tiba."
+            : "Sentuh untuk berganti antara Otomatis, Terang, atau Gelap."}
+        </Text>
       </View>
 
       <View style={styles.section}>
@@ -498,24 +389,13 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 68,
     height: 68,
-    borderRadius: 34,
-    borderWidth: 2,
-    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   headerLogo: {
-    width: "88%",
-    height: "88%",
-    borderRadius: 30,
-    opacity: 0.95,
+    width: "100%",
+    height: "100%",
   },
   avatar: {
     width: 80,

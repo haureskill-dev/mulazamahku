@@ -39,9 +39,9 @@ function NativeTabLayout() {
           <Label>Catatan</Label>
         </NativeTabs.Trigger>
       )}
-      <NativeTabs.Trigger name="faedah">
-        <Icon sf={{ default: "photo.artframe", selected: "photo.artframe" }} />
-        <Label>Faedah</Label>
+      <NativeTabs.Trigger name="pojok-baca">
+        <Icon sf={{ default: "book.closed", selected: "book.closed.fill" }} />
+        <Label>Pojok Baca</Label>
       </NativeTabs.Trigger>
       {user?.role === "admin" && (
         <NativeTabs.Trigger name="flyer">
@@ -52,10 +52,6 @@ function NativeTabLayout() {
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Beranda</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="rujukan">
-        <Icon sf={{ default: "book", selected: "book.fill" }} />
-        <Label>Rujukan</Label>
       </NativeTabs.Trigger>
       {user?.role !== "pengajar" && (
         <NativeTabs.Trigger name="mudzakarah">
@@ -83,10 +79,9 @@ function ClassicTabLayout() {
   // Hitung jumlah tab yang terlihat berdasarkan role user
   let visibleTabsCount = 0;
   if (user?.role !== "pengajar") visibleTabsCount++; // notes
-  visibleTabsCount++; // faedah
+  visibleTabsCount++; // pojok-baca (menggabungkan faidah & rujukan)
   if (user?.role === "admin") visibleTabsCount++; // flyer
   visibleTabsCount++; // index
-  visibleTabsCount++; // rujukan
   if (user?.role !== "pengajar") visibleTabsCount++; // mudzakarah
   visibleTabsCount++; // profile
 
@@ -138,15 +133,21 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="faedah"
+        name="pojok-baca"
         options={{
-          title: "Faedah",
+          title: "Pojok Baca",
           tabBarIcon: ({ color }) =>
             isIOS && SymbolViewComponent ? (
-              <SymbolViewComponent name="photo.artframe" tintColor={color} size={24} />
+              <SymbolViewComponent name="book.closed" tintColor={color} size={24} />
             ) : (
-              <Feather name="image" size={22} color={color} />
+              <Feather name="book-open" size={22} color={color} />
             ),
+        }}
+      />
+      <Tabs.Screen
+        name="faedah"
+        options={{
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -182,7 +183,7 @@ function ClassicTabLayout() {
                     borderRadius: 28,
                     justifyContent: "center",
                     alignItems: "center",
-                    marginBottom: 20,
+                    marginBottom: 32,
                     shadowColor: colors.primary,
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.3,
@@ -203,13 +204,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="rujukan"
         options={{
-          title: "Rujukan",
-          tabBarIcon: ({ color }) =>
-            isIOS && SymbolViewComponent ? (
-              <SymbolViewComponent name="book" tintColor={color} size={24} />
-            ) : (
-              <Feather name="book-open" size={22} color={color} />
-            ),
+          href: null,
         }}
       />
       <Tabs.Screen

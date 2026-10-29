@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { StorageService } from "@/services/storage";
-import { UserRole } from "@/types";
+import { UserProfile, UserRole } from "@/types";
 import { supabase } from "@/services/supabase";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
@@ -224,6 +224,19 @@ export default function LoginScreen() {
     }
   };
 
+  const handleDemoSignIn = async () => {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const role = selectedRole || "murid";
+    const defaultNames: Record<UserRole, string> = {
+      murid: "Thalibul Ilmi",
+      pengajar: "Ustadzah Rubeya Litiloly",
+      admin: "Pengelola Mulazamah",
+    };
+    await StorageService.set(StorageService.ACCESS_GATE_KEY, role);
+    await signIn(defaultNames[role], `${role}@mulazamahku.com`, role);
+    router.replace("/(tabs)");
+  };
+
   // ── Loading state ───────────────────────────────────────────
   if (gateVerified === null) {
     return (
@@ -250,7 +263,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.brandArea}>
-          <View style={[styles.logoContainer, { borderColor: colors.gold }]}>
+          <View style={styles.logoContainer}>
             <Image
               source={require("@/assets/images/logo.png")}
               style={styles.logoImage}
@@ -490,6 +503,31 @@ export default function LoginScreen() {
                 </View>
               )}
             </Pressable>
+
+            <Pressable
+              onPress={handleDemoSignIn}
+              style={({ pressed }) => [
+                {
+                  marginTop: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderRadius: 25,
+                  borderWidth: 1.5,
+                  borderColor: colors.primary,
+                  backgroundColor: pressed ? "rgba(43, 90, 142, 0.08)" : "transparent",
+                  alignSelf: "center",
+                },
+              ]}
+            >
+              <Feather name="arrow-right-circle" size={16} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>
+                Masuk Langsung ({ROLE_INFO[selectedRole || "murid"].label})
+              </Text>
+            </Pressable>
           </View>
         )}
 
@@ -527,23 +565,13 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    borderWidth: 2.5,
-    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
     marginBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
   },
   logoImage: {
-    width: "88%",
-    height: "88%",
-    borderRadius: 44,
+    width: "100%",
+    height: "100%",
   },
   appName: {
     fontSize: 26,

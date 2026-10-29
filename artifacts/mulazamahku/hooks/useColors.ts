@@ -1,6 +1,5 @@
-import { useColorScheme } from "react-native";
-
 import colors from "@/constants/colors";
+import { useThemeState } from "@/services/themeStore";
 
 /**
  * Returns the design tokens for the current color scheme.
@@ -8,17 +7,11 @@ import colors from "@/constants/colors";
  * The returned object contains all color tokens for the active palette
  * plus scheme-independent values like `radius`.
  *
- * Falls back to the light palette when no dark key is defined in
- * constants/colors.ts (the scaffold ships light-only by default).
- * When a sibling web artifact's dark tokens are synced into a `dark`
- * key, this hook will automatically switch palettes based on the
- * device's appearance setting.
+ * Skema ditentukan oleh themeStore: otomatis terang di siang hari
+ * (06:00–17:59) dan gelap di malam hari, kecuali user memilih manual.
  */
 export function useColors() {
-  const scheme = useColorScheme();
-  const palette =
-    scheme === "dark" && "dark" in colors
-      ? (colors as Record<string, typeof colors.light>).dark
-      : colors.light;
-  return { ...palette, radius: colors.radius };
+  const { scheme } = useThemeState();
+  const palette = scheme === "dark" ? colors.dark : colors.light;
+  return { ...palette, isDark: scheme === "dark", radius: colors.radius };
 }

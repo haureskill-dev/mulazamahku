@@ -57,6 +57,15 @@ export const KajianTambahanService = {
     return { success: true };
   },
 
+  async createWithId(id: string, kajian: Omit<KajianTambahan, "id" | "created_at">): Promise<{ success: boolean; error?: string }> {
+    const { error } = await supabase.from(TABLE_NAME).upsert(
+      { id, ...kajian },
+      { onConflict: 'id' }
+    );
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
   async delete(id: string): Promise<{ success: boolean; error?: string }> {
     const { error } = await supabase.from(TABLE_NAME).upsert({ id, is_deleted: true }, { onConflict: 'id' });
     if (error) return { success: false, error: error.message };

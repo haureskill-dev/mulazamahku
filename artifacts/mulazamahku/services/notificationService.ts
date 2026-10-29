@@ -178,12 +178,12 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
 
   // ── Hitung notifikasi yang seharusnya dijadwalkan ──────────────────────
   const desiredNotifs = new Map<string, {
-    content: Notifications.NotificationContentInput;
+    content: any;
     triggerDate: Date;
   }>();
 
   // Notifikasi yang waktunya baru saja lewat — kirim langsung
-  const immediateNotifs: { id: string; content: Notifications.NotificationContentInput }[] = [];
+  const immediateNotifs: { id: string; content: any }[] = [];
 
   for (let offset = 0; offset < 30; offset++) {
     const date = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
@@ -245,7 +245,7 @@ export async function scheduleAllKajianReminders(userRole?: string): Promise<voi
       const h1Time = new Date(date.getTime() - 24 * 60 * 60 * 1000);
       h1Time.setHours(20, 0, 0, 0);
 
-      const h1Content: Notifications.NotificationContentInput = {
+      const h1Content: any = {
         title: batalInfo ? "⚠️ Info Update Kajian" : "📚 Pengingat Kajian Besok",
         body: batalInfo 
           ? `Kajian "${kajian.judul}" besok DIBATALKAN karena: ${batalInfo.alasan}`
@@ -373,7 +373,7 @@ export async function sendTestNotification(): Promise<boolean> {
         body: "Alhamdulillah, notifikasi berfungsi dengan baik di perangkat ini.",
         sound: true,
         channelId: "kajian-reminders-v2",
-      },
+      } as any,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: new Date(Date.now() + 3000), // 3 detik dari sekarang

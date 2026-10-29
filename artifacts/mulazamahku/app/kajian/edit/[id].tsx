@@ -64,14 +64,13 @@ export default function EditJadwalScreen() {
 
     let success, error;
     if (!isCustomExists) {
-      // Create new with specific ID
-      const res = await KajianTambahanService.create({
-        id: id as string,
+      // Create new entry with the same ID (upsert) — aman untuk dummy maupun custom
+      const res = await KajianTambahanService.createWithId(id as string, {
         ...form,
         ustadz: "Ustadzah Rubeya Litiloly",
         created_by_email: user?.email || "",
         created_by_role: user?.role || "",
-      } as any);
+      });
       success = res.success;
       error = res.error;
     } else {

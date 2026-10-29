@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -25,15 +25,38 @@ import { RujukanService } from "@/services/rujukanService";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
 import { RujukanKitab } from "@/types";
 
-export default function RujukanScreen() {
+export default function RujukanScreen({
+  hideTopInset = false,
+  headerComponent,
+}: {
+  hideTopInset?: boolean;
+  headerComponent?: React.ReactNode;
+} = {}) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { user } = useAuth();
 
   const [rujukanList, setRujukanList] = useState<RujukanKitab[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Urutkan kitab A-Z dan filter berdasarkan pencarian
+  const filteredAndSortedList = useMemo(() => {
+    let list = [...rujukanList];
+    list.sort((a, b) => (a.judul_kitab || "").localeCompare(b.judul_kitab || "", "id", { sensitivity: "base" }));
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (r) =>
+          (r.judul_kitab && r.judul_kitab.toLowerCase().includes(q)) ||
+          (r.penulis && r.penulis.toLowerCase().includes(q)) ||
+          (r.deskripsi && r.deskripsi.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [rujukanList, searchQuery]);
 
   // State form
   const [showForm, setShowForm] = useState(false);
@@ -197,12 +220,46 @@ export default function RujukanScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Rujukan Kitab</Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Daftar kitab referensi yang digunakan dalam kajian.
-        </Text>
+    <View style={[styles.container, { paddingTop: hideTopInset ? 0 : insets.top, backgroundColor: colors.background }]}>
+      {headerComponent ? (
+        headerComponent
+      ) : (
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.foreground }]}>Rujukan Kitab</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            Daftar kitab referensi yang digunakan dalam kajian.
+          </Text>
+        </View>
+      )}
+
+      {/* Search Bar & Counter */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Feather name="search" size={16} color={colors.mutedForeground} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Cari judul kitab atau penulis..."
+            placeholderTextColor={colors.mutedForeground}
+            style={[styles.searchInput, { color: colors.foreground }]}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+              <Feather name="x-circle" size={16} color={colors.mutedForeground} />
+            </Pressable>
+          )}
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 6, paddingHorizontal: 4 }}>
+          <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: colors.mutedForeground }}>
+            Urut A–Z · {filteredAndSortedList.length} kitab
+          </Text>
+          {searchQuery.trim().length > 0 && (
+            <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.primary }}>
+              Hasil filter
+            </Text>
+          )}
+        </View>
       </View>
 
       {/* Tombol Tambah untuk Pengajar & Admin */}
@@ -235,9 +292,19 @@ export default function RujukanScreen() {
             Belum ada rujukan kitab.
           </Text>
         </View>
+      ) : filteredAndSortedList.length === 0 ? (
+        <View style={styles.centerContent}>
+          <Feather name="search" size={40} color={colors.mutedForeground} style={{ opacity: 0.4, marginBottom: 12 }} />
+          <Text style={[styles.emptyText, { color: colors.foreground }]}>
+            Kitab tidak ditemukan
+          </Text>
+          <Text style={[{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 4, textAlign: "center" }]}>
+            Tidak ada kitab atau penulis yang cocok dengan "{searchQuery}".
+          </Text>
+        </View>
       ) : (
         <FlatList
-          data={rujukanList}
+          data={filteredAndSortedList}
           keyExtractor={(item) => item.id}
           renderItem={renderRujukanItem}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100 }}
@@ -405,6 +472,20 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
   title: { fontSize: 28, fontFamily: "Inter_700Bold", marginBottom: 4 },
   subtitle: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
   centerContent: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   loadingText: { marginTop: 12, fontSize: 14, fontFamily: "Inter_400Regular" },
   emptyText: { fontSize: 14, fontFamily: "Inter_500Medium", textAlign: "center" },

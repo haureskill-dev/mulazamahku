@@ -30,6 +30,10 @@ import { KajianTambahanService } from "@/services/kajianTambahanService";
 import { scheduleAllKajianReminders } from "@/services/notificationService";
 import { Image } from "expo-image";
 import { WebPullToRefresh } from "@/components/WebPullToRefresh";
+import { FullCalendarModal } from "@/components/FullCalendarModal";
+import { FloatingScrollParchment } from "@/components/FloatingScrollParchment";
+import { formatHijri, formatMasehi } from "@/utils/dates";
+import { WebNotificationService } from "@/services/webNotificationService";
 
 const DAYS_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"];
 
@@ -63,7 +67,7 @@ function shortPekan(pekanStr: string): string {
 /** Cek apakah kajian aktif pada tanggal tertentu (cocok hari + pekan) */
 function isKajianOnDate(kajian: Kajian, date: Date, flyers: Flyer[] = []): boolean {
   // Termasuk status 'akan_datang' agar kajian yang belum rutin tetap ditampilkan
-  if (kajian.status === "nonaktif" || kajian.status === "selesai") return false;
+  if ((kajian.status as string) === "nonaktif" || kajian.status === "selesai") return false;
 
   // Cek apakah ada flyer (reschedule) yang tanggal berlakunya cocok dengan date ini
   const dateStr = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
@@ -156,7 +160,6 @@ const MOTIVASI_QUOTES = [
   "📚 \"Menuntut ilmu itu wajib atas setiap muslim.\" — HR. Ibnu Majah",
   "🌟 \"Barangsiapa menempuh jalan untuk menuntut ilmu, Allah akan memudahkan baginya jalan ke surga.\" — HR. Muslim",
   "💎 \"Ilmu itu lebih baik daripada harta. Ilmu menjagamu, sedangkan harta engkau yang menjaganya.\" — Ali bin Abi Thalib",
-  "🌙 \"Carilah ilmu walau sampai ke negeri China.\" — HR. Ibnu 'Abdil Barr",
   "📖 \"Seorang 'alim yang mengamalkan ilmunya lebih utama dari seribu orang yang beribadah.\" — HR. Ad-Dailami",
   "🕌 \"Duduk bersama ulama lebih baik dari berdiri di hadapan raja.\" — Al-Imam Asy-Syafi'i",
 ];
@@ -344,6 +347,31 @@ export default function BerandaScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, number>>({});
   const [selectedFlyer, setSelectedFlyer] = useState<Flyer | null>(null);
+  const [showArsipModal, setShowArsipModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+
+  const calendarKajianData = useMemo(() => ({
+    kajian: allKajianList,
+    flyers,
+    batal: batalList,
+  }), [allKajianList, flyers, batalList]);
+
+  const handleSyncNotif = useCallback(async () => {
+    if (Platform.OS === "web") {
+      const ok = await WebNotificationService.requestPermission();
+      if (ok) {
+        WebNotificationService.notify(
+          "✅ Notifikasi Aktif",
+          "Jadwal kajian Mulazamahku berhasil disinkronkan dengan browser Anda!"
+        );
+      } else {
+        alert("Izin notifikasi belum diaktifkan di browser Anda.");
+      }
+    } else {
+      await scheduleAllKajianReminders(user?.role);
+      Alert.alert("Tersinkron ✓", "Notifikasi jadwal kajian berhasil disinkronkan ke perangkat!");
+    }
+  }, [user?.role]);
 
   useEffect(() => {
     flyers.forEach(f => {
@@ -382,15 +410,16 @@ export default function BerandaScreen() {
   }, [fetchFlyers]);
 
   return (
-    <WebPullToRefresh
-      onRefresh={onRefresh}
-      refreshing={refreshing}
-      primaryColor={colors.primary}
-      style={[styles.root, { backgroundColor: colors.background }]}
-      contentContainerStyle={{
-        paddingBottom: insets.bottom + 90,
-      }}
-    >
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <WebPullToRefresh
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        primaryColor={colors.primary}
+        style={[styles.root, { backgroundColor: colors.background }]}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 90,
+        }}
+      >
       {/* ── Tulisan Berjalan (Paling Atas) ───────────────────────── */}
       <View style={{ paddingTop: insets.top, backgroundColor: colors.primary }}>
         <MarqueeText colors={colors} width={width} />
@@ -444,6 +473,38 @@ export default function BerandaScreen() {
             </Pressable>
           )}
         </View>
+
+        {/* Real Date Card: Masehi & Hijriah -> Klik untuk buka Kalender Bulanan Asli */}
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowCalendarModal(true);
+          }}
+          style={({ pressed }) => [
+            styles.calendarLaunchCard,
+            {
+              backgroundColor: "rgba(255,255,255,0.12)",
+              borderColor: "rgba(201,162,39,0.5)",
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <View style={styles.calendarLaunchLeft}>
+            <View style={[styles.calendarLaunchIconWrap, { backgroundColor: colors.gold }]}>
+              <Feather name="calendar" size={16} color="#1A2744" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.calendarLaunchMasehi}>{formatMasehi(new Date())}</Text>
+              <Text style={[styles.calendarLaunchHijri, { color: colors.goldLight }]}>
+                {formatHijri(new Date())}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.calendarLaunchRight}>
+            <Text style={styles.calendarLaunchAction}>Jadwal Lengkap</Text>
+            <Feather name="chevron-right" size={14} color="#FFFFFF" />
+          </View>
+        </Pressable>
 
         {/* Statistik */}
         <View style={styles.statsRow}>
@@ -548,23 +609,36 @@ export default function BerandaScreen() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
           {(() => {
-            // Urutkan flyer agar flyer milik highlight ada di urutan pertama
-            const sortedFlyers = [...flyers].sort((a, b) => {
-              if (highlight && a.kajian_id === highlight.id && b.kajian_id !== highlight.id) return -1;
-              if (highlight && b.kajian_id === highlight.id && a.kajian_id !== highlight.id) return 1;
-              return 0; // pertahankan urutan aslinya (berdasarkan created_at)
-            });
+            // Tampilkan sesuai urutan upload (created_at desc dari database)
+            const MAX_VISIBLE = 5;
+            const visibleFlyers = flyers.slice(0, MAX_VISIBLE);
+            const archivedFlyers = flyers.slice(MAX_VISIBLE);
 
-            if (sortedFlyers.length > 0) {
-              return sortedFlyers.map((f) => {
-                const ratio = imageAspectRatios[f.id] || 16 / 9; // Default landscape jika belum load
+            if (visibleFlyers.length > 0) {
+              const CANVA_CARD_HEIGHT = 200;
+              const flyerCards = visibleFlyers.map((f) => {
+                const ratio = imageAspectRatios[f.id] || 3 / 4;
+                const cardWidth = Math.min(Math.max(Math.round(CANVA_CARD_HEIGHT * ratio), 140), 280);
                 return (
                   <Pressable key={f.id} onPress={() => setSelectedFlyer(f)}>
-                    <View style={[styles.flyerCard, { borderColor: colors.border, aspectRatio: ratio }]}>
+                    <View
+                      style={[
+                        styles.flyerCard,
+                        {
+                          borderColor: colors.border,
+                          height: CANVA_CARD_HEIGHT,
+                          width: cardWidth,
+                          backgroundColor: colors.card,
+                          borderRadius: 16,
+                          overflow: "hidden",
+                        },
+                      ]}
+                    >
                       <Image 
                         source={{ uri: f.image_url }} 
                         style={styles.flyerImage} 
-                        contentFit="contain"
+                        contentFit="cover"
+                        transition={200}
                         onLoad={(e) => {
                           if (e.source.width && e.source.height) {
                             setImageAspectRatios(prev => ({
@@ -578,6 +652,29 @@ export default function BerandaScreen() {
                   </Pressable>
                 );
               });
+
+              // Tambahkan kartu "Arsip Flyer" di akhir jika ada flyer lama
+              if (archivedFlyers.length > 0) {
+                flyerCards.push(
+                  <Pressable key="arsip-flyer" onPress={() => setShowArsipModal(true)}>
+                    <View style={[styles.flyerCard, { borderColor: colors.border, width: 160, height: CANVA_CARD_HEIGHT, borderRadius: 16, justifyContent: "center", alignItems: "center", backgroundColor: colors.card }]}>
+                      <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.highlight, justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
+                        <Feather name="archive" size={20} color={colors.primary} />
+                      </View>
+                      <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_700Bold", marginBottom: 2 }}>Arsip Flyer</Text>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_400Regular" }}>
+                        {archivedFlyers.length} poster lainnya
+                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 4 }}>
+                        <Text style={{ color: colors.primary, fontSize: 11, fontFamily: "Inter_600SemiBold" }}>Lihat Semua</Text>
+                        <Feather name="chevron-right" size={12} color={colors.primary} />
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              }
+
+              return flyerCards;
             } else {
               return (
                 <View style={[styles.flyerCard, { borderColor: colors.border, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.02)" }]}>
@@ -735,7 +832,104 @@ export default function BerandaScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ── Modal Arsip Flyer ────────────────────────── */}
+      <Modal visible={showArsipModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowArsipModal(false)}>
+        <View style={[{ flex: 1, backgroundColor: colors.background }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Pressable onPress={() => setShowArsipModal(false)} hitSlop={8}>
+              <Feather name="x" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={{ fontSize: 17, fontFamily: "Inter_700Bold", color: colors.foreground }}>Arsip Flyer</Text>
+            <View style={{ width: 22 }} />
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
+            <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 16 }}>
+              Poster kajian yang lebih lama dari 5 terbaru.
+            </Text>
+            {(() => {
+              // Tampilkan sesuai urutan upload asli
+              const archivedFlyers = flyers.slice(5);
+
+              if (archivedFlyers.length === 0) {
+                return (
+                  <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                    <Feather name="archive" size={40} color={colors.mutedForeground} style={{ opacity: 0.4, marginBottom: 12 }} />
+                    <Text style={{ color: colors.mutedForeground, fontSize: 14, fontFamily: "Inter_500Medium" }}>Belum ada flyer di arsip.</Text>
+                  </View>
+                );
+              }
+
+              return archivedFlyers.map((f) => {
+                const ratio = imageAspectRatios[f.id] || 16 / 9;
+                const getKajianTitle = (id: string) => {
+                  const k = DUMMY_KAJIAN.find((x) => x.id === id);
+                  return k ? k.judul : id;
+                };
+                const formatDate = (iso: string) => new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+
+                return (
+                  <Pressable
+                    key={f.id}
+                    onPress={() => {
+                      setShowArsipModal(false);
+                      setTimeout(() => setSelectedFlyer(f), 300);
+                    }}
+                    style={({ pressed }) => [{
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: pressed ? colors.highlight : colors.card,
+                      overflow: "hidden",
+                      marginBottom: 14,
+                    }]}
+                  >
+                    <Image
+                      source={{ uri: f.image_url }}
+                      style={{ width: "100%", aspectRatio: ratio, backgroundColor: "rgba(0,0,0,0.03)" }}
+                      contentFit="contain"
+                      onLoad={(e) => {
+                        if (e.source.width && e.source.height) {
+                          setImageAspectRatios(prev => ({ ...prev, [f.id]: e.source.width / e.source.height }));
+                        }
+                      }}
+                    />
+                    <View style={{ padding: 12 }}>
+                      <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: colors.foreground, marginBottom: 2 }}>
+                        {getKajianTitle(f.kajian_id)}
+                      </Text>
+                      {f.keterangan ? (
+                        <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 4 }} numberOfLines={2}>
+                          {f.keterangan}
+                        </Text>
+                      ) : null}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Feather name="user" size={10} color={colors.mutedForeground} />
+                        <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>
+                          {f.dibuat_oleh} · {formatDate(f.created_at)}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              });
+            })()}
+          </ScrollView>
+        </View>
+      </Modal>
     </WebPullToRefresh>
+
+    {/* Gulungan kertas mengambang berisi materi kajian terdekat (sinkron dengan progress materi) */}
+    <FloatingScrollParchment kajian={highlight} bottomOffset={insets.bottom + 70} />
+
+    {/* Modal Kalender Asli per Bulan (sinkron Masehi & Hijriah) */}
+    <FullCalendarModal
+      visible={showCalendarModal}
+      onClose={() => setShowCalendarModal(false)}
+      kajianData={calendarKajianData}
+      onSyncNotif={handleSyncNotif}
+    />
+  </View>
   );
 }
 
@@ -757,7 +951,50 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 14,
+  },
+  calendarLaunchCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  calendarLaunchLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  calendarLaunchIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarLaunchMasehi: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+  },
+  calendarLaunchHijri: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    marginTop: 1,
+  },
+  calendarLaunchRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  calendarLaunchAction: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
   greetingArabic: {
     fontSize: 17,

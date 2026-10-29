@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    textAlign: "right",
+    textAlign: "left",
     flex: 1,
     marginLeft: 16,
   },

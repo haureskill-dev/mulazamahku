@@ -297,4 +297,5 @@ export const ADMIN_KAJIAN_CONTACTS: AdminKajianContact[] = [
   { id: "cp9", nama: "Ummu Iffvy", phone: "6285291171799", lokasi: "RT Abu Bakar Topaz VPH" },
   { id: "cp10", nama: "CP Kajian Rumah Azaji Zamrud", phone: "6281805021014", lokasi: "Rumah Azaji Zamrud" },
   { id: "cp11", nama: "Ukh Lenny", phone: "62817895557", lokasi: "R. Bu Malika Topaz VPH" },
+  { id: "cp12", nama: "Ukh Hilda", phone: "6289517288810", lokasi: "GSI Blok H" },
 ];

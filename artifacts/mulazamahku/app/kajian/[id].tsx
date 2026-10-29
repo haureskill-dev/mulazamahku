@@ -11,8 +11,11 @@ import { DUMMY_KAJIAN, PENGAJAR_PROFILES, ADMIN_KAJIAN_CONTACTS } from "@/servic
 import { OjekMuslimahModal } from "@/components/OjekMuslimahModal";
 import { KajianTambahanService } from "@/services/kajianTambahanService";
 import { KajianBatalService, KajianBatal } from "@/services/kajianBatalService";
-import { ProgressService } from "@/services/progressService";
-import { Kajian } from "@/types";
+import { ProgressService, ProgressData } from "@/services/progressService";
+import { RujukanService } from "@/services/rujukanService";
+import { Kajian, RujukanKitab } from "@/types";
+import { getNextOccurrences } from "@/utils/kajianSchedule";
+import { formatHijri, formatMasehi, parseDateStr, toDateStr } from "@/utils/dates";
 
 const STATUS_LABEL: Record<string, string> = {
   aktif: "Kajian Rutin",
@@ -40,9 +43,16 @@ export default function KajianDetailScreen() {
   const [progress, setProgress] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [savedProgress, setSavedProgress] = useState("");
+  const [progressUpdatedAt, setProgressUpdatedAt] = useState<string | null>(null);
+  // Tanggal kajian berikutnya — dipilih manual oleh pengajar/admin (YYYY-MM-DD)
+  const [tanggalKajian, setTanggalKajian] = useState<string | null>(null);
+  const [savedTanggal, setSavedTanggal] = useState<string | null>(null);
+  const [manualTanggal, setManualTanggal] = useState("");
   const [inputHeight, setInputHeight] = useState(80);
   const [ojekModalVisible, setOjekModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [rujukanList, setRujukanList] = useState<RujukanKitab[]>([]);
 
   const [batalList, setBatalList] = useState<KajianBatal[]>([]);
   const [batalModalVisible, setBatalModalVisible] = useState(false);
@@ -55,11 +65,28 @@ export default function KajianDetailScreen() {
 
   useEffect(() => {
     if (id) {
-      ProgressService.get(id as string).then((v) => {
-        if (v) {
-          setProgress(v);
-          setSavedProgress(v);
+      ProgressService.get(id as string).then((data: ProgressData) => {
+        if (data.progress) {
+          setProgress(data.progress);
+          setSavedProgress(data.progress);
         }
+        if (data.updated_at) {
+          setProgressUpdatedAt(data.updated_at);
+        }
+        if (data.tanggal_kajian) {
+          setTanggalKajian(data.tanggal_kajian);
+          setSavedTanggal(data.tanggal_kajian);
+          const d = parseDateStr(data.tanggal_kajian);
+          if (d) setManualTanggal(`${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`);
+        }
+      });
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      RujukanService.getRujukanByKajian(id as string).then((data) => {
+        setRujukanList(data);
       });
     }
   }, [id]);
@@ -100,10 +127,35 @@ export default function KajianDetailScreen() {
     }
   }, [id]);
 
+  const applyManualTanggal = (text: string) => {
+    // Auto-format DD/MM/YYYY
+    const digits = text.replace(/\D/g, "").slice(0, 8);
+    let formatted = digits;
+    if (digits.length > 4) formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    else if (digits.length > 2) formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    setManualTanggal(formatted);
+    if (digits.length === 8) {
+      const dd = parseInt(digits.slice(0, 2), 10);
+      const mm = parseInt(digits.slice(2, 4), 10);
+      const yyyy = parseInt(digits.slice(4), 10);
+      const d = new Date(yyyy, mm - 1, dd);
+      if (d.getDate() === dd && d.getMonth() === mm - 1) setTanggalKajian(toDateStr(d));
+    } else if (digits.length === 0) {
+      setTanggalKajian(null);
+    }
+  };
+
   const handleSaveProgress = async () => {
     setIsSaving(true);
-    await ProgressService.set(id as string, progress);
+    const ok = await ProgressService.set(id as string, progress, tanggalKajian);
+    if (!ok) {
+      setIsSaving(false);
+      Alert.alert("Gagal", "Progres gagal disimpan. Periksa koneksi internet.");
+      return;
+    }
     setSavedProgress(progress);
+    setSavedTanggal(tanggalKajian);
+    setProgressUpdatedAt(new Date().toISOString());
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsSaving(false);
   };
@@ -233,10 +285,20 @@ export default function KajianDetailScreen() {
       return;
     }
 
-    const cp = ADMIN_KAJIAN_CONTACTS.find((c) => 
-      kajian.lokasi.toLowerCase().includes(c.lokasi.toLowerCase()) || 
-      c.lokasi.toLowerCase().includes(kajian.lokasi.toLowerCase())
-    );
+    // Improved matching: try exact, then partial, then word-based matching
+    const lokasiLower = kajian.lokasi.toLowerCase();
+    const cp = ADMIN_KAJIAN_CONTACTS.find((c) => {
+      const cpLower = c.lokasi.toLowerCase();
+      // Exact match
+      if (cpLower === lokasiLower) return true;
+      // Partial includes (either direction)
+      if (lokasiLower.includes(cpLower) || cpLower.includes(lokasiLower)) return true;
+      // Word-based matching: split both into keywords and check overlap
+      const lokasiWords = lokasiLower.split(/[\s,·\-]+/).filter(w => w.length > 2);
+      const cpWords = cpLower.split(/[\s,·\-]+/).filter(w => w.length > 2);
+      const overlap = lokasiWords.filter(w => cpWords.some(cw => cw.includes(w) || w.includes(cw)));
+      return overlap.length >= 2;
+    });
     
     if (!cp) {
       if (Platform.OS === "web") {
@@ -267,6 +329,30 @@ export default function KajianDetailScreen() {
     await Linking.openURL(webUrl).catch((err) => console.error(err));
   };
 
+  const formatProgressDate = (isoDate: string | null) => {
+    if (!isoDate) return null;
+    try {
+      const d = new Date(isoDate);
+      const days = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    } catch {
+      return null;
+    }
+  };
+
+  const openRujukanLink = async (url: string) => {
+    try {
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.open(url, "_blank");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (e) {
+      console.error("Gagal membuka link:", e);
+    }
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <View
@@ -291,7 +377,7 @@ export default function KajianDetailScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + 40 },
+          { paddingBottom: insets.bottom + 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -390,118 +476,253 @@ export default function KajianDetailScreen() {
           <Text style={[styles.descText, { color: colors.mutedForeground }]}>{kajian.deskripsi}</Text>
         </View>
 
-        <View style={[styles.descCard, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 0 }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <Feather name="book-open" size={18} color={colors.primary} />
-            <Text style={[styles.descTitle, { color: colors.foreground, marginBottom: 0 }]}>
-              Progres Materi
-            </Text>
+        {/* ── Progres Belajar (Premium Card) ──────────────────── */}
+        <View style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Header */}
+          <View style={[styles.progressHeader, { borderBottomColor: colors.border }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+              <View style={[styles.progressIconWrap, { backgroundColor: colors.highlight }]}>
+                <Feather name="book-open" size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.progressHeaderTitle, { color: colors.foreground }]}>
+                  Progres Belajar
+                </Text>
+                {savedTanggal ? (
+                  <Text style={[styles.progressDateText, { color: colors.mutedForeground }]}>
+                    Untuk kajian: {formatMasehi(parseDateStr(savedTanggal)!)}
+                  </Text>
+                ) : savedProgress ? (
+                  <Text style={[styles.progressDateText, { color: colors.mutedForeground }]}>
+                    Tanggal kajian belum ditentukan
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+            {savedTanggal && (
+              <View style={[styles.progressDateBadge, { backgroundColor: "rgba(201,162,39,0.12)", borderColor: "rgba(201,162,39,0.3)" }]}>
+                <Feather name="calendar" size={11} color={colors.gold} />
+                <Text style={[styles.progressDateBadgeText, { color: colors.gold }]}>
+                  {parseDateStr(savedTanggal)!.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                </Text>
+              </View>
+            )}
           </View>
-          
-          {(user?.role === "pengajar" || user?.role === "admin") ? (
-            <>
-              <Text style={[styles.descText, { color: colors.mutedForeground, marginBottom: 12 }]}>
-                Catat sampai mana materi atau halaman kitab yang telah diajarkan pada kajian ini.
-              </Text>
-                <TextInput
-                  value={progress}
-                  onChangeText={setProgress}
-                  placeholder="Contoh: Bab Thaharah, Halaman 45"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[
-                    styles.progressInput,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                      color: colors.foreground,
-                      height: Platform.OS === "web" ? Math.max(80, inputHeight) : undefined,
-                    },
-                  ]}
-                  multiline
-                  scrollEnabled={Platform.OS === "web" ? true : false}
-                  onContentSizeChange={(e) => {
-                    if (Platform.OS === "web") {
-                      setInputHeight(e.nativeEvent.contentSize.height);
-                    }
-                  }}
-                />
-              <Pressable
-                onPress={handleSaveProgress}
-                disabled={isSaving || progress === savedProgress}
-                style={({ pressed }) => [
-                  styles.saveBtn,
-                  {
-                    backgroundColor: progress === savedProgress ? colors.muted : colors.primary,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <Text
-                    style={[
-                      styles.saveBtnText,
-                      { color: progress === savedProgress ? colors.mutedForeground : "#FFF" },
-                    ]}
-                  >
-                    {progress === savedProgress && progress ? "Tersimpan" : "Simpan Progres"}
+
+          {/* Body */}
+          <View style={styles.progressBody}>
+            {(user?.role === "pengajar" || user?.role === "admin") ? (
+              <>
+                <Text style={[styles.descText, { color: colors.mutedForeground, marginBottom: 12 }]}>
+                  Catat sampai mana materi atau halaman kitab yang telah diajarkan, lalu pilih untuk kajian tanggal berapa materi ini dilanjutkan.
+                </Text>
+
+                {/* Pilih tanggal kajian berikutnya (manual) */}
+                <Text style={[styles.progressDisplayLabel, { color: colors.foreground, marginBottom: 8 }]}>
+                  Untuk kajian tanggal
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                  {getNextOccurrences(kajian, 4).map((d) => {
+                    const ds = toDateStr(d);
+                    const active = tanggalKajian === ds;
+                    return (
+                      <Pressable
+                        key={ds}
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.selectionAsync();
+                          setTanggalKajian(ds);
+                          setManualTanggal(`${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`);
+                        }}
+                        style={({ pressed }) => [
+                          styles.dateChip,
+                          {
+                            backgroundColor: active ? colors.primary : colors.background,
+                            borderColor: active ? colors.primary : colors.border,
+                            opacity: pressed ? 0.8 : 1,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.dateChipDay, { color: active ? "#FFF" : colors.foreground }]}>
+                          {d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
+                        </Text>
+                        <Text style={[styles.dateChipHijri, { color: active ? "rgba(255,255,255,0.75)" : colors.mutedForeground }]}>
+                          {formatHijri(d, false)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <View style={[styles.manualDateWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Feather name="calendar" size={15} color={colors.mutedForeground} />
+                  <TextInput
+                    value={manualTanggal}
+                    onChangeText={applyManualTanggal}
+                    placeholder="Atau ketik manual: DD/MM/YYYY"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    style={[styles.manualDateInput, { color: colors.foreground }]}
+                  />
+                  {tanggalKajian && (
+                    <Pressable onPress={() => { setTanggalKajian(null); setManualTanggal(""); }} hitSlop={8}>
+                      <Feather name="x-circle" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  )}
+                </View>
+                {tanggalKajian && parseDateStr(tanggalKajian) && (
+                  <Text style={[styles.progressDateSmall, { color: colors.gold, marginBottom: 12, marginTop: -4 }]}>
+                    {formatMasehi(parseDateStr(tanggalKajian)!)} · {formatHijri(parseDateStr(tanggalKajian)!)}
                   </Text>
                 )}
+
+                <Text style={[styles.progressDisplayLabel, { color: colors.foreground, marginBottom: 8 }]}>
+                  Materi sampai
+                </Text>
+                  <TextInput
+                    value={progress}
+                    onChangeText={setProgress}
+                    placeholder="Contoh: Bab Thaharah, Halaman 45"
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[
+                      styles.progressInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                        height: Platform.OS === "web" ? Math.max(80, inputHeight) : undefined,
+                      },
+                    ]}
+                    multiline
+                    scrollEnabled={Platform.OS === "web" ? true : false}
+                    onContentSizeChange={(e) => {
+                      if (Platform.OS === "web") {
+                        setInputHeight(e.nativeEvent.contentSize.height);
+                      }
+                    }}
+                  />
+                {(() => {
+                  const unchanged = progress === savedProgress && tanggalKajian === savedTanggal;
+                  return (
+                    <Pressable
+                      onPress={handleSaveProgress}
+                      disabled={isSaving || unchanged}
+                      style={({ pressed }) => [
+                        styles.saveBtn,
+                        {
+                          backgroundColor: unchanged ? colors.muted : colors.primary,
+                          opacity: pressed ? 0.85 : 1,
+                        },
+                      ]}
+                    >
+                      {isSaving ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <Text
+                          style={[
+                            styles.saveBtnText,
+                            { color: unchanged ? colors.mutedForeground : "#FFF" },
+                          ]}
+                        >
+                          {unchanged && progress ? "Tersimpan ✓" : "Simpan Progres"}
+                        </Text>
+                      )}
+                    </Pressable>
+                  );
+                })()}
+              </>
+            ) : (
+              <>
+                {savedProgress ? (
+                  <View style={[styles.progressDisplayCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+                      <View style={[styles.progressDot, { backgroundColor: colors.gold }]} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.progressDisplayLabel, { color: colors.mutedForeground }]}>
+                          Materi terakhir sampai:
+                        </Text>
+                        <Text style={[styles.progressDisplayText, { color: colors.foreground }, Platform.OS === "web" && { whiteSpace: "pre-wrap" } as any]}>
+                          {savedProgress}
+                        </Text>
+                        {savedTanggal && parseDateStr(savedTanggal) && (
+                          <View style={[styles.progressDateRow]}>
+                            <Feather name="calendar" size={11} color={colors.mutedForeground} />
+                            <Text style={[styles.progressDateSmall, { color: colors.mutedForeground }]}>
+                              {formatMasehi(parseDateStr(savedTanggal)!)} · {formatHijri(parseDateStr(savedTanggal)!)}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <View style={[styles.progressNextBanner, { backgroundColor: "rgba(201,162,39,0.08)", borderColor: "rgba(201,162,39,0.25)" }]}>
+                      <Feather name="arrow-right-circle" size={14} color={colors.gold} />
+                      <Text style={[styles.progressNextText, { color: colors.gold }]}>
+                        {savedTanggal && parseDateStr(savedTanggal)
+                          ? `Kajian ${formatMasehi(parseDateStr(savedTanggal)!)} melanjutkan dari sini`
+                          : "Kajian selanjutnya melanjutkan dari sini"}
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{ alignItems: "center", paddingVertical: 16 }}>
+                    <Feather name="book" size={28} color={colors.mutedForeground} style={{ opacity: 0.4, marginBottom: 8 }} />
+                    <Text style={[styles.descText, { color: colors.mutedForeground, fontStyle: "italic", textAlign: "center" }]}>
+                      Belum ada informasi progres materi.
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* ── Kitab Rujukan ──────────────────── */}
+        {rujukanList.length > 0 && (
+          <View style={[styles.descCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 0 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <View style={[styles.progressIconWrap, { backgroundColor: colors.highlight, width: 32, height: 32, borderRadius: 8 }]}>
+                <Feather name="bookmark" size={16} color={colors.primary} />
+              </View>
+              <Text style={[styles.descTitle, { color: colors.foreground, marginBottom: 0 }]}>
+                Kitab Rujukan
+              </Text>
+            </View>
+            {rujukanList.map((r, idx) => (
+              <Pressable
+                key={r.id}
+                onPress={() => r.file_url ? openRujukanLink(r.file_url) : null}
+                style={({ pressed }) => [
+                  styles.rujukanItem,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: pressed && r.file_url ? colors.highlight : colors.surface,
+                    borderBottomWidth: idx < rujukanList.length - 1 ? 0 : 0,
+                  }
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rujukanTitle, { color: colors.foreground }]}>
+                    {r.judul_kitab}
+                  </Text>
+                  {r.penulis && (
+                    <Text style={[styles.rujukanAuthor, { color: colors.mutedForeground }]}>
+                      {r.penulis}
+                    </Text>
+                  )}
+                  {r.deskripsi && (
+                    <Text style={[styles.rujukanDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+                      {r.deskripsi}
+                    </Text>
+                  )}
+                </View>
+                {r.file_url && (
+                  <View style={[styles.rujukanLinkBadge, { backgroundColor: "rgba(58,110,168,0.1)" }]}>
+                    <Feather name="external-link" size={14} color="#3A6EA8" />
+                  </View>
+                )}
               </Pressable>
-            </>
-          ) : (
-            <Text style={[styles.descText, { color: savedProgress ? colors.foreground : colors.mutedForeground, fontStyle: savedProgress ? "normal" : "italic" }, Platform.OS === "web" && { whiteSpace: "pre-wrap" } as any]}>
-              {savedProgress || "Belum ada informasi progres materi."}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.actionBar}>
-          {kajian.status !== "online" && (
-            <>
-              <ActionIcon 
-                icon="map" 
-                label="Rute" 
-                color={colors.primary} 
-                bgColor="rgba(201,162,39,0.15)" 
-                onPress={openMaps} 
-              />
-              <ActionIcon 
-                icon="navigation" 
-                label="Ojek" 
-                color="#3A6EA8" 
-                bgColor="rgba(58,110,168,0.15)" 
-                onPress={() => {
-                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setOjekModalVisible(true);
-                }} 
-              />
-            </>
-          )}
-
-          <ActionIcon 
-            icon="whatsapp" 
-            isFontAwesome 
-            label="Tanya CP" 
-            color="#25D366" 
-            bgColor="rgba(37,211,102,0.15)" 
-            onPress={() => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              openAdminWhatsApp();
-            }} 
-          />
-
-          {(user?.role === "pengajar" || user?.role === "admin") && (
-            <ActionIcon 
-              icon="alert-triangle" 
-              label="Batal/Udzur" 
-              color="#F59E0B" 
-              bgColor="rgba(245,158,11,0.15)" 
-              onPress={() => setBatalModalVisible(true)} 
-            />
-          )}
-        </View>
+            ))}
+          </View>
+        )}
 
 
 
@@ -514,6 +735,53 @@ export default function KajianDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* ── Sticky Action Bar (tetap di bawah) ──────────────────── */}
+      <View style={[styles.stickyActionBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: insets.bottom + 8 }]}>
+        {kajian.status !== "online" && (
+          <>
+            <ActionIcon 
+              icon="map" 
+              label="Rute" 
+              color={colors.primary} 
+              bgColor="rgba(201,162,39,0.15)" 
+              onPress={openMaps} 
+            />
+            <ActionIcon 
+              icon="navigation" 
+              label="Ojek" 
+              color="#3A6EA8" 
+              bgColor="rgba(58,110,168,0.15)" 
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setOjekModalVisible(true);
+              }} 
+            />
+          </>
+        )}
+
+        <ActionIcon 
+          icon="whatsapp" 
+          isFontAwesome 
+          label="Tanya CP" 
+          color="#25D366" 
+          bgColor="rgba(37,211,102,0.15)" 
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            openAdminWhatsApp();
+          }} 
+        />
+
+        {(user?.role === "pengajar" || user?.role === "admin") && (
+          <ActionIcon 
+            icon="alert-triangle" 
+            label="Batal/Udzur" 
+            color="#F59E0B" 
+            bgColor="rgba(245,158,11,0.15)" 
+            onPress={() => setBatalModalVisible(true)} 
+          />
+        )}
+      </View>
 
       <OjekMuslimahModal
         visible={ojekModalVisible}
@@ -577,14 +845,14 @@ function ActionIcon({ icon, isFontAwesome, label, color, bgColor, onPress }: any
         { alignItems: "center", opacity: pressed ? 0.7 : 1, width: 75 }
       ]}
     >
-      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: bgColor, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+      <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: bgColor, alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
         {isFontAwesome ? (
-          <FontAwesome name={icon} size={24} color={color} />
+          <FontAwesome name={icon} size={22} color={color} />
         ) : (
-          <Feather name={icon} size={24} color={color} />
+          <Feather name={icon} size={22} color={color} />
         )}
       </View>
-      <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: color, textAlign: "center", lineHeight: 14 }}>{label}</Text>
+      <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: color, textAlign: "center", lineHeight: 13 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -724,6 +992,104 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 21,
   },
+
+  // ── Progress Card ──────────────────────────
+  progressCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  progressHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  progressIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressHeaderTitle: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+  },
+  progressDateText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+  progressDateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  progressDateBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+  },
+  progressBody: {
+    padding: 16,
+  },
+  progressDisplayCard: {
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+  },
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 5,
+  },
+  progressDisplayLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginBottom: 4,
+  },
+  progressDisplayText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    lineHeight: 22,
+  },
+  progressDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
+  },
+  progressDateSmall: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
+  progressNextBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  progressNextText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    flex: 1,
+  },
+
   progressInput: {
     borderWidth: 1,
     borderRadius: 10,
@@ -733,6 +1099,36 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     marginBottom: 12,
+  },
+  dateChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  dateChipDay: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  dateChipHijri: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+  manualDateWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 42,
+    gap: 8,
+    marginBottom: 12,
+  },
+  manualDateInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
   },
   saveBtn: {
     height: 44,
@@ -744,13 +1140,62 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
   },
-  actionBar: {
+
+  // ── Rujukan ──────────────────────────
+  rujukanItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 12,
+  },
+  rujukanTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 2,
+  },
+  rujukanAuthor: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 2,
+  },
+  rujukanDesc: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 16,
+  },
+  rujukanLinkBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // ── Sticky Action Bar ──────────────────────────
+  stickyActionBar: {
     flexDirection: "row",
     justifyContent: "space-evenly",
-    alignItems: "flex-start",
+    alignItems: "center",
+    paddingTop: 12,
     paddingHorizontal: 10,
-    marginTop: 24,
-    marginBottom: 8,
+    borderTopWidth: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 12,
+      },
+      web: {
+        boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
+      } as any,
+    }),
   },
   actionBtn: {
     flexDirection: "row",

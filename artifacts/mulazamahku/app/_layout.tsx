@@ -29,7 +29,28 @@ import { MudzakarahProvider } from "@/context/MudzakarahContext";
 import { UpdateChecker } from "@/components/UpdateChecker";
 import { scheduleAllKajianReminders, registerBackgroundNotificationTask } from "@/services/notificationService";
 import { registerPushToken } from "@/services/pushTokenService";
+import { WebNotificationService } from "@/services/webNotificationService";
+import { useColors } from "@/hooks/useColors";
 import * as Notifications from "expo-notifications";
+
+// Enforce LTR and Left-aligned defaults on Web to prevent accidental RTL flips
+if (Platform.OS === "web" && typeof document !== "undefined") {
+  try {
+    document.documentElement.dir = "ltr";
+    const styleEl = document.createElement("style");
+    styleEl.textContent = `
+      html, body, #root {
+        direction: ltr !important;
+        text-align: left !important;
+      }
+      [dir="rtl"] {
+        direction: ltr !important;
+        text-align: left !important;
+      }
+    `;
+    document.head.appendChild(styleEl);
+  } catch {}
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,14 +64,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (isLoading) return;
     const inTabs = segments[0] === "(tabs)";
     
-    const isLoginScreen = segments.length === 0 || segments[0] === "index";
+    const isLoginScreen = !segments[0] || (segments[0] as string) === "index";
     
     // Redirect unauthenticated users trying to access ANY protected screen
     if (!user && !isLoginScreen) {
       router.replace("/");
     } 
     // Redirect authenticated users trying to access the login screen
-    else if (user && (segments.length === 0 || segments[0] === "index")) {
+    else if (user && isLoginScreen) {
       router.replace("/(tabs)");
     }
   }, [user, isLoading, segments]);
@@ -132,13 +153,21 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayoutNav() {
+  const colors = useColors();
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      WebNotificationService.maybeRequestOnFirstVisit();
+    }
+  }, []);
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#000000" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View
         style={{
           flex: 1,
           width: "100%",
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.background,
         }}
       >
         <AuthGuard>

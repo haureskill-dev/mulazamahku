@@ -36,7 +36,13 @@ try {
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-export default function FaedahScreen() {
+export default function FaedahScreen({
+  hideTopInset = false,
+  headerComponent,
+}: {
+  hideTopInset?: boolean;
+  headerComponent?: React.ReactNode;
+} = {}) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { user } = useAuth();
@@ -481,19 +487,23 @@ export default function FaedahScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+    <View style={[styles.container, { paddingTop: hideTopInset ? 0 : insets.top, backgroundColor: colors.background }]}>
       <FlatList
         data={faedahList.filter(f => f.status !== "disetujui")}
         keyExtractor={(item) => item.id}
         renderItem={renderFaedahItem}
         ListHeaderComponent={
           <>
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.foreground }]}>Faedah Kajian</Text>
-              <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-                Kumpulan desain faedah yang dibuat dari materi kajian.
-              </Text>
-            </View>
+            {headerComponent ? (
+              headerComponent
+            ) : (
+              <View style={styles.header}>
+                <Text style={[styles.title, { color: colors.foreground }]}>Faidah Kajian</Text>
+                <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                  Kumpulan desain faidah yang dibuat dari materi kajian.
+                </Text>
+              </View>
+            )}
 
             {/* Tombol Pilih Gambar untuk Murid & Admin */}
             {(user?.role === "murid" || user?.role === "admin") && (
@@ -503,7 +513,7 @@ export default function FaedahScreen() {
                     styles.uploadBtn,
                     { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
                   ]}
-                  onPress={pickImage}
+                  onPress={() => pickImage()}
                 >
                   <Feather name="image" size={18} color="#FFFFFF" />
                   <Text style={styles.uploadBtnText}>Pilih Desain dari Galeri</Text>
@@ -518,30 +528,35 @@ export default function FaedahScreen() {
                   <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Faedah Terbaru</Text>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-                  {faedahList.filter(f => f.status === "disetujui").map((f) => (
-                    <Pressable key={f.id} onPress={() => setViewImageUri(f.image_url || null)}>
-                      <View style={[styles.carouselCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                        <Image
-                          source={{ uri: f.image_url || 'https://placehold.co/300x400/png' }}
-                          style={[styles.carouselImage, { aspectRatio: imageAspectRatios[f.id] || 4 / 5, height: undefined }]}
-                          contentFit="contain"
-                          onLoad={(e) => {
-                            const { width, height } = e.source;
-                            if (width && height) {
-                              setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
-                            }
-                          }}
-                        />
-                        <View style={styles.carouselMeta}>
-                          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                            <View style={{ flex: 1, paddingRight: 8 }}>
-                              <Text style={[styles.carouselName, { color: colors.foreground }]} numberOfLines={1}>
-                                {f.uploader_name}
-                              </Text>
-                              <Text style={[styles.carouselDate, { color: colors.mutedForeground }]}>
-                                {formatDate(f.created_at)}
-                              </Text>
-                            </View>
+                  {faedahList.filter(f => f.status === "disetujui").map((f) => {
+                    const CANVA_FAEDAH_HEIGHT = 230;
+                    const ratio = imageAspectRatios[f.id] || 3 / 4;
+                    const cardWidth = Math.min(Math.max(Math.round(CANVA_FAEDAH_HEIGHT * ratio), 150), 280);
+                    return (
+                      <Pressable key={f.id} onPress={() => setViewImageUri(f.image_url || null)}>
+                        <View style={[styles.carouselCard, { borderColor: colors.border, backgroundColor: colors.card, width: cardWidth, borderRadius: 16, overflow: "hidden" }]}>
+                          <Image
+                            source={{ uri: f.image_url || 'https://placehold.co/300x400/png' }}
+                            style={{ width: "100%", height: 160 }}
+                            contentFit="cover"
+                            transition={200}
+                            onLoad={(e) => {
+                              const { width, height } = e.source;
+                              if (width && height) {
+                                setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
+                              }
+                            }}
+                          />
+                          <View style={styles.carouselMeta}>
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                              <View style={{ flex: 1, paddingRight: 8 }}>
+                                <Text style={[styles.carouselName, { color: colors.foreground }]} numberOfLines={1}>
+                                  {f.uploader_name}
+                                </Text>
+                                <Text style={[styles.carouselDate, { color: colors.mutedForeground }]}>
+                                  {formatDate(f.created_at)}
+                                </Text>
+                              </View>
                             <Pressable
                               style={({ pressed }) => [
                                 { 
@@ -573,7 +588,8 @@ export default function FaedahScreen() {
                         </View>
                       </View>
                     </Pressable>
-                  ))}
+                  );
+                })}
                 </ScrollView>
               </View>
             )}
