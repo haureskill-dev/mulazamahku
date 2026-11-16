@@ -2,7 +2,7 @@
   "expo": {
     "name": "Mulazamahku",
     "slug": "mulazamahku",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -25,6 +25,7 @@
     },
     "android": {
       "package": "com.mulazamahku.app",
+      "versionCode": 2,
       "permissions": [
         "SCHEDULE_EXACT_ALARM",
         "USE_EXACT_ALARM",
