@@ -514,50 +514,19 @@ export default function KajianDetailScreen() {
             {(user?.role === "pengajar" || user?.role === "admin") ? (
               <>
                 <Text style={[styles.descText, { color: colors.mutedForeground, marginBottom: 12 }]}>
-                  Catat sampai mana materi atau halaman kitab yang telah diajarkan, lalu pilih untuk kajian tanggal berapa materi ini dilanjutkan.
+                  Catat sampai mana materi atau halaman kitab yang telah diajarkan, lalu ketik untuk kajian tanggal berapa materi ini dilanjutkan.
                 </Text>
 
-                {/* Pilih tanggal kajian berikutnya (manual) */}
+                {/* Ketik manual tanggal kajian berikutnya */}
                 <Text style={[styles.progressDisplayLabel, { color: colors.foreground, marginBottom: 8 }]}>
                   Untuk kajian tanggal
                 </Text>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                  {getNextOccurrences(kajian, 4).map((d) => {
-                    const ds = toDateStr(d);
-                    const active = tanggalKajian === ds;
-                    return (
-                      <Pressable
-                        key={ds}
-                        onPress={() => {
-                          if (Platform.OS !== "web") Haptics.selectionAsync();
-                          setTanggalKajian(ds);
-                          setManualTanggal(`${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`);
-                        }}
-                        style={({ pressed }) => [
-                          styles.dateChip,
-                          {
-                            backgroundColor: active ? colors.primary : colors.background,
-                            borderColor: active ? colors.primary : colors.border,
-                            opacity: pressed ? 0.8 : 1,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.dateChipDay, { color: active ? "#FFF" : colors.foreground }]}>
-                          {d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
-                        </Text>
-                        <Text style={[styles.dateChipHijri, { color: active ? "rgba(255,255,255,0.75)" : colors.mutedForeground }]}>
-                          {formatHijri(d, false)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
                 <View style={[styles.manualDateWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <Feather name="calendar" size={15} color={colors.mutedForeground} />
                   <TextInput
                     value={manualTanggal}
                     onChangeText={applyManualTanggal}
-                    placeholder="Atau ketik manual: DD/MM/YYYY"
+                    placeholder="Ketik tanggal: DD/MM/YYYY"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
                     maxLength={10}
