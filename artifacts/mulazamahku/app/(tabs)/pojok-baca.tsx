@@ -93,10 +93,11 @@ export default function PojokBacaScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {SegmentedHeader}
       {activeTab === "faidah" ? (
-        <FaedahScreen hideTopInset headerComponent={SegmentedHeader} />
+        <FaedahScreen hideTopInset headerComponent={<View />} />
       ) : (
-        <RujukanScreen hideTopInset headerComponent={SegmentedHeader} />
+        <RujukanScreen hideTopInset headerComponent={<View />} />
       )}
     </View>
   );

@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -43,6 +44,21 @@ export function FullCalendarModal({
 }: FullCalendarModalProps) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Ukuran responsif: di laptop/tablet konten dibatasi lebarnya & angka diperbesar
+  // agar tidak terlihat kecil di dalam sel yang lebar.
+  const MAX_CONTENT_WIDTH = 640;
+  const contentWidth = Math.min(screenWidth, MAX_CONTENT_WIDTH);
+  const cellSize = (contentWidth - 40 - 28) / 7; // padding konten 20*2, padding kartu 14*2
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+  const masehiFontSize = Math.round(clamp(cellSize * 0.34, 14, 24));
+  const hijriFontSize = Math.round(clamp(cellSize * 0.19, 9, 13));
+  const dayHeaderFontSize = Math.round(clamp(cellSize * 0.2, 11, 15));
+  const dotSize = cellSize > 60 ? 6 : 4;
+
+  const batalBg = colors.isDark ? "rgba(224,96,90,0.15)" : "#FEE2E2";
+  const batalBorder = colors.isDark ? "rgba(224,96,90,0.45)" : "#FCA5A5";
 
   const today = useMemo(() => new Date(), []);
   const [currentYear, setCurrentYear] = useState(() => today.getFullYear());
@@ -173,7 +189,12 @@ export function FullCalendarModal({
         <ScrollView
           contentContainerStyle={[
             styles.content,
-            { paddingBottom: insets.bottom + 40 },
+            {
+              paddingBottom: insets.bottom + 40,
+              width: "100%",
+              maxWidth: MAX_CONTENT_WIDTH,
+              alignSelf: "center",
+            },
           ]}
           showsVerticalScrollIndicator={false}
         >
@@ -187,7 +208,7 @@ export function FullCalendarModal({
             {/* Navigasi Bulan */}
             <View style={[styles.monthNav, { borderBottomColor: colors.border }]}>
               <Pressable onPress={prevMonth} hitSlop={10} style={styles.navArrow}>
-                <Feather name="chevron-left" size={20} color={colors.primary} />
+                <Feather name="chevron-left" size={22} color={colors.accentText} />
               </Pressable>
               <View style={{ alignItems: "center", flex: 1 }}>
                 <Text style={[styles.monthTitle, { color: colors.foreground }]}>
@@ -198,7 +219,7 @@ export function FullCalendarModal({
                 </Text>
               </View>
               <Pressable onPress={nextMonth} hitSlop={10} style={styles.navArrow}>
-                <Feather name="chevron-right" size={20} color={colors.primary} />
+                <Feather name="chevron-right" size={22} color={colors.accentText} />
               </Pressable>
             </View>
 
@@ -209,7 +230,10 @@ export function FullCalendarModal({
                   <Text
                     style={[
                       styles.dayColText,
-                      { color: idx === 0 ? colors.destructive : colors.mutedForeground },
+                      {
+                        fontSize: dayHeaderFontSize,
+                        color: idx === 0 ? colors.destructive : colors.mutedForeground,
+                      },
                     ]}
                   >
                     {h.slice(0, 3)}
@@ -263,6 +287,7 @@ export function FullCalendarModal({
                         style={[
                           styles.dateCellMasehi,
                           {
+                            fontSize: masehiFontSize,
                             color: isSelected
                               ? "#FFFFFF"
                               : dIdx === 0
@@ -278,6 +303,7 @@ export function FullCalendarModal({
                         style={[
                           styles.dateCellHijri,
                           {
+                            fontSize: hijriFontSize,
                             color: isSelected
                               ? "rgba(255,255,255,0.75)"
                               : colors.mutedForeground,
@@ -293,10 +319,14 @@ export function FullCalendarModal({
                           style={[
                             styles.eventDot,
                             {
+                              width: dotSize,
+                              height: dotSize,
+                              borderRadius: dotSize / 2,
+                              bottom: cellSize > 60 ? 6 : 3,
                               backgroundColor: isSelected
                                 ? colors.gold
                                 : hasBatal
-                                ? "#EF4444"
+                                ? colors.destructive
                                 : colors.gold,
                             },
                           ]}
@@ -329,8 +359,8 @@ export function FullCalendarModal({
                     { backgroundColor: colors.highlight, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
-                  <Feather name="bell" size={13} color={colors.primary} />
-                  <Text style={[styles.syncBtnText, { color: colors.primary }]}>Sinkron Notif</Text>
+                  <Feather name="bell" size={13} color={colors.accentText} />
+                  <Text style={[styles.syncBtnText, { color: colors.accentText }]}>Sinkron Notif</Text>
                 </Pressable>
               )}
             </View>
@@ -365,7 +395,7 @@ export function FullCalendarModal({
                       styles.eventCard,
                       {
                         backgroundColor: colors.card,
-                        borderColor: evt.batal ? "#FCA5A5" : colors.border,
+                        borderColor: evt.batal ? batalBorder : colors.border,
                         opacity: pressed ? 0.85 : 1,
                       },
                     ]}
@@ -376,7 +406,7 @@ export function FullCalendarModal({
                           styles.timeBadge,
                           {
                             backgroundColor: evt.batal
-                              ? "#FEE2E2"
+                              ? batalBg
                               : colors.highlight,
                           },
                         ]}
@@ -384,12 +414,12 @@ export function FullCalendarModal({
                         <Feather
                           name="clock"
                           size={11}
-                          color={evt.batal ? "#EF4444" : colors.primary}
+                          color={evt.batal ? colors.destructive : colors.accentText}
                         />
                         <Text
                           style={[
                             styles.timeBadgeText,
-                            { color: evt.batal ? "#EF4444" : colors.primary },
+                            { color: evt.batal ? colors.destructive : colors.accentText },
                           ]}
                         >
                           {evt.waktu}
@@ -398,13 +428,13 @@ export function FullCalendarModal({
 
                       {evt.isRescheduled && !evt.batal && (
                         <View style={styles.rescheduleBadge}>
-                          <Text style={styles.rescheduleText}>📌 Jadwal Diperbarui</Text>
+                          <Text style={[styles.rescheduleText, { color: colors.gold }]}>📌 Jadwal Diperbarui</Text>
                         </View>
                       )}
 
                       {evt.batal && (
-                        <View style={styles.batalBadge}>
-                          <Text style={styles.batalBadgeText}>⚠️ Dibatalkan</Text>
+                        <View style={[styles.batalBadge, { backgroundColor: batalBg }]}>
+                          <Text style={[styles.batalBadgeText, { color: colors.destructive }]}>⚠️ Dibatalkan</Text>
                         </View>
                       )}
                     </View>
@@ -426,9 +456,9 @@ export function FullCalendarModal({
                     </Text>
 
                     {evt.batal ? (
-                      <View style={styles.batalAlasanBox}>
-                        <Feather name="alert-circle" size={12} color="#EF4444" />
-                        <Text style={styles.batalAlasanText}>
+                      <View style={[styles.batalAlasanBox, { backgroundColor: batalBg }]}>
+                        <Feather name="alert-circle" size={12} color={colors.destructive} />
+                        <Text style={[styles.batalAlasanText, { color: colors.isDark ? "#FCA5A5" : "#991B1B" }]}>
                           Alasan: {evt.batal.alasan}
                         </Text>
                       </View>

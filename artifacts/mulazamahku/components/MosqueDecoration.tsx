@@ -60,13 +60,6 @@ export function MosqueDecoration({ width = 360, goldColor = "#C9A227", opacity =
           fill={goldColor}
         />
         {/* Hiasan puncak kubah (finial) dihapus agar kubah terlihat botak */}
-
-        {/* ── Ornamen jendela (arcade) ─────────────────── */}
-        <Path d="M 100 66 Q 100 58 108 56 Q 116 58 116 66 Z" fill="rgba(26,39,68,0.4)" />
-        <Path d="M 164 66 Q 164 58 172 56 Q 180 58 180 66 Z" fill="rgba(26,39,68,0.4)" />
-        <Path d="M 180 66 Q 180 58 188 56 Q 196 58 196 66 Z" fill="rgba(26,39,68,0.4)" />
-        <Path d="M 244 66 Q 244 58 252 56 Q 260 58 260 66 Z" fill="rgba(26,39,68,0.4)" />
-
       </G>
     </Svg>
   );

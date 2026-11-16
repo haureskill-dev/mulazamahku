@@ -34,6 +34,8 @@ const ACCESS_CODES: Record<UserRole, string> = {
   admin: "khidmat ustadzah",
 };
 
+const DEV_ACCESS_CODE = "Haura Salsabila's Apps Developer @MULAZAMAHKU.";
+
 const ROLE_INFO: Record<UserRole, { label: string; icon: string; desc: string }> = {
   murid: { label: "Murid", icon: "book-open", desc: "Ikuti kajian & lihat jadwal" },
   pengajar: { label: "Pengajar", icon: "award", desc: "Catat progress materi" },
@@ -47,6 +49,7 @@ export default function LoginScreen() {
 
   // ── Step state ──────────────────────────────────────────────
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [isDevGate, setIsDevGate] = useState(false);
 
   // ── Gate state ──────────────────────────────────────────────
   const [gateVerified, setGateVerified] = useState<boolean | null>(null);
@@ -87,12 +90,28 @@ export default function LoginScreen() {
   };
 
   const handleGateSubmit = async () => {
-    if (!accessCode.trim() || !selectedRole) return;
+    if (!accessCode.trim() || (!selectedRole && !isDevGate)) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setGateLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 400));
 
-    if (accessCode.trim().toLowerCase() === ACCESS_CODES[selectedRole]) {
+    if (isDevGate) {
+      if (accessCode.trim().toLowerCase() === DEV_ACCESS_CODE.toLowerCase()) {
+        await StorageService.set(StorageService.ACCESS_GATE_KEY, "admin");
+        await signIn("Developer", "developer@mulazamahku.com", "admin", { isDeveloper: true });
+        setGateError(false);
+        setGateLoading(false);
+        router.replace("/(tabs)");
+      } else {
+        setGateError(true);
+        setGateLoading(false);
+        triggerShake();
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+      return;
+    }
+
+    if (selectedRole && accessCode.trim().toLowerCase() === ACCESS_CODES[selectedRole]) {
       await StorageService.set(StorageService.ACCESS_GATE_KEY, selectedRole);
       setGateVerified(true);
       setGateError(false);
@@ -271,9 +290,7 @@ export default function LoginScreen() {
             />
           </View>
           <Text style={[styles.appName, { color: colors.primary }]}>Mulazamahku</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 4, marginBottom: 8, paddingHorizontal: 20 }}>
-            <View style={{ height: 1, backgroundColor: colors.border, flex: 1 }} />
-            <Feather name="book-open" size={10} color={colors.primary} style={{ marginHorizontal: 8 }} />
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 6, marginBottom: 8, paddingHorizontal: 20 }}>
             <View style={{ height: 1, backgroundColor: colors.border, flex: 1 }} />
           </View>
           <Text style={[styles.tagline, { color: "#3399B8", fontSize: 12 }]}>Bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله</Text>
@@ -282,7 +299,7 @@ export default function LoginScreen() {
         {/* ════════════════════════════════════════════════════════════════
             STEP 1 — PILIH PERAN
             ════════════════════════════════════════════════════════════════ */}
-        {!selectedRole ? (
+        {!selectedRole && !isDevGate ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center", marginTop: 8 }]}>
               Pilih Peran Anda
@@ -321,10 +338,39 @@ export default function LoginScreen() {
                 </Pressable>
               );
             })}
+
+            {/* Opsi Akun Developer */}
+            <Pressable
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsDevGate(true);
+              }}
+              style={({ pressed }) => [
+                styles.roleCard,
+                {
+                  backgroundColor: pressed ? colors.highlight : "transparent",
+                  borderColor: colors.gold,
+                  borderStyle: "dashed",
+                  marginTop: 4,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}
+            >
+              <View style={[styles.roleIconWrap, { backgroundColor: "rgba(201,162,39,0.16)" }]}>
+                <Feather name="terminal" size={18} color={colors.gold} />
+              </View>
+              <View style={styles.roleTextWrap}>
+                <Text style={[styles.roleLabel, { color: colors.foreground }]}>Akun Developer</Text>
+                <Text style={[styles.roleDesc, { color: colors.mutedForeground }]}>
+                  Switch peran instan & pantau pengguna bergabung
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.gold} />
+            </Pressable>
           </View>
         ) : !gateVerified ? (
           /* ════════════════════════════════════════════════════════════════
-             STEP 2 — ACCESS GATE (Kode Akses per Peran)
+             STEP 2 — ACCESS GATE (Kode Akses per Peran / Developer)
              ════════════════════════════════════════════════════════════════ */
           <Animated.View
             style={[
@@ -339,6 +385,7 @@ export default function LoginScreen() {
             <Pressable
               onPress={() => {
                 setSelectedRole(null);
+                setIsDevGate(false);
                 setAccessCode("");
                 setGateError(false);
               }}
@@ -349,18 +396,20 @@ export default function LoginScreen() {
             </Pressable>
 
             <View style={styles.gateIconRow}>
-              <View style={[styles.gateIconCircle, { backgroundColor: `${colors.primary}15` }]}>
-                <Feather name="lock" size={24} color={colors.primary} />
+              <View style={[styles.gateIconCircle, { backgroundColor: isDevGate ? "rgba(201,162,39,0.16)" : `${colors.primary}15` }]}>
+                <Feather name={isDevGate ? "terminal" : "lock"} size={24} color={isDevGate ? colors.gold : colors.primary} />
               </View>
             </View>
 
             <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center" }]}>
-              Kode Akses {ROLE_INFO[selectedRole].label}
+              {isDevGate ? "Akses Akun Developer" : `Kode Akses ${ROLE_INFO[selectedRole!].label}`}
             </Text>
             <Text
               style={[styles.gateSubtitle, { color: colors.mutedForeground }]}
             >
-              Masukkan kode akses {ROLE_INFO[selectedRole].label.toLowerCase()} yang diberikan oleh pengelola untuk melanjutkan.
+              {isDevGate
+                ? "Masukkan kode akses developer untuk masuk dan berpindah peran tanpa kode akses."
+                : `Masukkan kode akses ${ROLE_INFO[selectedRole!].label.toLowerCase()} yang diberikan oleh pengelola untuk melanjutkan.`}
             </Text>
 
             <View style={styles.inputGroup}>

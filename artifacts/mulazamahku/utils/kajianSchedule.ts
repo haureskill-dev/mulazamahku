@@ -45,7 +45,7 @@ export function isKajianOnDate(kajian: Kajian, date: Date, flyers: Flyer[] = [])
   const kajianDay = extractDayName(kajian.hari);
   if (kajianDay !== dayName) return false;
 
-  const pekanMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
+  const pekanMatch = kajian.hari.match(/pekan(?:\s*ke[- ]*)?\s*([\d]+(?:\s*(?:&|,|dan|-)\s*\d+)*)/i);
   if (!pekanMatch) return true;
   const weekNum = Math.ceil(date.getDate() / 7);
   return pekanMatch[1].includes(String(weekNum));

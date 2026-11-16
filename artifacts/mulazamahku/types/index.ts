@@ -97,6 +97,7 @@ export interface UserProfile {
   nama: string;
   email: string;
   role: UserRole;
+  isDeveloper?: boolean;
   photoURL?: string;
   totalKajian: number;
   totalCatatan: number;

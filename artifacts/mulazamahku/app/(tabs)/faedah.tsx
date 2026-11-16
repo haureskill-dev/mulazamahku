@@ -79,7 +79,7 @@ export default function FaedahScreen({
           const response = await fetch(imageUrl);
           const blob = await response.blob();
           const blobUrl = URL.createObjectURL(blob);
-          
+
           const link = document.createElement("a");
           link.href = blobUrl;
           link.download = `faedah_${Date.now()}.jpg`;
@@ -99,12 +99,12 @@ export default function FaedahScreen({
       // Native: download lalu share
       const filename = `faedah_${Date.now()}.jpg`;
       const fileUri = FileSystem.documentDirectory + filename;
-      
+
       const downloadResult = await FileSystem.downloadAsync(imageUrl, fileUri);
-      
+
       if (downloadResult.status === 200) {
         const options: any[] = [];
-        
+
         // Tombol 'Simpan ke Galeri' hanya muncul jika expo-media-library tersedia
         if (MediaLibrary) {
           options.push({
@@ -125,7 +125,7 @@ export default function FaedahScreen({
             }
           });
         }
-        
+
         options.push({
           text: "Bagikan",
           onPress: async () => {
@@ -141,9 +141,9 @@ export default function FaedahScreen({
             }
           }
         });
-        
+
         options.push({ text: "Batal", style: "cancel" });
-        
+
         Alert.alert(
           "Pilih Tindakan",
           "Apa yang ingin Anda lakukan dengan gambar ini?",
@@ -187,7 +187,7 @@ export default function FaedahScreen({
           if (width && height) {
             setImageAspectRatios(prev => ({ ...prev, [f.id]: width / height }));
           }
-        }, () => {});
+        }, () => { });
       }
     });
   }, [faedahList]);
@@ -239,7 +239,7 @@ export default function FaedahScreen({
     setUploading(true);
 
     let success, error;
-    
+
     if (editingFaedahId) {
       const res = await FaedahService.updateFaedahImage(editingFaedahId, previewUri);
       success = res.success;
@@ -261,10 +261,10 @@ export default function FaedahScreen({
     setEditingFaedahId(null);
 
     if (success) {
-      const msg = editingFaedahId 
-        ? "Desain faedah berhasil diperbarui." 
+      const msg = editingFaedahId
+        ? "Desain faedah berhasil diperbarui."
         : "Desain Anda telah berhasil dikirim dan sedang menunggu pengecekan pengajar.";
-        
+
       if (Platform.OS === "web") {
         window.alert(msg);
       } else {
@@ -316,7 +316,7 @@ export default function FaedahScreen({
     );
 
     setUploading(false);
-    
+
     if (success) {
       setFeedbackItem(null);
       setFeedbackAction(null);
@@ -371,116 +371,116 @@ export default function FaedahScreen({
     if (!iso) return "-";
     const date = new Date(iso);
     if (isNaN(date.getTime())) return "-";
-    
+
     const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
     const d = date.getDate();
     const m = months[date.getMonth()];
     const y = date.getFullYear();
     const hh = date.getHours().toString().padStart(2, "0");
     const mm = date.getMinutes().toString().padStart(2, "0");
-    
+
     return `${d} ${m} ${y}, ${hh}.${mm}`;
   };
 
   const renderFaedahItem = ({ item }: { item: FaedahItem }) => {
     const badge = getStatusBadge(item.status);
     return (
-      <View style={{ paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20, width: "100%", maxWidth: 560, alignSelf: "center" }}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Pressable onPress={() => setViewImageUri(item.image_url || null)}>
-          <Image
-            source={{ uri: item.image_url || 'https://placehold.co/600x400/png' }}
-            style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 4 / 5, height: undefined }]}
-            contentFit="contain"
-            onLoad={(e) => {
-              const { width, height } = e.source;
-              if (width && height) {
-                setImageAspectRatios(prev => ({ ...prev, [item.id]: width / height }));
-              }
-            }}
-          />
-        </Pressable>
-        <View style={styles.cardBody}>
-          <View style={styles.cardMeta}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardName, { color: colors.foreground }]}>
-                {item.uploader_name}
-              </Text>
-              <Text style={[styles.cardDate, { color: colors.mutedForeground }]}>
-                {formatDate(item.created_at)}
-              </Text>
+          <Pressable onPress={() => setViewImageUri(item.image_url || null)}>
+            <Image
+              source={{ uri: item.image_url || 'https://placehold.co/600x400/png' }}
+              style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 4 / 5, height: undefined, maxHeight: 420 }]}
+              contentFit="contain"
+              onLoad={(e) => {
+                const { width, height } = e.source;
+                if (width && height) {
+                  setImageAspectRatios(prev => ({ ...prev, [item.id]: width / height }));
+                }
+              }}
+            />
+          </Pressable>
+          <View style={styles.cardBody}>
+            <View style={styles.cardMeta}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cardName, { color: colors.foreground }]}>
+                  {item.uploader_name}
+                </Text>
+                <Text style={[styles.cardDate, { color: colors.mutedForeground }]}>
+                  {formatDate(item.created_at)}
+                </Text>
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                <Feather name={badge.icon} size={12} color={badge.color} />
+                <Text style={[styles.statusText, { color: badge.color }]}>
+                  {badge.label}
+                </Text>
+              </View>
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-              <Feather name={badge.icon} size={12} color={badge.color} />
-              <Text style={[styles.statusText, { color: badge.color }]}>
-                {badge.label}
-              </Text>
-            </View>
-          </View>
 
-          {/* Menampilkan feedback jika ada */}
-          {!!item.catatan && (
-            <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border }]}>
-              <Text style={[styles.feedbackLabel, { color: colors.primary }]}>Catatan Pengajar:</Text>
-              <Text style={[styles.feedbackTextContent, { color: colors.foreground }]}>{item.catatan}</Text>
-            </View>
-          )}
+            {/* Menampilkan feedback jika ada */}
+            {!!item.catatan && (
+              <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border }]}>
+                <Text style={[styles.feedbackLabel, { color: colors.primary }]}>Catatan Pengajar:</Text>
+                <Text style={[styles.feedbackTextContent, { color: colors.foreground }]}>{item.catatan}</Text>
+              </View>
+            )}
 
-          {/* Tombol approve/reject untuk pengajar */}
-          {user?.role === "pengajar" && item.status === "menunggu" && (
-            <View style={styles.actionRow}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionBtn,
-                  { backgroundColor: "#22C55E", opacity: pressed ? 0.8 : 1 },
-                ]}
-                onPress={() => handleApprove(item)}
-              >
-                <Feather name="check" size={14} color="#FFFFFF" />
-                <Text style={styles.actionBtnText}>Setujui</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionBtn,
-                  { backgroundColor: "#EF4444", opacity: pressed ? 0.8 : 1 },
-                ]}
-                onPress={() => handleReject(item)}
-              >
-                <Feather name="x" size={14} color="#FFFFFF" />
-                <Text style={styles.actionBtnText}>Tolak</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {/* Tombol Hapus & Edit untuk pengupload atau admin */}
-          {(user?.role === "admin" || user?.email === item.uploader_email) && (
-            <View style={[styles.actionRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)" }]}>
-              {user?.email === item.uploader_email && (
+            {/* Tombol approve/reject untuk pengajar */}
+            {user?.role === "pengajar" && item.status === "menunggu" && (
+              <View style={styles.actionRow}>
                 <Pressable
                   style={({ pressed }) => [
                     styles.actionBtn,
-                    { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                    { backgroundColor: "#22C55E", opacity: pressed ? 0.8 : 1 },
                   ]}
-                  onPress={() => pickImage(item.id)}
+                  onPress={() => handleApprove(item)}
                 >
-                  <Feather name="edit-2" size={14} color={colors.foreground} />
-                  <Text style={[styles.actionBtnText, { color: colors.foreground }]}>Edit Gambar</Text>
+                  <Feather name="check" size={14} color="#FFFFFF" />
+                  <Text style={styles.actionBtnText}>Setujui</Text>
                 </Pressable>
-              )}
-              
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionBtn,
-                  { backgroundColor: "#EF4444", opacity: pressed ? 0.7 : 1 }
-                ]}
-                onPress={() => handleDelete(item.id)}
-              >
-                <Feather name="trash-2" size={14} color="#FFFFFF" />
-                <Text style={styles.actionBtnText}>Hapus</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionBtn,
+                    { backgroundColor: "#EF4444", opacity: pressed ? 0.8 : 1 },
+                  ]}
+                  onPress={() => handleReject(item)}
+                >
+                  <Feather name="x" size={14} color="#FFFFFF" />
+                  <Text style={styles.actionBtnText}>Tolak</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Tombol Hapus & Edit untuk pengupload atau admin */}
+            {(user?.role === "admin" || user?.email === item.uploader_email) && (
+              <View style={[styles.actionRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)" }]}>
+                {user?.email === item.uploader_email && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.actionBtn,
+                      { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                    onPress={() => pickImage(item.id)}
+                  >
+                    <Feather name="edit-2" size={14} color={colors.foreground} />
+                    <Text style={[styles.actionBtnText, { color: colors.foreground }]}>Edit Gambar</Text>
+                  </Pressable>
+                )}
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionBtn,
+                    { backgroundColor: "#EF4444", opacity: pressed ? 0.7 : 1 }
+                  ]}
+                  onPress={() => handleDelete(item.id)}
+                >
+                  <Feather name="trash-2" size={14} color="#FFFFFF" />
+                  <Text style={styles.actionBtnText}>Hapus</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     );
@@ -488,38 +488,39 @@ export default function FaedahScreen({
 
   return (
     <View style={[styles.container, { paddingTop: hideTopInset ? 0 : insets.top, backgroundColor: colors.background }]}>
+      {headerComponent ? (
+        headerComponent
+      ) : (
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.foreground }]}>Faidah Kajian</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            Kumpulan desain faidah yang dibuat dari materi kajian.
+          </Text>
+        </View>
+      )}
+
+      {/* Tombol Pilih Gambar untuk Murid & Admin (tetap menempel di atas saat scroll) */}
+      {(user?.role === "murid" || user?.role === "admin") && (
+        <View style={{ paddingHorizontal: 20, marginBottom: 12, width: "100%", maxWidth: 560, alignSelf: "center" }}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.uploadBtn,
+              { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+            ]}
+            onPress={() => pickImage()}
+          >
+            <Feather name="image" size={18} color="#FFFFFF" />
+            <Text style={styles.uploadBtnText}>Pilih Desain dari Galeri</Text>
+          </Pressable>
+        </View>
+      )}
+
       <FlatList
         data={faedahList.filter(f => f.status !== "disetujui")}
         keyExtractor={(item) => item.id}
         renderItem={renderFaedahItem}
         ListHeaderComponent={
           <>
-            {headerComponent ? (
-              headerComponent
-            ) : (
-              <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.foreground }]}>Faidah Kajian</Text>
-                <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-                  Kumpulan desain faidah yang dibuat dari materi kajian.
-                </Text>
-              </View>
-            )}
-
-            {/* Tombol Pilih Gambar untuk Murid & Admin */}
-            {(user?.role === "murid" || user?.role === "admin") && (
-              <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.uploadBtn,
-                    { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
-                  ]}
-                  onPress={() => pickImage()}
-                >
-                  <Feather name="image" size={18} color="#FFFFFF" />
-                  <Text style={styles.uploadBtnText}>Pilih Desain dari Galeri</Text>
-                </Pressable>
-              </View>
-            )}
 
             {/* Carousel faedah yang sudah disetujui */}
             {faedahList.filter(f => f.status === "disetujui").length > 0 && (
@@ -557,39 +558,39 @@ export default function FaedahScreen({
                                   {formatDate(f.created_at)}
                                 </Text>
                               </View>
-                            <Pressable
-                              style={({ pressed }) => [
-                                { 
-                                  backgroundColor: "rgba(0,0,0,0.05)", 
-                                  width: 32, 
-                                  height: 32, 
-                                  borderRadius: 16, 
-                                  alignItems: "center", 
-                                  justifyContent: "center", 
-                                  opacity: pressed || downloading ? 0.6 : 1 
-                                },
-                              ]}
-                              onPress={() => downloadImage(f.image_url || "")}
-                              disabled={downloading}
-                            >
-                              {downloading ? (
-                                <ActivityIndicator size={14} color={colors.primary} />
-                              ) : (
-                                <Feather name="download" size={16} color={colors.primary} />
-                              )}
-                            </Pressable>
-                          </View>
-                          {!!f.catatan && (
-                            <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border, marginTop: 8, padding: 8 }]}>
-                              <Text style={[styles.feedbackLabel, { color: colors.primary, fontSize: 11 }]}>Catatan Pengajar:</Text>
-                              <Text style={[styles.feedbackTextContent, { color: colors.foreground, fontSize: 12 }]}>{f.catatan}</Text>
+                              <Pressable
+                                style={({ pressed }) => [
+                                  {
+                                    backgroundColor: "rgba(0,0,0,0.05)",
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    opacity: pressed || downloading ? 0.6 : 1
+                                  },
+                                ]}
+                                onPress={() => downloadImage(f.image_url || "")}
+                                disabled={downloading}
+                              >
+                                {downloading ? (
+                                  <ActivityIndicator size={14} color={colors.primary} />
+                                ) : (
+                                  <Feather name="download" size={16} color={colors.primary} />
+                                )}
+                              </Pressable>
                             </View>
-                          )}
+                            {!!f.catatan && (
+                              <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border, marginTop: 8, padding: 8 }]}>
+                                <Text style={[styles.feedbackLabel, { color: colors.primary, fontSize: 11 }]}>Catatan Pengajar:</Text>
+                                <Text style={[styles.feedbackTextContent, { color: colors.foreground, fontSize: 12 }]}>{f.catatan}</Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
-                      </View>
-                    </Pressable>
-                  );
-                })}
+                      </Pressable>
+                    );
+                  })}
                 </ScrollView>
               </View>
             )}
@@ -768,12 +769,12 @@ export default function FaedahScreen({
                 <Feather name="x" size={20} color={colors.foreground} />
               </Pressable>
             </View>
-            
+
             <View style={styles.feedbackBody}>
               <Text style={[styles.feedbackInfo, { color: colors.mutedForeground }]}>
                 Berikan catatan atau feedback untuk desain buatan {feedbackItem?.uploader_name} (opsional).
               </Text>
-              
+
               <View style={[styles.feedbackInputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
                 <TextInput
                   style={[styles.feedbackInput, { color: colors.foreground }]}
@@ -789,9 +790,9 @@ export default function FaedahScreen({
               <Pressable
                 style={({ pressed }) => [
                   styles.feedbackSubmitBtn,
-                  { 
+                  {
                     backgroundColor: feedbackAction === "disetujui" ? "#22C55E" : "#EF4444",
-                    opacity: pressed || uploading ? 0.7 : 1 
+                    opacity: pressed || uploading ? 0.7 : 1
                   }
                 ]}
                 onPress={submitFeedback}
@@ -819,7 +820,7 @@ export default function FaedahScreen({
       >
         <View style={styles.fullScreenOverlay}>
           <View style={{ position: "absolute", top: insets.top + 16, left: 0, right: 0, zIndex: 10, flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20 }}>
-            <Pressable 
+            <Pressable
               style={styles.closeFullScreenBtn}
               onPress={() => setViewImageUri(null)}
             >
@@ -840,9 +841,9 @@ export default function FaedahScreen({
             )}
           </View>
           {!!viewImageUri && (
-            <Image 
-              source={{ uri: viewImageUri }} 
-              style={styles.fullScreenImage} 
+            <Image
+              source={{ uri: viewImageUri }}
+              style={styles.fullScreenImage}
               contentFit="contain"
             />
           )}

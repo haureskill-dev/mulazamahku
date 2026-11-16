@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
@@ -33,16 +33,17 @@ function NativeTabLayout() {
   const { NativeTabs, Icon, Label } = NativeTabsModule;
   return (
     <NativeTabs>
+      {/* Pojok Baca selalu di paling pojok kiri, sesuai namanya */}
+      <NativeTabs.Trigger name="pojok-baca">
+        <Icon sf={{ default: "book.closed", selected: "book.closed.fill" }} />
+        <Label>Pojok Baca</Label>
+      </NativeTabs.Trigger>
       {user?.role !== "pengajar" && (
         <NativeTabs.Trigger name="notes">
           <Icon sf={{ default: "note.text", selected: "note.text" }} />
           <Label>Catatan</Label>
         </NativeTabs.Trigger>
       )}
-      <NativeTabs.Trigger name="pojok-baca">
-        <Icon sf={{ default: "book.closed", selected: "book.closed.fill" }} />
-        <Label>Pojok Baca</Label>
-      </NativeTabs.Trigger>
       {user?.role === "admin" && (
         <NativeTabs.Trigger name="flyer">
           <Icon sf={{ default: "megaphone", selected: "megaphone.fill" }} />
@@ -69,8 +70,8 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  // Ikuti tema aplikasi (themeStore), bukan tema sistem
+  const isDark = colors.isDark;
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const safeAreaInsets = useSafeAreaInsets();
@@ -119,6 +120,19 @@ function ClassicTabLayout() {
           ) : null,
       }}
     >
+      {/* Pojok Baca selalu di paling pojok kiri, sesuai namanya */}
+      <Tabs.Screen
+        name="pojok-baca"
+        options={{
+          title: "Pojok Baca",
+          tabBarIcon: ({ color }) =>
+            isIOS && SymbolViewComponent ? (
+              <SymbolViewComponent name="book.closed" tintColor={color} size={24} />
+            ) : (
+              <Feather name="book-open" size={22} color={color} />
+            ),
+        }}
+      />
       <Tabs.Screen
         name="notes"
         options={{
@@ -129,18 +143,6 @@ function ClassicTabLayout() {
               <SymbolViewComponent name="note.text" tintColor={color} size={24} />
             ) : (
               <Feather name="edit-3" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="pojok-baca"
-        options={{
-          title: "Pojok Baca",
-          tabBarIcon: ({ color }) =>
-            isIOS && SymbolViewComponent ? (
-              <SymbolViewComponent name="book.closed" tintColor={color} size={24} />
-            ) : (
-              <Feather name="book-open" size={22} color={color} />
             ),
         }}
       />

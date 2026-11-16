@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useState, useCallback, useMemo } from "react";
 import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
@@ -9,8 +9,11 @@ import { useNotes } from "@/context/NotesContext";
 import { useMudzakarah } from "@/context/MudzakarahContext";
 import { useColors } from "@/hooks/useColors";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
+import { KajianTambahanService, KajianTambahan } from "@/services/kajianTambahanService";
 import * as Updates from "expo-updates";
 import { useThemeState, setThemeMode } from "@/services/themeStore";
+import { supabase } from "@/services/supabase";
+import { UserRole } from "@/types";
 
 
 function formatDate(iso: string) {
@@ -60,7 +63,7 @@ function SettingItem({ icon, label, value, onPress, danger }: SettingItemProps) 
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, signOut, updateProfile } = useAuth();
+  const { user, signOut, updateProfile, switchRole } = useAuth();
   const { notes } = useNotes();
   const { topics } = useMudzakarah();
   const themeState = useThemeState();
@@ -85,7 +88,28 @@ export default function ProfileScreen() {
     }
   };
 
-  const activeKajian = DUMMY_KAJIAN.filter((k) => k.status === "aktif").length;
+  const [customKajianList, setCustomKajianList] = useState<KajianTambahan[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      KajianTambahanService.getAll().then(setCustomKajianList);
+    }, [])
+  );
+
+  // Sinkronkan total kajian dengan Jadwal Lengkap di Beranda
+  const totalKajian = useMemo(() => {
+    const deletedIds = customKajianList.filter((d) => d.is_deleted).map((d) => d.id);
+    const filteredCustom =
+      user?.role === "pengajar" || user?.role === "admin"
+        ? customKajianList
+        : customKajianList.filter((d) => d.is_public);
+    const activeCustom = filteredCustom.filter((d) => !d.is_deleted);
+    const customIds = activeCustom.map((c) => c.id);
+    const filteredDummy = DUMMY_KAJIAN.filter(
+      (d) => !customIds.includes(d.id) && !deletedIds.includes(d.id)
+    );
+    return filteredDummy.length + activeCustom.length;
+  }, [customKajianList, user?.role]);
   const myTopics = topics.filter((t) => t.authorName === user?.nama).length;
   const [updating, setUpdating] = useState(false);
 
@@ -93,6 +117,49 @@ export default function ProfileScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [newName, setNewName] = useState("");
   const [savingName, setSavingName] = useState(false);
+
+  // Developer Mode: daftar pengguna bergabung dari user_logs
+  const [usersModalVisible, setUsersModalVisible] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [joinedUsers, setJoinedUsers] = useState<
+    { key: string; nama: string; email: string; platform: string; lastLogin: string; count: number }[]
+  >([]);
+
+  const fetchJoinedUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase
+        .from("user_logs")
+        .select("nama, email, platform, logged_in_at")
+        .order("logged_in_at", { ascending: false })
+        .limit(500);
+      if (!error && data) {
+        const map = new Map<
+          string,
+          { key: string; nama: string; email: string; platform: string; lastLogin: string; count: number }
+        >();
+        for (const row of data as any[]) {
+          const key = (row.email || row.nama || "unknown").toLowerCase();
+          const existing = map.get(key);
+          if (!existing) {
+            map.set(key, {
+              key,
+              nama: row.nama || "-",
+              email: row.email || "-",
+              platform: row.platform || "-",
+              lastLogin: row.logged_in_at,
+              count: 1,
+            });
+          } else {
+            existing.count += 1;
+          }
+        }
+        setJoinedUsers(Array.from(map.values()));
+      }
+    } catch {}
+    setLoadingUsers(false);
+  }, []);
 
   const handleSaveName = async () => {
     if (!newName.trim()) return;
@@ -135,8 +202,9 @@ export default function ProfileScreen() {
   };
 
   return (
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
     <ScrollView
-      style={[styles.root, { backgroundColor: colors.background }]}
+      style={styles.root}
       contentContainerStyle={{ paddingBottom: bottomInset + 90 }}
       showsVerticalScrollIndicator={false}
     >
@@ -195,19 +263,19 @@ export default function ProfileScreen() {
 
       <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.statCol}>
-          <Text style={[styles.statNum, { color: colors.primary }]}>{activeKajian}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Kajian Rutin</Text>
+          <Text style={[styles.statNum, { color: colors.accentText }]}>{totalKajian}</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Total Kajian</Text>
         </View>
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <View style={styles.statCol}>
-          <Text style={[styles.statNum, { color: colors.primary }]}>0</Text>
+          <Text style={[styles.statNum, { color: colors.accentText }]}>0</Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Faedah</Text>
         </View>
         {user?.role !== "pengajar" && (
           <>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.statCol}>
-              <Text style={[styles.statNum, { color: colors.primary }]}>{notes.length}</Text>
+              <Text style={[styles.statNum, { color: colors.accentText }]}>{notes.length}</Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Catatan</Text>
             </View>
           </>
@@ -216,12 +284,72 @@ export default function ProfileScreen() {
           <>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.statCol}>
-              <Text style={[styles.statNum, { color: colors.primary }]}>{myTopics}</Text>
+              <Text style={[styles.statNum, { color: colors.accentText }]}>{myTopics}</Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Mudzakarah</Text>
             </View>
           </>
         )}
       </View>
+
+            {user?.isDeveloper && (
+        <View style={[styles.devCard, { backgroundColor: colors.card, borderColor: colors.gold }]}>
+          <View style={styles.devHeader}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Feather name="terminal" size={16} color={colors.gold} />
+              <Text style={[styles.devTitle, { color: colors.foreground }]}>Mode Developer</Text>
+            </View>
+            <View style={[styles.devBadge, { backgroundColor: "rgba(201,162,39,0.18)" }]}>
+              <Text style={[styles.devBadgeText, { color: colors.gold }]}>DEV</Text>
+            </View>
+          </View>
+          <Text style={[styles.devSub, { color: colors.mutedForeground }]}>
+            Ganti peran langsung tanpa kode akses untuk pengujian:
+          </Text>
+          <View style={styles.devRoleRow}>
+            {(["murid", "pengajar", "admin"] as UserRole[]).map((r) => {
+              const active = user.role === r;
+              const label = r === "murid" ? "User / Murid" : r === "pengajar" ? "Pengajar" : "Admin";
+              return (
+                <Pressable
+                  key={r}
+                  onPress={() => {
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    switchRole(r);
+                  }}
+                  style={({ pressed }) => [
+                    styles.devRoleBtn,
+                    {
+                      backgroundColor: active ? colors.primary : colors.surface,
+                      borderColor: active ? colors.primary : colors.border,
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.devRoleText, { color: active ? "#FFFFFF" : colors.foreground }]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Pressable
+            onPress={() => {
+              setUsersModalVisible(true);
+              fetchJoinedUsers();
+            }}
+            style={({ pressed }) => [
+              styles.devUsersBtn,
+              { backgroundColor: colors.highlight, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <Feather name="users" size={15} color={colors.accentText} />
+            <Text style={[styles.devUsersBtnText, { color: colors.accentText }]}>
+              Lihat Pengguna yang Bergabung
+            </Text>
+            <Feather name="chevron-right" size={15} color={colors.accentText} />
+          </Pressable>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>AKTIVITAS</Text>
@@ -229,7 +357,7 @@ export default function ProfileScreen() {
           <SettingItem
             icon="book-open"
             label="Semua Kajian"
-            value={`${DUMMY_KAJIAN.length} kajian`}
+            value={`${totalKajian} kajian`}
             onPress={() => router.push("/(tabs)")}
           />
           <SettingItem
@@ -330,6 +458,8 @@ export default function ProfileScreen() {
         "Menuntut ilmu itu wajib atas setiap muslim."
       </Text>
 
+    </ScrollView>
+
       <Modal
         visible={editModalVisible}
         transparent
@@ -375,7 +505,7 @@ export default function ProfileScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -570,6 +700,68 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minWidth: 80,
     alignItems: "center",
+  },
+  devCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+  },
+  devHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  devTitle: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+  },
+  devBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  devBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+  },
+  devSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 10,
+  },
+  devRoleRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
+  devRoleBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  devRoleText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  devUsersBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  devUsersBtnText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
   },
   modalBtnText: {
     fontSize: 14,

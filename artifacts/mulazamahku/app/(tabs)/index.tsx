@@ -1,5 +1,6 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import {
@@ -34,6 +35,7 @@ import { FullCalendarModal } from "@/components/FullCalendarModal";
 import { FloatingScrollParchment } from "@/components/FloatingScrollParchment";
 import { formatHijri, formatMasehi } from "@/utils/dates";
 import { WebNotificationService } from "@/services/webNotificationService";
+import { setThemeMode } from "@/services/themeStore";
 
 const DAYS_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"];
 
@@ -227,7 +229,7 @@ export default function BerandaScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { user } = useAuth();
+  const { user, switchRole } = useAuth();
   const { notes } = useNotes();
 
   const [customKajian, setCustomKajian] = useState<Kajian[]>([]);
@@ -444,11 +446,34 @@ export default function BerandaScreen() {
               </Text>
             </Pressable>
             {user?.role && (
-              <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
-                <Text style={{ fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", textTransform: "capitalize" }}>
-                  {user.role}
-                </Text>
-              </View>
+              user.isDeveloper ? (
+                <Pressable
+                  onPress={() => {
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    const order = ["murid", "pengajar", "admin"] as const;
+                    const next = order[(order.indexOf(user.role) + 1) % order.length];
+                    switchRole(next);
+                  }}
+                  style={{
+                    backgroundColor: "rgba(201,162,39,0.28)",
+                    borderWidth: 1,
+                    borderColor: colors.gold,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 9, fontFamily: "Inter_700Bold", color: "#F5E6A3", textTransform: "capitalize" }}>
+                    DEV · {user.role} ↻
+                  </Text>
+                </Pressable>
+              ) : (
+                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                  <Text style={{ fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", textTransform: "capitalize" }}>
+                    {user.role}
+                  </Text>
+                </View>
+              )
             )}
           </View>
 
@@ -458,20 +483,41 @@ export default function BerandaScreen() {
             <Text style={[styles.nameText, { marginTop: 2 }]}>{user?.nama ?? "Muslimah"}</Text>
           </View>
 
-          {(user?.role === "admin" || user?.role === "pengajar") && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Pressable
               onPress={() => {
                 if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (PENGAJAR_PROFILES.length > 0) {
-                  router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
-                }
+                setThemeMode(colors.isDark ? "light" : "dark");
               }}
-              style={styles.headerRightBtn}
+              accessibilityRole="button"
+              accessibilityLabel={colors.isDark ? "Ganti ke mode terang" : "Ganti ke mode gelap"}
+              style={({ pressed }) => [
+                styles.themeToggleBtn,
+                { opacity: pressed ? 0.75 : 1 },
+              ]}
             >
-              <Feather name="user" size={20} color="#FFFFFF" />
-              <Text style={styles.headerRightBtnText}>Pengajar</Text>
+              <Feather
+                name={colors.isDark ? "sun" : "moon"}
+                size={18}
+                color={colors.gold}
+              />
             </Pressable>
-          )}
+
+            {(user?.role === "admin" || user?.role === "pengajar") && (
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (PENGAJAR_PROFILES.length > 0) {
+                    router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
+                  }
+                }}
+                style={styles.headerRightBtn}
+              >
+                <Feather name="user" size={20} color="#FFFFFF" />
+                <Text style={styles.headerRightBtnText}>Pengajar</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {/* Real Date Card: Masehi & Hijriah -> Klik untuk buka Kalender Bulanan Asli */}
@@ -495,7 +541,7 @@ export default function BerandaScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.calendarLaunchMasehi}>{formatMasehi(new Date())}</Text>
-              <Text style={[styles.calendarLaunchHijri, { color: colors.goldLight }]}>
+              <Text style={[styles.calendarLaunchHijri, { color: "#F5E6A3" }]}>
                 {formatHijri(new Date())}
               </Text>
             </View>
@@ -506,21 +552,12 @@ export default function BerandaScreen() {
           </View>
         </Pressable>
 
-        {/* Statistik */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statItem, { borderColor: "rgba(201,162,39,0.4)", backgroundColor: "rgba(201,162,39,0.1)" }]}>
-            <Text style={[styles.statNum, { color: colors.gold }]}>
-              {DUMMY_KAJIAN.filter((k) => k.status === "aktif").length}
-            </Text>
-            <Text style={styles.statLabel}>Kajian Rutin</Text>
-          </View>
-          <View style={[styles.statItem, { borderColor: "rgba(201,162,39,0.4)", backgroundColor: "rgba(201,162,39,0.1)" }]}>
-            <Text style={[styles.statNum, { color: colors.gold }]}>{notes.length}</Text>
-            <Text style={styles.statLabel}>Catatan</Text>
-          </View>
-          <View style={[styles.statItem, { borderColor: "rgba(201,162,39,0.4)", backgroundColor: "rgba(201,162,39,0.1)" }]}>
-            <Text style={[styles.statNum, { color: colors.gold }]}>{DUMMY_KAJIAN.length}</Text>
-            <Text style={styles.statLabel}>Total Kajian</Text>
+        {/* Total Kajian (ringkas, sinkron dengan Jadwal Lengkap) */}
+        <View style={styles.totalKajianWrap}>
+          <View style={[styles.totalKajianPill, { borderColor: "rgba(201,162,39,0.45)", backgroundColor: "rgba(201,162,39,0.12)" }]}>
+            <Feather name="book-open" size={12} color={colors.gold} />
+            <Text style={styles.totalKajianLabel}>Total Kajian:</Text>
+            <Text style={[styles.totalKajianNum, { color: colors.gold }]}>{allKajianList.length}</Text>
           </View>
         </View>
 
@@ -610,7 +647,7 @@ export default function BerandaScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
           {(() => {
             // Tampilkan sesuai urutan upload (created_at desc dari database)
-            const MAX_VISIBLE = 5;
+            const MAX_VISIBLE = 10;
             const visibleFlyers = flyers.slice(0, MAX_VISIBLE);
             const archivedFlyers = flyers.slice(MAX_VISIBLE);
 
@@ -659,15 +696,15 @@ export default function BerandaScreen() {
                   <Pressable key="arsip-flyer" onPress={() => setShowArsipModal(true)}>
                     <View style={[styles.flyerCard, { borderColor: colors.border, width: 160, height: CANVA_CARD_HEIGHT, borderRadius: 16, justifyContent: "center", alignItems: "center", backgroundColor: colors.card }]}>
                       <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.highlight, justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
-                        <Feather name="archive" size={20} color={colors.primary} />
+                        <Feather name="archive" size={20} color={colors.accentText} />
                       </View>
                       <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_700Bold", marginBottom: 2 }}>Arsip Flyer</Text>
                       <Text style={{ color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_400Regular" }}>
                         {archivedFlyers.length} poster lainnya
                       </Text>
                       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 4 }}>
-                        <Text style={{ color: colors.primary, fontSize: 11, fontFamily: "Inter_600SemiBold" }}>Lihat Semua</Text>
-                        <Feather name="chevron-right" size={12} color={colors.primary} />
+                        <Text style={{ color: colors.accentText, fontSize: 11, fontFamily: "Inter_600SemiBold" }}>Lihat Semua</Text>
+                        <Feather name="chevron-right" size={12} color={colors.accentText} />
                       </View>
                     </View>
                   </Pressable>
@@ -710,6 +747,10 @@ export default function BerandaScreen() {
             if (items.length === 0) return null;
 
             const isDesktop = width > 600;
+            // Header hari dibuat paling menonjol dengan warna gradient, tanpa badge jumlah di kanan
+            const dayGradientColors: [string, string] = colors.isDark
+              ? [colors.header, colors.headerAlt]
+              : [colors.primary, colors.secondary];
             return (
               <View 
                 key={day} 
@@ -717,15 +758,20 @@ export default function BerandaScreen() {
                   styles.bentoCard, 
                   { 
                     backgroundColor: colors.card, 
-                    borderColor: colors.border,
+                    borderColor: colors.isDark ? "rgba(217,180,67,0.25)" : colors.border,
                     width: isDesktop ? '48%' : '100%'
                   }
                 ]}
               >
-                <View style={[styles.bentoHeader, { backgroundColor: colors.highlight, borderBottomColor: colors.border }]}>
-                  <Feather name="calendar" size={14} color={colors.primary} />
-                  <Text style={[styles.bentoDayText, { color: colors.primary }]}>{day}</Text>
-                </View>
+                <LinearGradient
+                  colors={dayGradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.bentoHeader}
+                >
+                  <View style={[styles.bentoDayAccent, { backgroundColor: colors.gold }]} />
+                  <Text style={styles.bentoDayText}>{day}</Text>
+                </LinearGradient>
                 <View style={styles.bentoContent}>
                   {items.map((kajian, idx) => {
                     const isLast = idx === items.length - 1;
@@ -737,10 +783,6 @@ export default function BerandaScreen() {
                       const bDate = new Date(b.tanggal);
                       return bDate >= today;
                     });
-                    
-                    const isConfirm = kajian.waktu.includes("konfirmasi");
-                    const timeStr = isConfirm ? "Confirm" : kajian.waktu.replace("WIB", "").split("-")[0].trim();
-                    const pekanStr = kajian.hari.includes("·") ? kajian.hari.split("·")[1].replace(/pekan/i, "Pk.").trim() : "";
 
                     return (
                       <Pressable
@@ -759,29 +801,30 @@ export default function BerandaScreen() {
                         ]}
                       >
                         <View style={styles.bentoItemTop}>
-                          <Text style={[styles.bentoTime, { color: colors.foreground }]}>
-                            {kajian.waktu.includes("konfirmasi") ? "Confirm" : kajian.waktu.split("-")[0].trim()}
-                          </Text>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                            {(() => {
-                              const pMatch = kajian.hari.match(/pekan\s*([\d\s&,]+)/i);
-                              if (pMatch) {
-                                return (
-                                  <View style={[styles.bentoPekanBadge, { backgroundColor: colors.highlight }]}>
-                                    <Text style={[styles.bentoPekanText, { color: colors.mutedForeground }]}>
-                                      Pekan {pMatch[1].trim()}
-                                    </Text>
-                                  </View>
-                                );
-                              }
-                              return null;
-                            })()}
+                          <View style={[styles.bentoTimeChip, { backgroundColor: colors.highlight }]}>
+                            <Feather name="clock" size={10} color={colors.accentText} />
+                            <Text style={[styles.bentoTime, { color: colors.accentText }]}>
+                              {kajian.waktu.includes("konfirmasi") ? "Confirm" : kajian.waktu.split("-")[0].trim()}
+                            </Text>
                           </View>
+                          {(() => {
+                            const pMatch = kajian.hari.match(/pekan(?:\s*ke[- ]*)?\s*([\d]+(?:\s*(?:&|,|dan|-)\s*\d+)*)/i);
+                            if (pMatch) {
+                              return (
+                                <View style={[styles.bentoPekanBadge, { backgroundColor: colors.goldLight }]}>
+                                  <Text style={[styles.bentoPekanText, { color: colors.goldForeground }]}>
+                                    Pekan {pMatch[1].trim()}
+                                  </Text>
+                                </View>
+                              );
+                            }
+                            return null;
+                          })()}
                         </View>
                         <Text style={[styles.bentoTitle, { color: isBatal ? colors.mutedForeground : colors.foreground, textDecorationLine: isBatal ? "line-through" : "none" }]} numberOfLines={2}>
                           {kajian.judul}
                         </Text>
-                        <Text style={[styles.bentoLoc, { color: isBatal ? "#EF4444" : colors.mutedForeground }]} numberOfLines={1}>
+                        <Text style={[styles.bentoLoc, { color: isBatal ? colors.destructive : colors.mutedForeground }]} numberOfLines={1}>
                           {isBatal ? (
                             <><Feather name="alert-circle" size={10} /> Dibatalkan</>
                           ) : (
@@ -843,13 +886,13 @@ export default function BerandaScreen() {
             <Text style={{ fontSize: 17, fontFamily: "Inter_700Bold", color: colors.foreground }}>Arsip Flyer</Text>
             <View style={{ width: 22 }} />
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
+          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40, width: "100%", maxWidth: 560, alignSelf: "center" }}>
             <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 16 }}>
-              Poster kajian yang lebih lama dari 5 terbaru.
+              Poster kajian yang lebih lama dari 10 terbaru.
             </Text>
             {(() => {
               // Tampilkan sesuai urutan upload asli
-              const archivedFlyers = flyers.slice(5);
+              const archivedFlyers = flyers.slice(10);
 
               if (archivedFlyers.length === 0) {
                 return (
@@ -886,7 +929,7 @@ export default function BerandaScreen() {
                   >
                     <Image
                       source={{ uri: f.image_url }}
-                      style={{ width: "100%", aspectRatio: ratio, backgroundColor: "rgba(0,0,0,0.03)" }}
+                      style={{ width: "100%", aspectRatio: ratio, maxHeight: 420, backgroundColor: "rgba(0,0,0,0.03)" }}
                       contentFit="contain"
                       onLoad={(e) => {
                         if (e.source.width && e.source.height) {
@@ -1056,30 +1099,40 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     marginTop: 4,
   },
-
-  // Stats
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 20,
-  },
-  statItem: {
-    flex: 1,
-    borderRadius: 10,
-    padding: 10,
+  themeToggleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.4)",
+  },
+
+  // Total Kajian (compact pill)
+  totalKajianWrap: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    marginBottom: 14,
+  },
+  totalKajianPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
     borderWidth: 1,
   },
-  statNum: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
+  totalKajianLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.85)",
   },
-  statLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.7)",
-    marginTop: 2,
-    textAlign: "center",
+  totalKajianNum: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
   },
   mosqueWrapper: {
     marginHorizontal: -20,
@@ -1187,20 +1240,28 @@ const styles = StyleSheet.create({
   bentoHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  bentoDayAccent: {
+    width: 4,
+    height: 20,
+    borderRadius: 2,
   },
   bentoDayText: {
-    fontSize: 14,
+    flex: 1,
+    fontSize: 18,
     fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
   },
   bentoContent: {
     paddingBottom: 4,
   },
   bentoItem: {
-    padding: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   bentoItemTop: {
     flexDirection: "row",
@@ -1208,9 +1269,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
+  bentoTimeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
   bentoTime: {
-    fontSize: 13,
-    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
   },
   bentoPekanBadge: {
     paddingHorizontal: 6,
@@ -1223,9 +1292,9 @@ const styles = StyleSheet.create({
   },
   bentoTitle: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_500Medium",
     marginBottom: 4,
-    lineHeight: 18,
+    lineHeight: 19,
     textAlign: "left",
   },
   bentoLoc: {

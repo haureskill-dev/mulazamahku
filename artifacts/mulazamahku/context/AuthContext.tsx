@@ -9,7 +9,8 @@ import { unregisterPushToken } from "@/services/pushTokenService";
 interface AuthContextValue {
   user: UserProfile | null;
   isLoading: boolean;
-  signIn: (name: string, email: string, role: UserRole) => Promise<void>;
+  signIn: (name: string, email: string, role: UserRole, options?: { isDeveloper?: boolean }) => Promise<void>;
+  switchRole: (role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
   signIn: async () => {},
+  switchRole: async () => {},
   signOut: async () => {},
   updateProfile: async () => {},
 });
@@ -37,12 +39,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const signIn = async (name: string, email: string, role: UserRole) => {
+  const signIn = async (
+    name: string,
+    email: string,
+    role: UserRole,
+    options?: { isDeveloper?: boolean }
+  ) => {
     const profile: UserProfile = {
       id: Date.now().toString(),
       nama: name,
       email: email,
       role: role,
+      isDeveloper: options?.isDeveloper ?? false,
       totalKajian: 0,
       totalCatatan: 0,
       bergabungSejak: new Date().toISOString(),
@@ -50,8 +58,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await StorageService.set(StorageService.USER_KEY, profile);
     setUser(profile);
 
-    // Fire-and-forget: catat login ke Supabase
-    logUserLogin(name, email);
+    // Fire-and-forget: catat login ke Supabase (kecuali akun developer agar log user tetap bersih)
+    if (!options?.isDeveloper) {
+      logUserLogin(name, email);
+    }
+  };
+
+  const switchRole = async (role: UserRole) => {
+    if (!user?.isDeveloper) return;
+    const updatedUser: UserProfile = { ...user, role };
+    await StorageService.set(StorageService.ACCESS_GATE_KEY, role);
+    await StorageService.set(StorageService.USER_KEY, updatedUser);
+    setUser(updatedUser);
   };
 
   const signOut = async () => {
@@ -84,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, switchRole, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

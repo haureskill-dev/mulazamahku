@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -16,13 +16,14 @@ export default function EditJadwalScreen() {
 
   const [form, setForm] = useState({
     judul: "",
+    ustadz: "Ustadzah Rubeya Litiloly",
     hari: "",
     waktu: "",
     lokasi: "",
     deskripsi: "",
     cp_nama: "",
     cp_telepon: "",
-    is_public: false,
+    is_public: true,
   });
 
   const [loading, setLoading] = useState(false);
@@ -35,17 +36,24 @@ export default function EditJadwalScreen() {
       if (found) {
         setForm({
           judul: found.judul,
+          ustadz: found.ustadz || "Ustadzah Rubeya Litiloly",
           hari: found.hari,
           waktu: found.waktu,
           lokasi: found.lokasi,
           deskripsi: found.deskripsi || "",
-          cp_nama: found.cp_nama || "",
-          cp_telepon: found.cp_telepon || "",
-          is_public: found.is_public || false,
+          cp_nama: (found as any).cp_nama || "",
+          cp_telepon: (found as any).cp_telepon || "",
+          // Jadwal bawaan (DUMMY_KAJIAN) bersifat umum secara default
+          is_public: "is_public" in found ? !!found.is_public : true,
         });
       } else {
-        Alert.alert("Error", "Data tidak ditemukan");
-        router.back();
+        if (Platform.OS === "web") {
+          window.alert("Data tidak ditemukan");
+          router.back();
+        } else {
+          Alert.alert("Error", "Data tidak ditemukan");
+          router.back();
+        }
       }
       setFetching(false);
     }
@@ -54,7 +62,11 @@ export default function EditJadwalScreen() {
 
   const handleSubmit = async () => {
     if (!form.judul || !form.hari || !form.waktu || !form.lokasi) {
-      Alert.alert("Data Tidak Lengkap", "Harap isi semua kolom wajib (yang bertanda bintang).");
+      if (Platform.OS === "web") {
+        window.alert("Harap isi semua kolom wajib (yang bertanda bintang).");
+      } else {
+        Alert.alert("Data Tidak Lengkap", "Harap isi semua kolom wajib (yang bertanda bintang).");
+      }
       return;
     }
 
@@ -67,7 +79,6 @@ export default function EditJadwalScreen() {
       // Create new entry with the same ID (upsert) — aman untuk dummy maupun custom
       const res = await KajianTambahanService.createWithId(id as string, {
         ...form,
-        ustadz: "Ustadzah Rubeya Litiloly",
         created_by_email: user?.email || "",
         created_by_role: user?.role || "",
       });
@@ -76,7 +87,6 @@ export default function EditJadwalScreen() {
     } else {
       const res = await KajianTambahanService.update(id as string, {
         ...form,
-        ustadz: "Ustadzah Rubeya Litiloly",
       });
       success = res.success;
       error = res.error;
@@ -84,11 +94,20 @@ export default function EditJadwalScreen() {
     setLoading(false);
 
     if (success) {
-      Alert.alert("Berhasil", "Jadwal kajian berhasil diperbarui.", [
-        { text: "OK", onPress: () => router.back() }
-      ]);
+      if (Platform.OS === "web") {
+        window.alert("Jadwal kajian berhasil diperbarui.");
+        router.back();
+      } else {
+        Alert.alert("Berhasil", "Jadwal kajian berhasil diperbarui.", [
+          { text: "OK", onPress: () => router.back() }
+        ]);
+      }
     } else {
-      Alert.alert("Gagal Menyimpan", error || "Terjadi kesalahan sistem.");
+      if (Platform.OS === "web") {
+        window.alert(error || "Terjadi kesalahan sistem.");
+      } else {
+        Alert.alert("Gagal Menyimpan", error || "Terjadi kesalahan sistem.");
+      }
     }
   };
 

@@ -276,10 +276,10 @@ export default function FlyerScreen() {
   };
 
   const renderFlyerItem = ({ item }: { item: Flyer }) => (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, width: "100%", maxWidth: 520, alignSelf: "center" }]}>
       <Image 
         source={{ uri: item.image_url }} 
-        style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 16 / 9, height: undefined }]} 
+        style={[styles.cardImage, { aspectRatio: imageAspectRatios[item.id] || 16 / 9, height: undefined, maxHeight: 420 }]} 
         contentFit="contain"
         onLoad={(e) => {
           const { width, height } = e.source;
@@ -357,7 +357,7 @@ export default function FlyerScreen() {
 
       {/* Tombol Upload untuk Admin */}
       {user?.role === "admin" && (
-        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+        <View style={{ paddingHorizontal: 20, marginBottom: 16, width: "100%", maxWidth: 560, alignSelf: "center" }}>
           <Pressable
             style={({ pressed }) => [
               styles.uploadBtn,
@@ -414,7 +414,7 @@ export default function FlyerScreen() {
             <View style={{ width: 22 }} />
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
+          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40, width: "100%", maxWidth: 560, alignSelf: "center" }}>
             {/* Preview gambar */}
             {editingFlyerId ? (
               <View>
