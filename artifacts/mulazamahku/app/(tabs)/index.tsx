@@ -607,52 +607,55 @@ export default function BerandaScreen() {
                 style={({ pressed }) => [
                   styles.highlightCard,
                   {
-                    backgroundColor: colors.primary,
-                    borderColor: colors.gold,
+                    borderColor: "rgba(201,162,39,0.4)",
                     opacity: pressed ? 0.92 : 1,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}
               >
-                <View style={[styles.highlightTopBar, { backgroundColor: colors.gold }]} />
-                <View style={styles.highlightInner}>
+                <LinearGradient
+                  colors={colors.isDark ? [colors.header, colors.headerAlt] : [colors.primary, colors.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.highlightInner}
+                >
                   <View style={styles.highlightTop}>
-                    <View style={[styles.highlightBadge, { backgroundColor: "rgba(201,162,39,0.2)", borderColor: "rgba(201,162,39,0.5)", borderWidth: 1 }]}>
-                      <Text style={[styles.highlightBadgeText, { color: colors.gold }]}>{highlight.hari}</Text>
+                    <View style={[styles.highlightBadge, { backgroundColor: "rgba(201,162,39,0.2)", borderColor: "rgba(201,162,39,0.45)", borderWidth: 1 }]}>
+                      <Text style={[styles.highlightBadgeText, { color: "#F5E6A3" }]}>{highlight.hari}</Text>
                     </View>
-                    <Text style={[styles.highlightTime, { color: "rgba(255,255,255,0.75)" }]}>
+                    <Text style={[styles.highlightTime, { color: "rgba(255,255,255,0.8)" }]}>
                       {highlightEffectiveInfo?.waktu || highlight.waktu}
                     </Text>
                   </View>
                   {highlightEffectiveInfo?.isRescheduled && (
-                    <View style={{ backgroundColor: "rgba(234,179,8,0.2)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, alignSelf: "flex-start", marginBottom: 4 }}>
-                      <Text style={{ color: colors.gold, fontSize: 10, fontFamily: "Inter_600SemiBold" }}>📌 Jadwal Diperbarui</Text>
+                    <View style={{ backgroundColor: "rgba(201,162,39,0.22)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: "flex-start", marginBottom: 6 }}>
+                      <Text style={{ color: "#F5E6A3", fontSize: 10, fontFamily: "Inter_600SemiBold" }}>📌 Jadwal Diperbarui</Text>
                     </View>
                   )}
                   <Text style={[styles.highlightJudul, { color: batalHighlightInfo ? "rgba(255,255,255,0.5)" : "#FFFFFF", textDecorationLine: batalHighlightInfo ? "line-through" : "none" }]}>
                     {highlight.judul}
                   </Text>
-                  <Text style={[styles.highlightUstadz, { color: "rgba(255,255,255,0.7)" }]}>
+                  <Text style={[styles.highlightUstadz, { color: "rgba(255,255,255,0.75)" }]}>
                     {highlight.ustadz}
                   </Text>
                   <View style={styles.highlightMeta}>
                     {batalHighlightInfo ? (
                       <>
-                        <Feather name="alert-circle" size={13} color="#EF4444" />
-                        <Text style={[styles.highlightLoc, { color: "#EF4444", fontFamily: "Inter_600SemiBold" }]}>
+                        <Feather name="alert-circle" size={13} color="#FCA5A5" />
+                        <Text style={[styles.highlightLoc, { color: "#FCA5A5", fontFamily: "Inter_600SemiBold" }]}>
                           Dibatalkan: {batalHighlightInfo.alasan}
                         </Text>
                       </>
                     ) : (
                       <>
-                        <Feather name="map-pin" size={13} color={colors.gold} />
-                        <Text style={[styles.highlightLoc, { color: colors.gold }]}>
+                        <Feather name="map-pin" size={13} color="#E8C766" />
+                        <Text style={[styles.highlightLoc, { color: "#F5E6A3" }]}>
                           {highlight.lokasi}
                         </Text>
                       </>
                     )}
                   </View>
-                </View>
+                </LinearGradient>
               </Pressable>
             );
           })()}
@@ -1239,7 +1242,7 @@ const styles = StyleSheet.create({
   // Highlight card
   highlightCard: {
     borderRadius: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
     marginBottom: 30,
     overflow: "hidden",
   },
