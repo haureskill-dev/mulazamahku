@@ -552,22 +552,22 @@ export default function BerandaScreen() {
                 <Feather name="calendar" size={16} color="#1A2744" />
               </View>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <Text style={styles.calendarLaunchMasehi}>{formatMasehi(new Date())}</Text>
-                  <View style={[styles.pekanBadge, { borderColor: "rgba(201,162,39,0.65)" }]}>
-                    <Text style={styles.pekanBadgeText}>
-                      Pekan {Math.ceil(new Date().getDate() / 7)}
-                    </Text>
-                  </View>
-                </View>
+                <Text style={styles.calendarLaunchMasehi}>{formatMasehi(new Date())}</Text>
                 <Text style={styles.calendarLaunchHijri}>
                   {formatHijri(new Date())}
                 </Text>
               </View>
             </View>
-            <View style={styles.calendarLaunchRight}>
-              <Text style={styles.calendarLaunchAction}>Jadwal</Text>
-              <Feather name="chevron-right" size={14} color="#F5E6A3" />
+            <View style={{ alignItems: "flex-end", gap: 4 }}>
+              <View style={[styles.pekanBadge, { borderColor: "rgba(201,162,39,0.65)" }]}>
+                <Text style={styles.pekanBadgeText}>
+                  Pekan {Math.ceil(new Date().getDate() / 7)}
+                </Text>
+              </View>
+              <View style={styles.calendarLaunchRight}>
+                <Text style={styles.calendarLaunchAction}>Jadwal</Text>
+                <Feather name="chevron-right" size={14} color="#F5E6A3" />
+              </View>
             </View>
           </Pressable>
 
