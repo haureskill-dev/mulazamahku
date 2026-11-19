@@ -558,13 +558,14 @@ export default function BerandaScreen() {
                 </Text>
               </View>
             </View>
-            <View style={{ alignItems: "flex-end", gap: 4 }}>
+            <View style={styles.calendarCombinedRight}>
               <Text style={styles.pekanText}>
                 Pekan {Math.ceil(new Date().getDate() / 7)}
               </Text>
-              <View style={styles.calendarLaunchRight}>
+              <View style={styles.calendarRightDivider} />
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
                 <Text style={styles.calendarLaunchAction}>Jadwal</Text>
-                <Feather name="chevron-right" size={14} color="#F5E6A3" />
+                <Feather name="chevron-right" size={13} color="#F5E6A3" />
               </View>
             </View>
           </Pressable>
@@ -1047,12 +1048,26 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
   },
+  calendarCombinedRight: {
+    alignItems: "center",
+    backgroundColor: "rgba(201,162,39,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.55)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 3,
+  },
+  calendarRightDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "rgba(201,162,39,0.3)",
+  },
   pekanText: {
-    fontSize: 10.5,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
     color: "#F5E6A3",
     letterSpacing: 0.3,
-    paddingRight: 2,
   },
   calendarLaunchHijri: {
     fontSize: 11.5,
