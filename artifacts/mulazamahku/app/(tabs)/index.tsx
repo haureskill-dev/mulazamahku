@@ -428,18 +428,20 @@ export default function BerandaScreen() {
         </View>
 
         {/* ── Header navy (User) ─────────────────────────────────────── */}
-        <View
-          style={[
-            styles.headerSection,
-            { backgroundColor: colors.primary, paddingTop: 16 },
-          ]}
+        <LinearGradient
+          colors={colors.isDark ? [colors.header, colors.headerAlt] : [colors.primary, colors.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.headerSection, { paddingTop: 18 }]}
         >
-
           <View style={styles.headerTop}>
             <View style={{ alignItems: "center", marginRight: 14 }}>
               <Pressable
                 onPress={() => router.push("/(tabs)/profile")}
-                style={[styles.avatarBtn, { borderColor: colors.gold, marginBottom: 4, marginRight: 0 }]}
+                style={({ pressed }) => [
+                  styles.avatarBtn,
+                  { borderColor: colors.gold, opacity: pressed ? 0.85 : 1 },
+                ]}
               >
                 <Text style={styles.avatarLetter}>
                   {(user?.nama ?? "M").charAt(0).toUpperCase()}
@@ -454,24 +456,15 @@ export default function BerandaScreen() {
                       const next = order[(order.indexOf(user.role) + 1) % order.length];
                       switchRole(next);
                     }}
-                    style={{
-                      backgroundColor: "rgba(201,162,39,0.28)",
-                      borderWidth: 1,
-                      borderColor: colors.gold,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                      borderRadius: 8,
-                    }}
+                    style={[styles.roleChip, styles.roleChipDev, { borderColor: colors.gold }]}
                   >
-                    <Text style={{ fontSize: 9, fontFamily: "Inter_700Bold", color: "#F5E6A3", textTransform: "capitalize" }}>
+                    <Text style={styles.roleChipDevText}>
                       DEV · {user.role} ↻
                     </Text>
                   </Pressable>
                 ) : (
-                  <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
-                    <Text style={{ fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", textTransform: "capitalize" }}>
-                      {user.role}
-                    </Text>
+                  <View style={styles.roleChip}>
+                    <Text style={styles.roleChipText}>{user.role}</Text>
                   </View>
                 )
               )}
@@ -480,7 +473,7 @@ export default function BerandaScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.greetingArabic}>{greetingArabic()}</Text>
               <Text style={styles.greetingText}>{greeting()},</Text>
-              <Text style={[styles.nameText, { marginTop: 2 }]}>{user?.nama ?? "Muslimah"}</Text>
+              <Text style={styles.nameText} numberOfLines={1}>{user?.nama ?? "Muslimah"}</Text>
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -498,7 +491,7 @@ export default function BerandaScreen() {
               >
                 <Feather
                   name={colors.isDark ? "sun" : "moon"}
-                  size={18}
+                  size={17}
                   color={colors.gold}
                 />
               </Pressable>
@@ -511,16 +504,16 @@ export default function BerandaScreen() {
                       router.push(`/pengajar/${PENGAJAR_PROFILES[0].id}`);
                     }
                   }}
-                  style={styles.headerRightBtn}
+                  style={({ pressed }) => [styles.headerRightBtn, { opacity: pressed ? 0.75 : 1 }]}
                 >
-                  <Feather name="user" size={20} color="#FFFFFF" />
+                  <Feather name="user" size={16} color="#FFFFFF" />
                   <Text style={styles.headerRightBtnText}>Pengajar</Text>
                 </Pressable>
               )}
             </View>
           </View>
 
-          {/* Real Date Card: Masehi & Hijriah -> Klik untuk buka Kalender Bulanan Asli */}
+          {/* Real Date Card: Masehi, Pekan & Hijriah -> Klik untuk buka Kalender Bulanan Asli */}
           <Pressable
             onPress={() => {
               if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -528,11 +521,7 @@ export default function BerandaScreen() {
             }}
             style={({ pressed }) => [
               styles.calendarLaunchCard,
-              {
-                backgroundColor: "rgba(255,255,255,0.12)",
-                borderColor: "rgba(201,162,39,0.5)",
-                opacity: pressed ? 0.85 : 1,
-              },
+              { opacity: pressed ? 0.85 : 1 },
             ]}
           >
             <View style={styles.calendarLaunchLeft}>
@@ -540,30 +529,31 @@ export default function BerandaScreen() {
                 <Feather name="calendar" size={16} color="#1A2744" />
               </View>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <Text style={styles.calendarLaunchMasehi}>{formatMasehi(new Date())}</Text>
-                  <View style={{ backgroundColor: "rgba(201,162,39,0.28)", borderWidth: 1, borderColor: colors.gold, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 10 }}>
-                    <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: "#F5E6A3" }}>
+                  <View style={[styles.pekanBadge, { borderColor: "rgba(201,162,39,0.65)" }]}>
+                    <Text style={styles.pekanBadgeText}>
                       Pekan {Math.ceil(new Date().getDate() / 7)}
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.calendarLaunchHijri, { color: "#F5E6A3" }]}>
+                <Text style={styles.calendarLaunchHijri}>
                   {formatHijri(new Date())}
                 </Text>
               </View>
             </View>
             <View style={styles.calendarLaunchRight}>
-              <Text style={styles.calendarLaunchAction}>Jadwal Lengkap</Text>
-              <Feather name="chevron-right" size={14} color="#FFFFFF" />
+              <Text style={styles.calendarLaunchAction}>Jadwal</Text>
+              <Feather name="chevron-right" size={14} color="#F5E6A3" />
             </View>
           </Pressable>
 
           {/* Total Kajian (ringkas, sinkron dengan Jadwal Lengkap) */}
           <View style={styles.totalKajianWrap}>
-            <View style={[styles.totalKajianPill, { borderColor: "rgba(201,162,39,0.45)", backgroundColor: "rgba(201,162,39,0.12)" }]}>
+            <View style={styles.totalKajianPill}>
               <Feather name="book-open" size={12} color={colors.gold} />
-              <Text style={styles.totalKajianLabel}>Total Kajian:</Text>
+              <Text style={styles.totalKajianLabel}>Total Kajian</Text>
+              <View style={styles.totalKajianDot} />
               <Text style={[styles.totalKajianNum, { color: colors.gold }]}>{allKajianList.length}</Text>
             </View>
           </View>
@@ -572,7 +562,7 @@ export default function BerandaScreen() {
           <View style={styles.mosqueWrapper}>
             <MosqueDecoration width={width} goldColor={colors.gold} opacity={0.85} />
           </View>
-        </View>
+        </LinearGradient>
 
         {/* ── Konten ──────────────────────────────────────────── */}
         <View style={styles.content}>
@@ -999,47 +989,66 @@ const styles = StyleSheet.create({
   },
   headerTop: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   calendarLaunchCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 16,
+    backgroundColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(201,162,39,0.4)",
+    marginBottom: 12,
   },
   calendarLaunchLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     flex: 1,
   },
   calendarLaunchIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   calendarLaunchMasehi: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
   },
+  pekanBadge: {
+    backgroundColor: "rgba(201,162,39,0.22)",
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 1.5,
+    borderRadius: 10,
+  },
+  pekanBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    color: "#F5E6A3",
+  },
   calendarLaunchHijri: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontFamily: "Inter_500Medium",
-    marginTop: 1,
+    color: "#F5E6A3",
+    marginTop: 2,
   },
   calendarLaunchRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: 3,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   calendarLaunchAction: {
     fontSize: 11,
@@ -1047,17 +1056,17 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   greetingArabic: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: "Inter_700Bold",
-    color: "#C9A227",
-    letterSpacing: 0.5,
-    marginBottom: 2,
+    color: "#E8C766",
+    letterSpacing: 0.4,
+    marginBottom: 1,
     textAlign: "left",
   },
   greetingText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.75)",
   },
   addScheduleBtn: {
     flexDirection: "row",
@@ -1073,69 +1082,103 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
   nameText: {
-    fontSize: 22,
+    fontSize: 21,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
-    marginTop: 2,
+    marginTop: 1,
+    letterSpacing: 0.2,
   },
   avatarBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.14)",
     borderWidth: 1.5,
+    marginBottom: 5,
   },
   avatarLetter: {
-    fontSize: 18,
+    fontSize: 19,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
+  },
+  roleChip: {
+    backgroundColor: "rgba(255,255,255,0.16)",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  roleChipText: {
+    fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+    textTransform: "capitalize",
+  },
+  roleChipDev: {
+    backgroundColor: "rgba(201,162,39,0.28)",
+    borderWidth: 1,
+  },
+  roleChipDevText: {
+    fontSize: 9,
+    fontFamily: "Inter_700Bold",
+    color: "#F5E6A3",
+    textTransform: "capitalize",
   },
   headerRightBtn: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    paddingHorizontal: 11,
+    paddingVertical: 7,
     borderRadius: 12,
   },
   headerRightBtnText: {
     color: "#FFF",
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
-    marginTop: 4,
+    marginTop: 3,
   },
   themeToggleBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.10)",
     borderWidth: 1,
-    borderColor: "rgba(201,162,39,0.4)",
+    borderColor: "rgba(201,162,39,0.35)",
   },
 
   // Total Kajian (compact pill)
   totalKajianWrap: {
     flexDirection: "row",
     justifyContent: "flex-start",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   totalKajianPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 11,
     paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.38)",
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   totalKajianLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
     color: "rgba(255,255,255,0.85)",
+  },
+  totalKajianDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "rgba(245,230,163,0.6)",
   },
   totalKajianNum: {
     fontSize: 12,
