@@ -559,11 +559,9 @@ export default function BerandaScreen() {
               </View>
             </View>
             <View style={{ alignItems: "flex-end", gap: 4 }}>
-              <View style={[styles.pekanBadge, { borderColor: "rgba(201,162,39,0.65)" }]}>
-                <Text style={styles.pekanBadgeText}>
-                  Pekan {Math.ceil(new Date().getDate() / 7)}
-                </Text>
-              </View>
+              <Text style={styles.pekanText}>
+                Pekan {Math.ceil(new Date().getDate() / 7)}
+              </Text>
               <View style={styles.calendarLaunchRight}>
                 <Text style={styles.calendarLaunchAction}>Jadwal</Text>
                 <Feather name="chevron-right" size={14} color="#F5E6A3" />
@@ -1046,17 +1044,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
   },
-  pekanBadge: {
-    backgroundColor: "rgba(201,162,39,0.22)",
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 1.5,
-    borderRadius: 10,
-  },
-  pekanBadgeText: {
-    fontSize: 10,
-    fontFamily: "Inter_700Bold",
+  pekanText: {
+    fontSize: 10.5,
+    fontFamily: "Inter_600SemiBold",
     color: "#F5E6A3",
+    letterSpacing: 0.3,
+    paddingRight: 2,
   },
   calendarLaunchHijri: {
     fontSize: 11.5,

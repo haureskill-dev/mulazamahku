@@ -128,7 +128,7 @@ export function OjekMuslimahModal({
             <View style={{ flex: 1 }}>
               <View style={styles.headerTitleRow}>
                 <View style={[styles.headerIcon, { backgroundColor: colors.highlight }]}>
-                  <Feather name="navigation" size={18} color={colors.primary} />
+                  <Feather name="navigation" size={18} color={colors.accentText} />
                 </View>
                 <Text style={[styles.title, { color: colors.foreground }]}>
                   Ojek Muslimah
@@ -168,7 +168,7 @@ export function OjekMuslimahModal({
                   ]}
                 >
                   <View style={[styles.lokasiIcon, { backgroundColor: colors.highlight }]}>
-                    <Feather name="map-pin" size={14} color={colors.primary} />
+                    <Feather name="map-pin" size={14} color={colors.accentText} />
                   </View>
                   <Text
                     style={[styles.lokasiText, { color: colors.foreground }]}
@@ -239,7 +239,7 @@ export function OjekMuslimahModal({
                   { backgroundColor: colors.highlight, borderColor: colors.border },
                 ]}
               >
-                <Feather name="map-pin" size={16} color={colors.primary} />
+                <Feather name="map-pin" size={16} color={colors.accentText} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.tujuanLabel, { color: colors.mutedForeground }]}>
                     Tujuan

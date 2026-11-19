@@ -741,15 +741,15 @@ export default function KajianDetailScreen() {
             <ActionIcon 
               icon="map" 
               label="Rute" 
-              color={colors.primary} 
-              bgColor="rgba(201,162,39,0.15)" 
+              color={colors.isDark ? colors.gold : colors.primary} 
+              bgColor={colors.isDark ? "rgba(217,180,67,0.18)" : "rgba(201,162,39,0.15)"} 
               onPress={openMaps} 
             />
             <ActionIcon 
               icon="navigation" 
               label="Ojek" 
-              color="#3A6EA8" 
-              bgColor="rgba(58,110,168,0.15)" 
+              color={colors.isDark ? "#7EB3F0" : "#3A6EA8"} 
+              bgColor={colors.isDark ? "rgba(126,179,240,0.18)" : "rgba(58,110,168,0.15)"} 
               onPress={() => {
                 if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setOjekModalVisible(true);
