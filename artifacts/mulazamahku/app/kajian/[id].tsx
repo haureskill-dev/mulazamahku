@@ -161,23 +161,44 @@ export default function KajianDetailScreen() {
   };
 
   const handleDeleteCustom = () => {
-    Alert.alert("Hapus Jadwal", "Anda yakin ingin menghapus jadwal tambahan ini?", [
-      { text: "Batal", style: "cancel" },
-      {
-        text: "Hapus",
-        style: "destructive",
-        onPress: async () => {
-          setIsDeleting(true);
-          const { success, error } = await KajianTambahanService.delete(id);
-          setIsDeleting(false);
-          if (success) {
-            router.back();
-          } else {
-            Alert.alert("Gagal Menghapus", error || "Terjadi kesalahan.");
-          }
+    const doDelete = async () => {
+      setIsDeleting(true);
+      const { success, error } = await KajianTambahanService.delete(
+        id as string,
+        kajian
+          ? {
+              judul: kajian.judul,
+              ustadz: kajian.ustadz,
+              waktu: kajian.waktu,
+              hari: kajian.hari,
+              lokasi: kajian.lokasi,
+              created_by_email: user?.email || "",
+              created_by_role: user?.role || "admin",
+            }
+          : undefined
+      );
+      setIsDeleting(false);
+      if (success) {
+        if (Platform.OS === "web") {
+          window.alert("Jadwal kajian berhasil dihapus.");
         }
+        router.back();
+      } else {
+        const msg = error || "Terjadi kesalahan.";
+        if (Platform.OS === "web") window.alert("Gagal Menghapus: " + msg);
+        else Alert.alert("Gagal Menghapus", msg);
       }
-    ]);
+    };
+
+    if (Platform.OS === "web") {
+      const ok = window.confirm("Anda yakin ingin menghapus jadwal kajian ini?");
+      if (ok) doDelete();
+    } else {
+      Alert.alert("Hapus Jadwal", "Anda yakin ingin menghapus jadwal kajian ini?", [
+        { text: "Batal", style: "cancel" },
+        { text: "Hapus", style: "destructive", onPress: doDelete },
+      ]);
+    }
   };
 
   const handleBatalSubmit = async () => {
@@ -210,14 +231,22 @@ export default function KajianDetailScreen() {
   };
 
   const handleDeleteBatal = async (batalId: string) => {
-    Alert.alert("Hapus Info", "Hapus info pembatalan ini?", [
-      { text: "Batal", style: "cancel" },
-      { text: "Hapus", style: "destructive", onPress: async () => {
-        await KajianBatalService.delete(batalId);
-        const newData = await KajianBatalService.getAll();
-        setBatalList(newData.filter(d => d.kajian_id === id));
-      }}
-    ]);
+    const doDelete = async () => {
+      await KajianBatalService.delete(batalId);
+      const newData = await KajianBatalService.getAll();
+      setBatalList(newData.filter(d => d.kajian_id === id));
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm("Hapus info pembatalan ini?")) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert("Hapus Info", "Hapus info pembatalan ini?", [
+        { text: "Batal", style: "cancel" },
+        { text: "Hapus", style: "destructive", onPress: doDelete },
+      ]);
+    }
   };
 
   if (loading) {
