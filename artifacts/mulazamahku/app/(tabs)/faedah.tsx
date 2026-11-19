@@ -558,27 +558,48 @@ export default function FaedahScreen({
                                   {formatDate(f.created_at)}
                                 </Text>
                               </View>
-                              <Pressable
-                                style={({ pressed }) => [
-                                  {
-                                    backgroundColor: "rgba(0,0,0,0.05)",
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 16,
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    opacity: pressed || downloading ? 0.6 : 1
-                                  },
-                                ]}
-                                onPress={() => downloadImage(f.image_url || "")}
-                                disabled={downloading}
-                              >
-                                {downloading ? (
-                                  <ActivityIndicator size={14} color={colors.primary} />
-                                ) : (
-                                  <Feather name="download" size={16} color={colors.primary} />
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <Pressable
+                                  style={({ pressed }) => [
+                                    {
+                                      backgroundColor: "rgba(0,0,0,0.05)",
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 16,
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      opacity: pressed || downloading ? 0.6 : 1
+                                    },
+                                  ]}
+                                  onPress={() => downloadImage(f.image_url || "")}
+                                  disabled={downloading}
+                                >
+                                  {downloading ? (
+                                    <ActivityIndicator size={14} color={colors.primary} />
+                                  ) : (
+                                    <Feather name="download" size={16} color={colors.primary} />
+                                  )}
+                                </Pressable>
+                                {(user?.role === "admin" || user?.role === "pengajar" || user?.email === f.uploader_email) && (
+                                  <Pressable
+                                    style={({ pressed }) => [
+                                      {
+                                        backgroundColor: "rgba(239,68,68,0.12)",
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 16,
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        opacity: pressed ? 0.6 : 1,
+                                      },
+                                    ]}
+                                    onPress={() => handleDelete(f.id)}
+                                    accessibilityLabel="Hapus faedah"
+                                  >
+                                    <Feather name="trash-2" size={15} color="#EF4444" />
+                                  </Pressable>
                                 )}
-                              </Pressable>
+                              </View>
                             </View>
                             {!!f.catatan && (
                               <View style={[styles.feedbackBox, { backgroundColor: colors.highlight, borderColor: colors.border, marginTop: 8, padding: 8 }]}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -23,10 +23,12 @@ import { useAuth } from "@/context/AuthContext";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { useFocusEffect } from "expo-router";
 import { FlyerService } from "@/services/flyerService";
+import { KajianTambahanService, KajianTambahan } from "@/services/kajianTambahanService";
 import { scheduleAllKajianReminders } from "@/services/notificationService";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
-import { Flyer } from "@/types";
+import { Flyer, Kajian } from "@/types";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -36,6 +38,7 @@ export default function FlyerScreen() {
   const { user } = useAuth();
 
   const [flyerList, setFlyerList] = useState<Flyer[]>([]);
+  const [customKajian, setCustomKajian] = useState<KajianTambahan[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,14 +57,31 @@ export default function FlyerScreen() {
   const [tanggalBerlaku, setTanggalBerlaku] = useState<string>("");
 
   const fetchFlyers = useCallback(async () => {
-    const data = await FlyerService.getAllFlyers();
+    const [data, kajianData] = await Promise.all([
+      FlyerService.getAllFlyers(),
+      KajianTambahanService.getAll(),
+    ]);
     setFlyerList(data);
+    setCustomKajian(kajianData);
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchFlyers();
-  }, [fetchFlyers]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchFlyers();
+    }, [fetchFlyers])
+  );
+
+  // Sinkronkan daftar kajian dengan perubahan/penambahan terbaru dari database
+  const allKajianList = useMemo(() => {
+    const deletedIds = customKajian.filter((d) => d.is_deleted).map((d) => d.id);
+    const activeCustom = customKajian.filter((d) => !d.is_deleted);
+    const customIds = activeCustom.map((c) => c.id);
+    const filteredDummy = DUMMY_KAJIAN.filter(
+      (d) => !customIds.includes(d.id) && !deletedIds.includes(d.id)
+    );
+    return [...filteredDummy, ...activeCustom] as Kajian[];
+  }, [customKajian]);
 
   useEffect(() => {
     flyerList.forEach(f => {
@@ -228,7 +248,7 @@ export default function FlyerScreen() {
   };
 
   const getKajianTitle = (id: string) => {
-    const k = DUMMY_KAJIAN.find((x) => x.id === id);
+    const k = allKajianList.find((x) => x.id === id);
     return k ? k.judul : id;
   };
 
@@ -512,7 +532,7 @@ export default function FlyerScreen() {
                   </Pressable>
                 </View>
                 <ScrollView>
-                  {DUMMY_KAJIAN.filter((k) => k.status === "aktif").map((k) => (
+                  {allKajianList.map((k) => (
                     <Pressable
                       key={k.id}
                       style={({ pressed }) => [
