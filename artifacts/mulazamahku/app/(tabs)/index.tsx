@@ -51,12 +51,35 @@ function extractDayName(hari: string): string {
   return hari;
 }
 
+function parsePekanNumbers(hari: string): number[] {
+  const m = hari.match(/pekan(?:\s*ke[- ]*)?\s*([\d]+(?:\s*(?:&|,|dan|-)\s*\d+)*)/i);
+  if (!m) return [0]; // rutin setiap pekan
+  const nums = m[1].match(/\d+/g)?.map(Number).filter((n) => !Number.isNaN(n)) ?? [];
+  return nums.length > 0 ? nums.sort((a, b) => a - b) : [0];
+}
+
+function parseStartMinutes(waktu: string): number {
+  const m = waktu.match(/(\d{1,2})[.:](\d{2})/);
+  if (!m) return 9999; // misal "(masih konfirmasi)"
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
 function groupByDay(kajian: Kajian[]): Record<string, Kajian[]> {
   const groups: Record<string, Kajian[]> = {};
   for (const d of DAYS_ORDER) groups[d] = [];
   for (const k of kajian) {
     const day = extractDayName(k.hari);
     if (groups[day]) groups[day].push(k);
+  }
+  // Urutkan per hari: mulai dari pekan 1, 2, 3, 4, dst., lalu jam mulai paling awal
+  for (const d of DAYS_ORDER) {
+    groups[d].sort((a, b) => {
+      const pa = parsePekanNumbers(a.hari);
+      const pb = parsePekanNumbers(b.hari);
+      if (pa[0] !== pb[0]) return pa[0] - pb[0];
+      if ((pa[1] ?? 0) !== (pb[1] ?? 0)) return (pa[1] ?? 0) - (pb[1] ?? 0);
+      return parseStartMinutes(a.waktu) - parseStartMinutes(b.waktu);
+    });
   }
   return groups;
 }
