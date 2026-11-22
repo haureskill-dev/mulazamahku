@@ -27,6 +27,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotesProvider } from "@/context/NotesContext";
 import { MudzakarahProvider } from "@/context/MudzakarahContext";
 import { UpdateChecker } from "@/components/UpdateChecker";
+import { NotificationPromptModal } from "@/components/NotificationPromptModal";
 import { scheduleAllKajianReminders, registerBackgroundNotificationTask } from "@/services/notificationService";
 import { registerPushToken } from "@/services/pushTokenService";
 import { WebNotificationService } from "@/services/webNotificationService";
@@ -155,12 +156,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function RootLayoutNav() {
   const colors = useColors();
 
-  useEffect(() => {
-    if (Platform.OS === "web") {
-      WebNotificationService.maybeRequestOnFirstVisit();
-    }
-  }, []);
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View
@@ -173,6 +168,7 @@ function RootLayoutNav() {
         <AuthGuard>
           <Slot />
           <UpdateChecker />
+          <NotificationPromptModal />
         </AuthGuard>
       </View>
     </View>
