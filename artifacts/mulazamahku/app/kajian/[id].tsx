@@ -1,7 +1,7 @@
 import { Feather, Ionicons, FontAwesome } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import React, { useEffect, useState, useCallback } from "react";
 import { Alert, ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
@@ -91,41 +91,50 @@ export default function KajianDetailScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    if (!kajian && id) {
-      // Coba fetch dari Supabase (custom schedules)
-      KajianTambahanService.getAll().then((data) => {
-        const found = data.find(d => d.id === id);
-        if (found) {
-          setKajian({
-            id: found.id,
-            judul: found.judul,
-            ustadz: found.ustadz,
-            waktu: found.waktu,
-            hari: found.hari,
-            lokasi: found.lokasi,
-            status: "aktif",
-            deskripsi: found.deskripsi || "",
-            kategori: "Kajian Rutin",
-            cp_nama: found.cp_nama,
-            cp_telepon: found.cp_telepon,
-            is_custom: true,
-          });
-        }
-        setLoading(false);
-      });
-    } else {
+  const loadKajianDetail = useCallback(async () => {
+    if (!id) return;
+    const dummyMatch = DUMMY_KAJIAN.find((k) => k.id === id) || null;
+    try {
+      const data = await KajianTambahanService.getAll();
+      const customMatch = data.find((d) => d.id === id);
+      if (customMatch && !customMatch.is_deleted) {
+        // Prioritaskan data terbaru hasil edit/tambah dari Supabase, pertahankan koordinat/maps dari dummy jika ada
+        setKajian({
+          ...(dummyMatch || {}),
+          id: customMatch.id,
+          judul: customMatch.judul,
+          ustadz: customMatch.ustadz,
+          waktu: customMatch.waktu,
+          hari: customMatch.hari,
+          lokasi: customMatch.lokasi,
+          status: dummyMatch?.status || "aktif",
+          deskripsi: customMatch.deskripsi || dummyMatch?.deskripsi || "",
+          kategori: dummyMatch?.kategori || "Kajian Rutin",
+          cp_nama: customMatch.cp_nama || dummyMatch?.cp_nama,
+          cp_telepon: customMatch.cp_telepon || dummyMatch?.cp_telepon,
+          is_custom: true,
+          is_public: customMatch.is_public,
+        });
+      } else if (dummyMatch) {
+        setKajian(dummyMatch);
+      }
+    } catch {
+      if (dummyMatch) setKajian(dummyMatch);
+    } finally {
       setLoading(false);
     }
-  }, [id, kajian]);
-
-  useEffect(() => {
-    if (id) {
-      KajianBatalService.getAll().then((data) => {
-        setBatalList(data.filter(d => d.kajian_id === id));
-      });
-    }
   }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadKajianDetail();
+      if (id) {
+        KajianBatalService.getAll().then((data) => {
+          setBatalList(data.filter((d) => d.kajian_id === id));
+        });
+      }
+    }, [loadKajianDetail, id])
+  );
 
   const applyManualTanggal = (text: string) => {
     // Auto-format DD/MM/YYYY

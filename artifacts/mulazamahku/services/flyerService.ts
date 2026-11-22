@@ -153,8 +153,11 @@ export const FlyerService = {
         return this._getFromCache();
       }
 
-      await AsyncStorage.setItem(FLYER_CACHE_KEY, JSON.stringify(data));
-      return data as Flyer[];
+      const sorted = (data as Flyer[]).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      await AsyncStorage.setItem(FLYER_CACHE_KEY, JSON.stringify(sorted));
+      return sorted;
     } catch {
       return this._getFromCache();
     }
@@ -213,7 +216,12 @@ export const FlyerService = {
   async _getFromCache(): Promise<Flyer[]> {
     try {
       const cached = await AsyncStorage.getItem(FLYER_CACHE_KEY);
-      if (cached) return JSON.parse(cached) as Flyer[];
+      if (cached) {
+        const parsed = JSON.parse(cached) as Flyer[];
+        return parsed.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
     } catch {}
     return [];
   },

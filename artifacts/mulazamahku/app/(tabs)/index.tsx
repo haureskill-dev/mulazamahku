@@ -33,6 +33,7 @@ import { Image } from "expo-image";
 import { WebPullToRefresh } from "@/components/WebPullToRefresh";
 import { FullCalendarModal } from "@/components/FullCalendarModal";
 import { FloatingScrollParchment } from "@/components/FloatingScrollParchment";
+import { MulazamahChatbotModal } from "@/components/MulazamahChatbotModal";
 import { formatHijri, formatMasehi } from "@/utils/dates";
 import { WebNotificationService } from "@/services/webNotificationService";
 import { setThemeMode } from "@/services/themeStore";
@@ -336,7 +337,10 @@ export default function BerandaScreen() {
 
   const fetchFlyers = useCallback(async () => {
     const data = await FlyerService.getAllFlyers();
-    setFlyers(data);
+    const sorted = [...data].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    setFlyers(sorted);
   }, []);
 
   const fetchBatal = useCallback(async () => {
@@ -374,6 +378,7 @@ export default function BerandaScreen() {
   const [selectedFlyer, setSelectedFlyer] = useState<Flyer | null>(null);
   const [showArsipModal, setShowArsipModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showChatbotModal, setShowChatbotModal] = useState(false);
 
   const calendarKajianData = useMemo(() => ({
     kajian: allKajianList,
@@ -570,7 +575,7 @@ export default function BerandaScreen() {
             </View>
           </Pressable>
 
-          {/* Total Kajian (ringkas, sinkron dengan Jadwal Lengkap) */}
+          {/* Total Kajian & Tombol Asisten Admin Otomatis */}
           <View style={styles.totalKajianWrap}>
             <View style={styles.totalKajianPill}>
               <Feather name="book-open" size={12} color={colors.gold} />
@@ -578,6 +583,26 @@ export default function BerandaScreen() {
               <View style={styles.totalKajianDot} />
               <Text style={[styles.totalKajianNum, { color: colors.gold }]}>{allKajianList.length}</Text>
             </View>
+
+            <Pressable
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowChatbotModal(true);
+              }}
+              style={({ pressed }) => [
+                styles.totalKajianPill,
+                {
+                  borderColor: "rgba(201,162,39,0.6)",
+                  backgroundColor: "rgba(201,162,39,0.2)",
+                  opacity: pressed ? 0.8 : 1,
+                },
+              ]}
+            >
+              <Feather name="message-circle" size={12} color="#F5E6A3" />
+              <Text style={[styles.totalKajianLabel, { color: "#F5E6A3", fontFamily: "Inter_600SemiBold" }]}>
+                Asisten Admin
+              </Text>
+            </Pressable>
           </View>
 
           {/* Motif silhouette masjid gold di bawah header */}
@@ -994,6 +1019,16 @@ export default function BerandaScreen() {
         kajianData={calendarKajianData}
         onSyncNotif={handleSyncNotif}
       />
+
+      {/* Chatbot Asisten Admin Kajian Otomatis */}
+      <MulazamahChatbotModal
+        visible={showChatbotModal}
+        onClose={() => setShowChatbotModal(false)}
+        allKajianList={allKajianList}
+        flyers={flyers}
+        batalList={batalList}
+        highlight={highlight}
+      />
     </View>
   );
 }
@@ -1189,7 +1224,8 @@ const styles = StyleSheet.create({
   // Total Kajian (compact pill)
   totalKajianWrap: {
     flexDirection: "row",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
   },
   totalKajianPill: {
