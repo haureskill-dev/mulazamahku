@@ -19,7 +19,7 @@ import { useColors } from "@/hooks/useColors";
 import { Kajian, Flyer } from "@/types";
 import {
   ADMIN_KAJIAN_CONTACTS,
-  OJEK_MUSLIMAH_CONTACTS,
+  OJEK_CONTACTS,
   PENGAJAR_PROFILES,
 } from "@/services/dummyData";
 import { ProgressService } from "@/services/progressService";
@@ -162,12 +162,12 @@ export function MulazamahChatbotModal({
 
     // 2. Tanya Ojek Muslimah
     if (/\b(ojek|antar|jemput|kendaraan|transport)\b/.test(q)) {
-      const drivers = OJEK_MUSLIMAH_CONTACTS.map((d) => `• ${d.nama} (+${d.phone})`).join("\n");
+      const drivers = OJEK_CONTACTS.map((d) => `• ${d.nama} (+${d.phone})`).join("\n");
       return {
         id: `${Date.now()}-bot`,
         sender: "bot",
         text: `Layanan Ojek Muslimah Mulazamahku:\n\n${drivers}\n\nKlik tombol di bawah untuk langsung menghubungi via WhatsApp:`,
-        actions: OJEK_MUSLIMAH_CONTACTS.map((d) => ({
+        actions: OJEK_CONTACTS.map((d) => ({
           label: `Pesan WA ${d.nama}`,
           type: "wa",
           phone: d.phone,
