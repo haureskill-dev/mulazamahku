@@ -148,6 +148,52 @@ function getStartMinutes(waktu: string): number {
   return 9999;
 }
 
+/**
+ * Hitung timestamp jadwal kajian terdekat untuk sebuah flyer (dalam ms),
+ * supaya flyer otomatis terurut dari hari & jam kajian paling dekat (paling kiri).
+ * Flyer yang tanggal berlakunya sudah lewat ditempatkan setelah flyer yang akan datang.
+ */
+function getFlyerSortTimestamp(flyer: Flyer, allKajian: Kajian[], allFlyers: Flyer[]): number {
+  const now = new Date();
+  const kajian = allKajian.find((k) => k.id === flyer.kajian_id);
+
+  // 1. Jika flyer punya tanggal_berlaku spesifik (YYYY-MM-DD)
+  if (flyer.tanggal_berlaku) {
+    const parts = flyer.tanggal_berlaku.split("-").map(Number);
+    if (parts.length === 3 && !parts.some(Number.isNaN)) {
+      const [y, m, d] = parts;
+      const mins = getStartMinutes(flyer.keterangan || kajian?.waktu || "");
+      const hh = mins < 1440 ? Math.floor(mins / 60) : 8;
+      const mm = mins < 1440 ? mins % 60 : 0;
+      const eventDate = new Date(y, m - 1, d, hh, mm, 0, 0);
+      // Buffer 60 menit setelah mulai
+      if (eventDate.getTime() + 60 * 60_000 >= now.getTime()) {
+        return eventDate.getTime();
+      }
+      // Sudah lewat: taruh setelah yang akan datang (urutkan yang paling baru lewat dulu)
+      return 1e15 + (1e13 - eventDate.getTime());
+    }
+  }
+
+  // 2. Cocokkan dengan jadwal rutin kajian terkait dalam 31 hari ke depan
+  if (kajian) {
+    for (let offset = 0; offset < 31; offset++) {
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+      if (!isKajianOnDate(kajian, date, allFlyers)) continue;
+      const flyerWaktu = extractTimeFromFlyer(kajian, date, allFlyers);
+      const effectiveWaktu = flyerWaktu || kajian.waktu;
+      if (offset === 0 && isKajianPassedToday(effectiveWaktu)) continue;
+      const mins = getStartMinutes(effectiveWaktu);
+      const hh = mins < 1440 ? Math.floor(mins / 60) : 23;
+      const mm = mins < 1440 ? mins % 60 : 59;
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm, 0, 0).getTime();
+    }
+  }
+
+  // 3. Fallback: taruh di akhir berdasarkan created_at terbaru
+  return 2e15 - new Date(flyer.created_at).getTime();
+}
+
 /** Cari kajian terdekat dalam 14 hari ke depan — memprioritaskan yang paling awal waktunya */
 function findNearestKajian(allKajian: Kajian[], flyers: Flyer[] = []): Kajian {
   const now = new Date();
@@ -298,6 +344,15 @@ export default function BerandaScreen() {
   const grouped = useMemo(() => groupByDay(allKajianList), [allKajianList]);
 
   const [flyers, setFlyers] = useState<Flyer[]>([]);
+  const sortedFlyers = useMemo(() => {
+    return [...flyers].sort((a, b) => {
+      const diff =
+        getFlyerSortTimestamp(a, allKajianList, flyers) -
+        getFlyerSortTimestamp(b, allKajianList, flyers);
+      if (diff !== 0) return diff;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [flyers, allKajianList]);
   const highlight = useMemo(() => findNearestKajian(allKajianList, flyers), [allKajianList, flyers]);
 
   // Cek apakah highlight punya flyer reschedule hari ini/besok untuk menampilkan waktu yang benar
@@ -693,10 +748,10 @@ export default function BerandaScreen() {
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
               {(() => {
-                // Tampilkan sesuai urutan upload (created_at desc dari database)
+                // Tampilkan berurutan dari hari & jam kajian terdekat (paling kiri)
                 const MAX_VISIBLE = 10;
-                const visibleFlyers = flyers.slice(0, MAX_VISIBLE);
-                const archivedFlyers = flyers.slice(MAX_VISIBLE);
+                const visibleFlyers = sortedFlyers.slice(0, MAX_VISIBLE);
+                const archivedFlyers = sortedFlyers.slice(MAX_VISIBLE);
 
                 if (visibleFlyers.length > 0) {
                   const CANVA_CARD_HEIGHT = 200;
@@ -939,7 +994,7 @@ export default function BerandaScreen() {
               </Text>
               {(() => {
                 // Tampilkan sesuai urutan upload asli
-                const archivedFlyers = flyers.slice(10);
+                const archivedFlyers = sortedFlyers.slice(10);
 
                 if (archivedFlyers.length === 0) {
                   return (
