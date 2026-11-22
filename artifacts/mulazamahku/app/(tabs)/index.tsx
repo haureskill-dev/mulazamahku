@@ -1140,9 +1140,9 @@ const styles = StyleSheet.create({
   },
   calendarCombinedRight: {
     alignItems: "center",
-    backgroundColor: "rgba(201,162,39,0.18)",
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(201,162,39,0.55)",
+    borderColor: "rgba(255,255,255,0.28)",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
@@ -1151,7 +1151,7 @@ const styles = StyleSheet.create({
   calendarRightDivider: {
     width: "100%",
     height: 1,
-    backgroundColor: "rgba(201,162,39,0.3)",
+    backgroundColor: "rgba(255,255,255,0.22)",
   },
   pekanText: {
     fontSize: 10,
