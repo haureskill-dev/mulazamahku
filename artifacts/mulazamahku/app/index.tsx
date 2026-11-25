@@ -1,5 +1,6 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -115,12 +116,10 @@ export default function LoginScreen() {
       if (v && (v === "murid" || v === "pengajar" || v === "admin")) {
         setSelectedRole(v as UserRole);
         setGateVerified(true);
-        setShowLanding(false);
       } else if (v === true as any) {
         // Legacy: user lama yang sudah verify dengan sistem lama
         setSelectedRole("murid");
         setGateVerified(true);
-        setShowLanding(false);
       } else {
         setGateVerified(false);
       }
@@ -338,61 +337,82 @@ export default function LoginScreen() {
               resizeMode="contain"
             />
           </View>
-          <Text style={[styles.appName, { color: colors.primary }]}>Mulazamahku</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 6, marginBottom: 8, paddingHorizontal: 20 }}>
-            <View style={{ height: 1, backgroundColor: colors.border, flex: 1 }} />
-          </View>
-          <Text style={[styles.tagline, { color: "#3399B8", fontSize: 12 }]}>Bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله</Text>
+          <Text style={[styles.appName, { color: colors.isDark ? "#FFFFFF" : colors.primary }]}>
+            Mulazamahku
+          </Text>
+          <Text style={[styles.tagline, { color: colors.isDark ? "#F5E6A3" : "#3399B8", fontSize: 12.5 }]}>
+            Bersama Ustadzah Rubeya Litiloly, S.Kom. حفظها الله
+          </Text>
         </View>
 
         {/* ════════════════════════════════════════════════════════════════
-            LANDING PAGE — KONTEN MUTIARA MULAZAMAHKU
+            LANDING PAGE — KONTEN MUTIARA MULAZAMAHKU (ELEGAN)
             ════════════════════════════════════════════════════════════════ */}
-        {showLanding && !selectedRole && !isDevGate ? (
-          <View style={{ width: "100%", maxWidth: 560, alignSelf: "center", gap: 14 }}>
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center", marginTop: 4 }]}>
-                Ahlan wa Sahlan di Mulazamahku
+        {showLanding ? (
+          <View style={{ width: "100%", maxWidth: 600, alignSelf: "center", gap: 16 }}>
+            {/* Hero Banner */}
+            <LinearGradient
+              colors={colors.isDark ? [colors.header, colors.headerAlt] : [colors.primary, colors.secondary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroCard}
+            >
+              <View style={styles.heroBadge}>
+                <Text style={styles.heroBadgeText}>✦ الملازمة وطلب العلم ✦</Text>
+              </View>
+
+              <Text style={styles.heroArabicMain}>
+                وصحبة أستاذ • وطول زمان{"\n"}وملازمة أستاذ • وطول زمان
               </Text>
-              <Text style={[styles.gateSubtitle, { color: colors.mutedForeground, marginBottom: 16 }]}>
-                Pendamping halaqah kajian, jadwal mulazamah, catatan materi, dan faidah ilmu.
+              <Text style={styles.heroArabicAuthor}>— قال الإمام الشافعي رحمه الله —</Text>
+
+              <View style={styles.heroDivider} />
+
+              <Text style={styles.heroMottoArabic}>من ثبت نبت</Text>
+              <Text style={styles.heroMottoMeaning}>
+                "Barang siapa yang menetap, maka dia akan tumbuh."
               </Text>
+
               <Pressable
                 onPress={() => {
                   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setShowLanding(false);
                 }}
                 style={({ pressed }) => [
-                  styles.btn,
-                  { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 },
+                  styles.heroCtaBtn,
+                  { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
                 ]}
               >
-                <View style={styles.btnInner}>
-                  <Text style={[styles.btnText, { color: "#FFFFFF" }]}>Masuk ke Aplikasi</Text>
-                  <Feather name="arrow-right" size={17} color="#FFFFFF" />
-                </View>
+                <Text style={styles.heroCtaText}>Masuk ke Aplikasi</Text>
+                <Feather name="arrow-right" size={16} color="#1A2744" />
               </Pressable>
-            </View>
+            </LinearGradient>
 
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 }}>
-                <Feather name="book-open" size={16} color={colors.gold} />
-                <Text style={[styles.cardTitle, { color: colors.foreground, fontSize: 16, marginBottom: 0 }]}>
-                  Mutiara Mulazamah
+            {/* Daftar Kalam Ulama & Adab Menuntut Ilmu */}
+            <View style={[styles.mutiaraSectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.mutiaraHeaderRow}>
+                <View style={[styles.mutiaraLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.mutiaraSectionTitle, { color: colors.gold }]}>
+                  ✦ KALAM ULAMA & ADAB ILMU ✦
                 </Text>
+                <View style={[styles.mutiaraLine, { backgroundColor: colors.border }]} />
               </View>
 
-              <View style={{ gap: 10 }}>
-                {MULAZAMAH_MUTIARA.map((item, idx) => (
+              <View style={{ gap: 12 }}>
+                {MULAZAMAH_MUTIARA.slice(2).map((item, idx) => (
                   <View
                     key={idx}
                     style={[
                       styles.mutiaraBox,
-                      { backgroundColor: colors.surface, borderColor: colors.border },
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        borderLeftColor: colors.gold,
+                      },
                     ]}
                   >
                     {item.arabic && (
-                      <Text style={[styles.mutiaraArabic, { color: colors.accentText }]}>
+                      <Text style={[styles.mutiaraArabic, { color: colors.isDark ? "#F5E6A3" : colors.primary }]}>
                         {item.arabic}
                       </Text>
                     )}
@@ -402,9 +422,13 @@ export default function LoginScreen() {
                       </Text>
                     )}
                     {item.source && (
-                      <Text style={[styles.mutiaraSource, { color: colors.gold }]}>
-                        — {item.source}
-                      </Text>
+                      <View style={styles.mutiaraSourceRow}>
+                        <View style={[styles.mutiaraSourcePill, { backgroundColor: "rgba(201,162,39,0.14)" }]}>
+                          <Text style={[styles.mutiaraSource, { color: colors.gold }]}>
+                            {item.source}
+                          </Text>
+                        </View>
+                      </View>
                     )}
                   </View>
                 ))}
@@ -417,11 +441,11 @@ export default function LoginScreen() {
                 }}
                 style={({ pressed }) => [
                   styles.btn,
-                  { backgroundColor: colors.primary, marginTop: 16, opacity: pressed ? 0.88 : 1 },
+                  { backgroundColor: colors.primary, marginTop: 18, opacity: pressed ? 0.88 : 1 },
                 ]}
               >
                 <View style={styles.btnInner}>
-                  <Text style={[styles.btnText, { color: "#FFFFFF" }]}>Mulai Sekarang</Text>
+                  <Text style={[styles.btnText, { color: "#FFFFFF" }]}>Mulai Menuntut Ilmu</Text>
                   <Feather name="arrow-right" size={17} color="#FFFFFF" />
                 </View>
               </Pressable>
@@ -640,6 +664,16 @@ export default function LoginScreen() {
              STEP 3 — LOGIN FORM
              ════════════════════════════════════════════════════════════════ */
           <View style={styles.loginFormContainer}>
+            <Pressable
+              onPress={() => {
+                setSelectedRole(null);
+                setGateVerified(false);
+              }}
+              style={[styles.backBtn, { alignSelf: "center", marginBottom: 16 }]}
+            >
+              <Feather name="arrow-left" size={15} color={colors.accentText} />
+              <Text style={[styles.backText, { color: colors.accentText }]}>Ganti Peran / Mutiara Mulazamah</Text>
+            </Pressable>
             <View style={{ alignItems: "center", marginBottom: 32 }}>
               <Feather name="log-in" size={36} color="#3399B8" style={{ marginBottom: 12 }} />
               <Text style={{ fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.foreground, textAlign: "center", marginBottom: 6 }}>
@@ -744,14 +778,14 @@ const styles = StyleSheet.create({
   },
   brandArea: {
     alignItems: "center",
-    marginBottom: 36,
+    marginBottom: 22,
   },
   logoContainer: {
-    width: 100,
-    height: 100,
+    width: 92,
+    height: 92,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
+    marginBottom: 8,
   },
   logoImage: {
     width: "100%",
@@ -760,12 +794,13 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 26,
     fontFamily: "Inter_700Bold",
-    marginBottom: 6,
+    marginBottom: 2,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_500Medium",
     textAlign: "center",
+    marginTop: 0,
   },
   loginFormContainer: {
     width: "100%",
@@ -1010,27 +1045,138 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     lineHeight: 18,
   },
-  mutiaraBox: {
-    borderRadius: 12,
+  heroCard: {
+    width: "100%",
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 13,
+    borderColor: "rgba(201,162,39,0.5)",
+    paddingHorizontal: 22,
+    paddingVertical: 24,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  heroBadge: {
+    backgroundColor: "rgba(201,162,39,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.45)",
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  heroBadgeText: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: "#F5E6A3",
+    letterSpacing: 0.5,
+  },
+  heroArabicMain: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    lineHeight: 34,
+    textAlign: "center",
+  },
+  heroArabicAuthor: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#E8C766",
+    marginTop: 6,
+  },
+  heroDivider: {
+    width: 64,
+    height: 1.5,
+    backgroundColor: "rgba(201,162,39,0.45)",
+    marginVertical: 16,
+  },
+  heroMottoArabic: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: "#F5E6A3",
+    textAlign: "center",
+  },
+  heroMottoMeaning: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    fontStyle: "italic",
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  heroCtaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#E8C766",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    width: "100%",
+  },
+  heroCtaText: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: "#1A2744",
+  },
+  mutiaraSectionCard: {
+    width: "100%",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+  },
+  mutiaraHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  mutiaraLine: {
+    flex: 1,
+    height: 1,
+  },
+  mutiaraSectionTitle: {
+    fontSize: 11.5,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 1,
+  },
+  mutiaraBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderLeftWidth: 3.5,
+    paddingHorizontal: 15,
+    paddingVertical: 14,
     gap: 6,
   },
   mutiaraArabic: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
-    lineHeight: 26,
+    lineHeight: 28,
     textAlign: "right",
   },
   mutiaraText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontFamily: "Inter_400Regular",
-    lineHeight: 20,
+    lineHeight: 21,
     textAlign: "left",
   },
+  mutiaraSourceRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 2,
+  },
+  mutiaraSourcePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
   mutiaraSource: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontFamily: "Inter_600SemiBold",
-    textAlign: "right",
   },
 });

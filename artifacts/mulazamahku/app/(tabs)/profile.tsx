@@ -373,8 +373,9 @@ export default function ProfileScreen() {
           </View>
           <Pressable
             onPress={() => {
-              setUsersModalVisible(true);
-              fetchJoinedUsers();
+              const next = !usersModalVisible;
+              setUsersModalVisible(next);
+              if (next) fetchJoinedUsers();
             }}
             style={({ pressed }) => [
               styles.devUsersBtn,
@@ -383,10 +384,76 @@ export default function ProfileScreen() {
           >
             <Feather name="users" size={15} color={colors.accentText} />
             <Text style={[styles.devUsersBtnText, { color: colors.accentText }]}>
-              Lihat Pengguna yang Bergabung
+              {usersModalVisible ? "Tutup Daftar Pengguna" : "Lihat Pengguna yang Bergabung"}
             </Text>
-            <Feather name="chevron-right" size={15} color={colors.accentText} />
+            <Feather name={usersModalVisible ? "chevron-up" : "chevron-down"} size={15} color={colors.accentText} />
           </Pressable>
+
+          {usersModalVisible && (
+            <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: colors.foreground }}>
+                  Terdaftar ({joinedUsers.length} pengguna)
+                </Text>
+                <Pressable onPress={fetchJoinedUsers} hitSlop={8} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Feather name="refresh-cw" size={13} color={colors.accentText} />
+                  <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.accentText }}>Muat Ulang</Text>
+                </Pressable>
+              </View>
+
+              {loadingUsers ? (
+                <View style={{ alignItems: "center", paddingVertical: 18 }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={{ marginTop: 6, color: colors.mutedForeground, fontSize: 12 }}>
+                    Memuat data pengguna...
+                  </Text>
+                </View>
+              ) : usersError ? (
+                <View style={{ paddingVertical: 12 }}>
+                  <Text style={{ color: colors.destructive, fontSize: 12 }}>{usersError}</Text>
+                </View>
+              ) : joinedUsers.length === 0 ? (
+                <View style={{ paddingVertical: 12 }}>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                    Belum ada data pengguna yang tercatat di Supabase.
+                  </Text>
+                </View>
+              ) : (
+                joinedUsers.map((u) => (
+                  <View
+                    key={u.key}
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                      borderWidth: 1,
+                      borderRadius: 10,
+                      padding: 10,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: colors.foreground, flex: 1 }}>
+                        {u.nama}
+                      </Text>
+                      <View style={{ backgroundColor: colors.highlight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                        <Text style={{ fontSize: 9.5, fontFamily: "Inter_600SemiBold", color: colors.accentText, textTransform: "uppercase" }}>
+                          {u.platform}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 11.5, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>
+                      {u.email}
+                    </Text>
+                    {u.lastLogin ? (
+                      <Text style={{ fontSize: 10.5, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>
+                        Terakhir aktif: {formatDate(u.lastLogin)} · {u.count}x masuk
+                      </Text>
+                    ) : null}
+                  </View>
+                ))
+              )}
+            </View>
+          )}
         </View>
       )}
 
