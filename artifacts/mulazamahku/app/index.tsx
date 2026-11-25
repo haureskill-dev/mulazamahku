@@ -44,49 +44,109 @@ const ROLE_INFO: Record<UserRole, { label: string; icon: string; desc: string }>
   admin: { label: "Admin", icon: "settings", desc: "Kelola jadwal & flyer" },
 };
 
-const MULAZAMAH_MUTIARA: { arabic?: string; text?: string; source?: string }[] = [
+interface LandingClip {
+  badge: string;
+  question: string;
+  nextLabel?: string;
+  isFinal?: boolean;
+  items: { arabic?: string; text?: string; source?: string }[];
+}
+
+const LANDING_CLIPS: LandingClip[] = [
   {
-    arabic: "وصحبة أستاذ • وطول زمان\nوملازمة أستاذ • وطول زمان",
-    source: "ديوان الشافعي",
+    badge: "✦ KLIP 1 · MUHASABAH PENUNTUT ILMU ✦",
+    question:
+      "Pernahkah merasa lelah berjalan sendiri dalam menuntut ilmu, bingung harus mulai dari mana, atau mudah terputus di tengah jalan?",
+    nextLabel: "Lanjut: Bagaimana Cara Bertahan?",
+    items: [
+      {
+        arabic: "إنما العلم يأتى ولم يأتي",
+        source: "ابن عباس رضي الله عنهما",
+      },
+      {
+        arabic: "العلم لا يعادله شيء لمن صحت نيته",
+        source: "الإمام أحمد رحمه الله",
+      },
+    ],
   },
   {
-    arabic: "من ثبت نبت",
-    text: "Barang siapa yang menetap, maka dia akan tumbuh.",
+    badge: "✦ KLIP 2 · RAHASIA KETEGUHAN ✦",
+    question:
+      "Mengapa para ulama mampu kokoh di atas ilmu? Karena mereka menetap lama bersama guru yang membimbing dari ilmu dasar hingga puncak.",
+    nextLabel: "Lanjut: Tiga Tahapan Ilmu",
+    items: [
+      {
+        arabic: "وصحبة أستاذ • وطول زمان\nوملازمة أستاذ • وطول زمان",
+        source: "ديوان الشافعي",
+      },
+      {
+        arabic: "من ثبت نبت",
+        text: "Barang siapa yang menetap, maka dia akan tumbuh.",
+      },
+      {
+        arabic: "الذي يربي الناس بصغار العلم قبل كباره",
+        source: "الإمام البخاري رحمه الله",
+      },
+    ],
   },
   {
-    arabic: "الذي يربي الناس بصغار العلم قبل كباره",
-    source: "الإمام البخاري رحمه الله",
+    badge: "✦ KLIP 3 · TAWADHU & KESABARAN ✦",
+    question:
+      "Di jengkal manakah posisi kita hari ini? Semakin dalam ilmu seseorang, semakin ia tawadhu dan tidak tergesa-gesa.",
+    nextLabel: "Lanjut: Adab & Kelapangan Hati",
+    items: [
+      {
+        arabic:
+          "العلم على ثلاثة أشبار؛ من دخل في شبر الأول تكبر، ومن دخل في شبر الثاني تواضع، ومن دخل في شبر الثالث يعلم أنه لا يعلم",
+        source: "الشيخ بكر بن زيد رحمه الله",
+      },
+      {
+        text: "Jangan tergesa-gesa dan cepat bosan, ikhlash, sabar, tempuh cara yang benar, dan istiqomah dalam menuntut ilmu.",
+      },
+    ],
   },
   {
-    arabic:
-      "العلم على ثلاثة أشبار؛ من دخل في شبر الأول تكبر، ومن دخل في شبر الثاني تواضع، ومن دخل في شبر الثالث يعلم أنه لا يعلم",
-    source: "الشيخ بكر بن زيد رحمه الله",
+    badge: "✦ KLIP 4 · ADAB & KELAPANGAN HATI ✦",
+    question:
+      "Bagaimana adab seorang penuntut ilmu terhadap gurunya, menjauhi fanatisme buta, dan tetap menjaga apa yang mampu diraih?",
+    nextLabel: "Lanjut: Keberkahan Waktu & Usia",
+    items: [
+      {
+        text: "Adab seorang penuntut ilmu dalam menyikapi kesalahan sang muallim.",
+      },
+      {
+        text: "Jangan seperti orang yang fanatik (taassub) karena ini dilarang dalam agama kita.",
+      },
+      {
+        arabic: "ما لا يدرك كله لا يدرك جله",
+      },
+    ],
   },
   {
-    text: "Jangan tergesa-gesa dan cepat bosan, ikhlash, sabar, tempuh cara yang benar, dan istiqomah dalam menuntut ilmu.",
+    badge: "✦ KLIP 5 · KEBERKAHAN WAKTU & USIA ✦",
+    question:
+      "Merasa waktu selalu sempit? Ingatlah siapa Pemilik waktu yang sesungguhnya dan mohonlah keberkahan usia serta amal.",
+    nextLabel: "Lanjut: Solusi Bersama Sahabat Sevisi",
+    items: [
+      {
+        arabic: "خير الناس من طال عمره وحسن عمله",
+      },
+      {
+        text: "Allah Azza wa Jalla adalah pemilik waktu, Allah yang akan atur untuk kita. Mohonlah kepada Allah keberkahan waktu dan usia.",
+      },
+    ],
   },
   {
-    text: "Jangan seperti orang yang fanatik (taassub) karena ini dilarang dalam agama kita.",
-  },
-  {
-    text: "Allah Azza wa Jalla adalah pemilik waktu, Allah yang akan atur untuk kita. Mohonlah kepada Allah keberkahan waktu dan usia.",
-  },
-  {
-    arabic: "خير الناس من طال عمره وحسن عمله",
-  },
-  {
-    text: "Adab seorang penuntut ilmu dalam menyikapi kesalahan sang muallim.",
-  },
-  {
-    arabic: "ما لا يدرك كله لا يدرك جله",
-  },
-  {
-    arabic: "العلم لا يعادله شيء لمن صحت نيته",
-    source: "الإمام أحمد رحمه الله",
-  },
-  {
-    arabic: "إنما العلم يأتى ولم يأتي",
-    source: "ابن عباس رضي الله عنهما",
+    badge: "✦ KLIP 6 · SOLUSI & SAHABAT SATU VISI ✦",
+    question:
+      "Kini Anda tidak perlu berjalan sendiri. Mulazamahku hadir sebagai solusi pendamping jadwal kajian, catatan materi guru, kitab rujukan, dan mudzakarah bersama sahabat satu visi.",
+    isFinal: true,
+    items: [
+      {
+        arabic: "وصحبة أستاذ • وطول زمان • من ثبت نبت",
+        text: "Tidak hanya menuntut ilmu sendiri, tetapi terarah bersama guru dan ditemani sahabat satu visi.",
+      },
+    ],
   },
 ];
 
@@ -134,7 +194,7 @@ export default function LoginScreen() {
     [morphAnim]
   );
 
-  // Animasi morphing otomatis & orb cahaya lembut di Landing Page
+  // Animasi orb cahaya lembut di Landing Page
   useEffect(() => {
     if (!showLanding) return;
     const orbLoop = Animated.loop(
@@ -154,16 +214,10 @@ export default function LoginScreen() {
       ])
     );
     orbLoop.start();
-
-    const interval = setInterval(() => {
-      morphToIndex((activeMutiaraIdx + 1) % MULAZAMAH_MUTIARA.length);
-    }, 5200);
-
     return () => {
       orbLoop.stop();
-      clearInterval(interval);
     };
-  }, [showLanding, activeMutiaraIdx, morphToIndex, orbAnim]);
+  }, [showLanding, orbAnim]);
 
   // Check if user already passed the gate before
   useEffect(() => {
@@ -401,11 +455,10 @@ export default function LoginScreen() {
         </View>
 
         {/* ════════════════════════════════════════════════════════════════
-            LANDING PAGE — KONTEN MUTIARA MULAZAMAHKU (MORPHING & ELEGAN)
+            LANDING PAGE — KLIP BERTAHAP (MORPHING STORY CLIPS)
             ════════════════════════════════════════════════════════════════ */}
         {showLanding ? (
-          <View style={{ width: "100%", maxWidth: 640, alignSelf: "center", gap: 18 }}>
-            {/* Hero Morphing Spotlight Banner */}
+          <View style={{ width: "100%", maxWidth: 640, alignSelf: "center" }}>
             <LinearGradient
               colors={colors.isDark ? ["#0D152B", "#1E2F5D"] : ["#14203B", "#2B4073"]}
               start={{ x: 0, y: 0 }}
@@ -420,177 +473,193 @@ export default function LoginScreen() {
                   {
                     opacity: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [0.14, 0.28] }),
                     transform: [
-                      { scale: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.18] }) },
-                      { translateY: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 10] }) },
+                      { scale: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.2] }) },
+                      { translateY: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 12] }) },
                     ],
                   },
                 ]}
               />
 
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeText}>✦ الملازمة وطلب العلم ✦</Text>
-              </View>
-
-              {/* Bait Utama Diwan Asy-Syafi'i & Motto */}
-              <Text style={styles.heroArabicMain}>
-                وصحبة أستاذ • وطول زمان{"\n"}وملازمة أستاذ • وطول زمان
-              </Text>
-              <Text style={styles.heroArabicAuthor}>— ديوان الشافعي —</Text>
-
-              <View style={styles.heroDivider} />
-
-              <Text style={styles.heroMottoArabic}>من ثبت نبت</Text>
-              <Text style={styles.heroMottoMeaning}>
-                "Barang siapa yang menetap, maka dia akan tumbuh."
-              </Text>
-
-              {/* Panggung Morphing Kalam Ulama (berganti halus otomatis & bisa diklik) */}
-              <View style={styles.morphStageWrap}>
-                <Animated.View
-                  style={[
-                    styles.morphStageInner,
-                    {
-                      opacity: morphAnim,
-                      transform: [
-                        {
-                          scale: morphAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.93, 1],
-                          }),
-                        },
-                        {
-                          translateY: morphAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [12, 0],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  {MULAZAMAH_MUTIARA[activeMutiaraIdx].arabic && (
-                    <Text style={styles.morphStageArabic}>
-                      {MULAZAMAH_MUTIARA[activeMutiaraIdx].arabic}
-                    </Text>
-                  )}
-                  {MULAZAMAH_MUTIARA[activeMutiaraIdx].text && (
-                    <Text style={styles.morphStageText}>
-                      {MULAZAMAH_MUTIARA[activeMutiaraIdx].text}
-                    </Text>
-                  )}
-                  {MULAZAMAH_MUTIARA[activeMutiaraIdx].source && (
-                    <Text style={styles.morphStageSource}>
-                      — {MULAZAMAH_MUTIARA[activeMutiaraIdx].source}
-                    </Text>
-                  )}
-                </Animated.View>
-
-                {/* Indikator pill yang membesar/mengecil (morphing dots) */}
-                <View style={styles.morphDotsRow}>
-                  {MULAZAMAH_MUTIARA.map((_, i) => {
-                    const isActive = i === activeMutiaraIdx;
-                    return (
-                      <Pressable
-                        key={i}
-                        onPress={() => morphToIndex(i)}
-                        hitSlop={6}
-                        style={[
-                          styles.morphDot,
-                          isActive ? styles.morphDotActive : styles.morphDotInactive,
-                        ]}
-                      />
-                    );
-                  })}
-                </View>
-              </View>
-
-              <Pressable
-                onPress={() => {
-                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowLanding(false);
-                }}
-                style={({ pressed }) => [
-                  styles.heroCtaBtn,
-                  { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-                ]}
-              >
-                <Text style={styles.heroCtaText}>Masuk ke Aplikasi</Text>
-                <Feather name="arrow-right" size={17} color="#1A2744" />
-              </Pressable>
-            </LinearGradient>
-
-            {/* Daftar Lengkap Kalam Ulama & Adab Menuntut Ilmu */}
-            <View style={[styles.mutiaraSectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.mutiaraHeaderRow}>
-                <View style={[styles.mutiaraLine, { backgroundColor: colors.border }]} />
-                <Text style={[styles.mutiaraSectionTitle, { color: colors.gold }]}>
-                  ✦ UNTAIAN MUTIARA MULAZAMAH ✦
+              {/* Baris Atas: Indikator Klip & Tombol Lewati */}
+              <View style={styles.clipTopRow}>
+                <Text style={styles.clipStepText}>
+                  Klip {activeMutiaraIdx + 1} dari {LANDING_CLIPS.length}
                 </Text>
-                <View style={[styles.mutiaraLine, { backgroundColor: colors.border }]} />
+                <Pressable
+                  onPress={() => {
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    setShowLanding(false);
+                  }}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.clipSkipBtn, { opacity: pressed ? 0.75 : 1 }]}
+                >
+                  <Text style={styles.clipSkipText}>Lewati</Text>
+                  <Feather name="chevrons-right" size={13} color="#F5E6A3" />
+                </Pressable>
               </View>
 
-              <View style={{ gap: 14 }}>
-                {MULAZAMAH_MUTIARA.map((item, idx) => {
-                  const isSpotlit = idx === activeMutiaraIdx;
+              {/* Progress Bar 6 Klip (bisa diklik untuk lompat klip) */}
+              <View style={styles.clipProgressRow}>
+                {LANDING_CLIPS.map((_, i) => {
+                  const isDone = i <= activeMutiaraIdx;
+                  const isCurrent = i === activeMutiaraIdx;
                   return (
                     <Pressable
-                      key={idx}
-                      onPress={() => morphToIndex(idx)}
-                      style={({ pressed }) => [
-                        styles.mutiaraBox,
+                      key={i}
+                      onPress={() => morphToIndex(i)}
+                      hitSlop={6}
+                      style={[
+                        styles.clipProgressBar,
                         {
-                          backgroundColor: isSpotlit ? colors.highlight : colors.surface,
-                          borderColor: isSpotlit ? colors.gold : colors.border,
-                          borderLeftColor: colors.gold,
-                          transform: [{ scale: pressed ? 0.985 : isSpotlit ? 1.01 : 1 }],
+                          backgroundColor: isCurrent
+                            ? "#E8C766"
+                            : isDone
+                            ? "rgba(232,199,102,0.55)"
+                            : "rgba(255,255,255,0.18)",
                         },
                       ]}
-                    >
-                      {item.arabic && (
-                        <Text
-                          style={[
-                            styles.mutiaraArabic,
-                            { color: colors.isDark ? "#F5E6A3" : colors.primary },
-                          ]}
-                        >
-                          {item.arabic}
-                        </Text>
-                      )}
-                      {item.text && (
-                        <Text style={[styles.mutiaraText, { color: colors.foreground }]}>
-                          {item.text}
-                        </Text>
-                      )}
-                      {item.source && (
-                        <View style={styles.mutiaraSourceRow}>
-                          <View style={[styles.mutiaraSourcePill, { backgroundColor: "rgba(201,162,39,0.16)" }]}>
-                            <Text style={[styles.mutiaraSource, { color: colors.gold }]}>
-                              {item.source}
-                            </Text>
-                          </View>
-                        </View>
-                      )}
-                    </Pressable>
+                    />
                   );
                 })}
               </View>
 
-              <Pressable
-                onPress={() => {
-                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowLanding(false);
+              {/* Isi Klip Aktif dengan Animasi Morph Smooth */}
+              <Animated.View
+                style={{
+                  width: "100%",
+                  alignItems: "center",
+                  opacity: morphAnim,
+                  transform: [
+                    {
+                      scale: morphAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.94, 1],
+                      }),
+                    },
+                    {
+                      translateY: morphAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [16, 0],
+                      }),
+                    },
+                  ],
                 }}
-                style={({ pressed }) => [
-                  styles.btn,
-                  { backgroundColor: colors.primary, marginTop: 20, opacity: pressed ? 0.88 : 1 },
-                ]}
               >
-                <View style={styles.btnInner}>
-                  <Text style={[styles.btnText, { color: "#FFFFFF" }]}>Mulai Menuntut Ilmu</Text>
-                  <Feather name="arrow-right" size={17} color="#FFFFFF" />
+                <View style={styles.heroBadge}>
+                  <Text style={styles.heroBadgeText}>
+                    {LANDING_CLIPS[activeMutiaraIdx].badge}
+                  </Text>
                 </View>
-              </Pressable>
-            </View>
+
+                {/* Pertanyaan Relevan / Narasi Pembuka Klip */}
+                <Text style={styles.clipQuestionText}>
+                  {LANDING_CLIPS[activeMutiaraIdx].question}
+                </Text>
+
+                {/* Kartu-kartu Kalam Ulama pada Klip Ini */}
+                <View style={{ width: "100%", gap: 14, marginBottom: 22 }}>
+                  {LANDING_CLIPS[activeMutiaraIdx].items.map((item, idx) => (
+                    <View key={idx} style={styles.clipQuoteCard}>
+                      {item.arabic && (
+                        <Text style={styles.clipQuoteArabic}>{item.arabic}</Text>
+                      )}
+                      {item.text && (
+                        <Text style={styles.clipQuoteText}>{item.text}</Text>
+                      )}
+                      {item.source && (
+                        <Text style={styles.clipQuoteSource}>— {item.source}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+
+                {/* Tombol Navigasi Klip / Komitmen Akhir */}
+                {!LANDING_CLIPS[activeMutiaraIdx].isFinal ? (
+                  <View style={styles.clipNavRow}>
+                    {activeMutiaraIdx > 0 && (
+                      <Pressable
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.selectionAsync();
+                          morphToIndex(activeMutiaraIdx - 1);
+                        }}
+                        style={({ pressed }) => [
+                          styles.clipPrevBtn,
+                          { opacity: pressed ? 0.8 : 1 },
+                        ]}
+                      >
+                        <Feather name="arrow-left" size={16} color="#F5E6A3" />
+                      </Pressable>
+                    )}
+                    <Pressable
+                      onPress={() => {
+                        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        morphToIndex(activeMutiaraIdx + 1);
+                      }}
+                      style={({ pressed }) => [
+                        styles.heroCtaBtn,
+                        { flex: 1, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+                      ]}
+                    >
+                      <Text style={styles.heroCtaText}>
+                        {LANDING_CLIPS[activeMutiaraIdx].nextLabel || "Lanjut"}
+                      </Text>
+                      <Feather name="arrow-right" size={17} color="#1A2744" />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={{ width: "100%", gap: 10 }}>
+                    <Pressable
+                      onPress={() => {
+                        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        setShowLanding(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.heroCtaBtn,
+                        {
+                          paddingVertical: 15,
+                          opacity: pressed ? 0.92 : 1,
+                          transform: [{ scale: pressed ? 0.98 : 1 }],
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.heroCtaText, { textAlign: "center", flex: 1 }]}>
+                        Insyaallah Siap Membersamai Guru dalam Menuntut Ilmu
+                      </Text>
+                      <Feather name="arrow-right" size={18} color="#1A2744" />
+                    </Pressable>
+
+                    <View style={styles.clipNavRow}>
+                      <Pressable
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.selectionAsync();
+                          morphToIndex(activeMutiaraIdx - 1);
+                        }}
+                        style={({ pressed }) => [
+                          styles.clipPrevBtn,
+                          { opacity: pressed ? 0.8 : 1 },
+                        ]}
+                      >
+                        <Feather name="arrow-left" size={16} color="#F5E6A3" />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.selectionAsync();
+                          setShowLanding(false);
+                        }}
+                        style={({ pressed }) => [
+                          styles.clipSecondaryCta,
+                          { flex: 1, opacity: pressed ? 0.85 : 1 },
+                        ]}
+                      >
+                        <Text style={styles.clipSecondaryCtaText}>
+                          Masuk ke Aplikasi Mulazamahku
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+              </Animated.View>
+            </LinearGradient>
           </View>
         ) : !selectedRole && !isDevGate ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -1314,6 +1383,117 @@ const styles = StyleSheet.create({
   morphDotInactive: {
     width: 7,
     backgroundColor: "rgba(255,255,255,0.28)",
+  },
+  clipTopRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  clipStepText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "rgba(255,255,255,0.75)",
+    letterSpacing: 0.4,
+  },
+  clipSkipBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  clipSkipText: {
+    fontSize: 11.5,
+    fontFamily: "Inter_600SemiBold",
+    color: "#F5E6A3",
+  },
+  clipProgressRow: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 20,
+  },
+  clipProgressBar: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+  },
+  clipQuestionText: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+    lineHeight: 24,
+    textAlign: "center",
+    marginBottom: 18,
+    paddingHorizontal: 4,
+  },
+  clipQuoteCard: {
+    width: "100%",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.42)",
+    borderLeftWidth: 4,
+    borderLeftColor: "#E8C766",
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  clipQuoteArabic: {
+    fontSize: 25,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFDF6",
+    lineHeight: 42,
+    textAlign: "center",
+  },
+  clipQuoteText: {
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.92)",
+    lineHeight: 23,
+    textAlign: "center",
+  },
+  clipQuoteSource: {
+    fontSize: 13.5,
+    fontFamily: "Inter_600SemiBold",
+    color: "#E8C766",
+    textAlign: "center",
+    marginTop: 2,
+  },
+  clipNavRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  clipPrevBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.5)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clipSecondaryCta: {
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  clipSecondaryCtaText: {
+    fontSize: 13.5,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
   heroCtaBtn: {
     flexDirection: "row",
