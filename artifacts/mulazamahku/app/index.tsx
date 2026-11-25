@@ -2,11 +2,12 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
   Animated,
+  Easing,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -46,7 +47,7 @@ const ROLE_INFO: Record<UserRole, { label: string; icon: string; desc: string }>
 const MULAZAMAH_MUTIARA: { arabic?: string; text?: string; source?: string }[] = [
   {
     arabic: "وصحبة أستاذ • وطول زمان\nوملازمة أستاذ • وطول زمان",
-    source: "قال الإمام الشافعي رحمه الله",
+    source: "ديوان الشافعي",
   },
   {
     arabic: "من ثبت نبت",
@@ -109,6 +110,60 @@ export default function LoginScreen() {
   // ── Login state ─────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
+  const [activeMutiaraIdx, setActiveMutiaraIdx] = useState(0);
+  const morphAnim = useRef(new Animated.Value(1)).current;
+  const orbAnim = useRef(new Animated.Value(0)).current;
+
+  const morphToIndex = useCallback(
+    (nextIdx: number) => {
+      Animated.timing(morphAnim, {
+        toValue: 0,
+        duration: 240,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: Platform.OS !== "web",
+      }).start(() => {
+        setActiveMutiaraIdx(nextIdx);
+        Animated.timing(morphAnim, {
+          toValue: 1,
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }).start();
+      });
+    },
+    [morphAnim]
+  );
+
+  // Animasi morphing otomatis & orb cahaya lembut di Landing Page
+  useEffect(() => {
+    if (!showLanding) return;
+    const orbLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(orbAnim, {
+          toValue: 1,
+          duration: 3200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.timing(orbAnim, {
+          toValue: 0,
+          duration: 3200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ])
+    );
+    orbLoop.start();
+
+    const interval = setInterval(() => {
+      morphToIndex((activeMutiaraIdx + 1) % MULAZAMAH_MUTIARA.length);
+    }, 5200);
+
+    return () => {
+      orbLoop.stop();
+      clearInterval(interval);
+    };
+  }, [showLanding, activeMutiaraIdx, morphToIndex, orbAnim]);
 
   // Check if user already passed the gate before
   useEffect(() => {
@@ -346,25 +401,41 @@ export default function LoginScreen() {
         </View>
 
         {/* ════════════════════════════════════════════════════════════════
-            LANDING PAGE — KONTEN MUTIARA MULAZAMAHKU (ELEGAN)
+            LANDING PAGE — KONTEN MUTIARA MULAZAMAHKU (MORPHING & ELEGAN)
             ════════════════════════════════════════════════════════════════ */}
         {showLanding ? (
-          <View style={{ width: "100%", maxWidth: 600, alignSelf: "center", gap: 16 }}>
-            {/* Hero Banner */}
+          <View style={{ width: "100%", maxWidth: 640, alignSelf: "center", gap: 18 }}>
+            {/* Hero Morphing Spotlight Banner */}
             <LinearGradient
-              colors={colors.isDark ? [colors.header, colors.headerAlt] : [colors.primary, colors.secondary]}
+              colors={colors.isDark ? ["#0D152B", "#1E2F5D"] : ["#14203B", "#2B4073"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.heroCard}
             >
+              {/* Cahaya latar belakang yang bergerak halus (morph glow) */}
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.heroGlowOrb,
+                  {
+                    opacity: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [0.14, 0.28] }),
+                    transform: [
+                      { scale: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.18] }) },
+                      { translateY: orbAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 10] }) },
+                    ],
+                  },
+                ]}
+              />
+
               <View style={styles.heroBadge}>
                 <Text style={styles.heroBadgeText}>✦ الملازمة وطلب العلم ✦</Text>
               </View>
 
+              {/* Bait Utama Diwan Asy-Syafi'i & Motto */}
               <Text style={styles.heroArabicMain}>
                 وصحبة أستاذ • وطول زمان{"\n"}وملازمة أستاذ • وطول زمان
               </Text>
-              <Text style={styles.heroArabicAuthor}>— قال الإمام الشافعي رحمه الله —</Text>
+              <Text style={styles.heroArabicAuthor}>— ديوان الشافعي —</Text>
 
               <View style={styles.heroDivider} />
 
@@ -372,6 +443,66 @@ export default function LoginScreen() {
               <Text style={styles.heroMottoMeaning}>
                 "Barang siapa yang menetap, maka dia akan tumbuh."
               </Text>
+
+              {/* Panggung Morphing Kalam Ulama (berganti halus otomatis & bisa diklik) */}
+              <View style={styles.morphStageWrap}>
+                <Animated.View
+                  style={[
+                    styles.morphStageInner,
+                    {
+                      opacity: morphAnim,
+                      transform: [
+                        {
+                          scale: morphAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.93, 1],
+                          }),
+                        },
+                        {
+                          translateY: morphAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [12, 0],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  {MULAZAMAH_MUTIARA[activeMutiaraIdx].arabic && (
+                    <Text style={styles.morphStageArabic}>
+                      {MULAZAMAH_MUTIARA[activeMutiaraIdx].arabic}
+                    </Text>
+                  )}
+                  {MULAZAMAH_MUTIARA[activeMutiaraIdx].text && (
+                    <Text style={styles.morphStageText}>
+                      {MULAZAMAH_MUTIARA[activeMutiaraIdx].text}
+                    </Text>
+                  )}
+                  {MULAZAMAH_MUTIARA[activeMutiaraIdx].source && (
+                    <Text style={styles.morphStageSource}>
+                      — {MULAZAMAH_MUTIARA[activeMutiaraIdx].source}
+                    </Text>
+                  )}
+                </Animated.View>
+
+                {/* Indikator pill yang membesar/mengecil (morphing dots) */}
+                <View style={styles.morphDotsRow}>
+                  {MULAZAMAH_MUTIARA.map((_, i) => {
+                    const isActive = i === activeMutiaraIdx;
+                    return (
+                      <Pressable
+                        key={i}
+                        onPress={() => morphToIndex(i)}
+                        hitSlop={6}
+                        style={[
+                          styles.morphDot,
+                          isActive ? styles.morphDotActive : styles.morphDotInactive,
+                        ]}
+                      />
+                    );
+                  })}
+                </View>
+              </View>
 
               <Pressable
                 onPress={() => {
@@ -384,54 +515,64 @@ export default function LoginScreen() {
                 ]}
               >
                 <Text style={styles.heroCtaText}>Masuk ke Aplikasi</Text>
-                <Feather name="arrow-right" size={16} color="#1A2744" />
+                <Feather name="arrow-right" size={17} color="#1A2744" />
               </Pressable>
             </LinearGradient>
 
-            {/* Daftar Kalam Ulama & Adab Menuntut Ilmu */}
+            {/* Daftar Lengkap Kalam Ulama & Adab Menuntut Ilmu */}
             <View style={[styles.mutiaraSectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.mutiaraHeaderRow}>
                 <View style={[styles.mutiaraLine, { backgroundColor: colors.border }]} />
                 <Text style={[styles.mutiaraSectionTitle, { color: colors.gold }]}>
-                  ✦ KALAM ULAMA & ADAB ILMU ✦
+                  ✦ UNTAIAN MUTIARA MULAZAMAH ✦
                 </Text>
                 <View style={[styles.mutiaraLine, { backgroundColor: colors.border }]} />
               </View>
 
-              <View style={{ gap: 12 }}>
-                {MULAZAMAH_MUTIARA.slice(2).map((item, idx) => (
-                  <View
-                    key={idx}
-                    style={[
-                      styles.mutiaraBox,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                        borderLeftColor: colors.gold,
-                      },
-                    ]}
-                  >
-                    {item.arabic && (
-                      <Text style={[styles.mutiaraArabic, { color: colors.isDark ? "#F5E6A3" : colors.primary }]}>
-                        {item.arabic}
-                      </Text>
-                    )}
-                    {item.text && (
-                      <Text style={[styles.mutiaraText, { color: colors.foreground }]}>
-                        {item.text}
-                      </Text>
-                    )}
-                    {item.source && (
-                      <View style={styles.mutiaraSourceRow}>
-                        <View style={[styles.mutiaraSourcePill, { backgroundColor: "rgba(201,162,39,0.14)" }]}>
-                          <Text style={[styles.mutiaraSource, { color: colors.gold }]}>
-                            {item.source}
-                          </Text>
+              <View style={{ gap: 14 }}>
+                {MULAZAMAH_MUTIARA.map((item, idx) => {
+                  const isSpotlit = idx === activeMutiaraIdx;
+                  return (
+                    <Pressable
+                      key={idx}
+                      onPress={() => morphToIndex(idx)}
+                      style={({ pressed }) => [
+                        styles.mutiaraBox,
+                        {
+                          backgroundColor: isSpotlit ? colors.highlight : colors.surface,
+                          borderColor: isSpotlit ? colors.gold : colors.border,
+                          borderLeftColor: colors.gold,
+                          transform: [{ scale: pressed ? 0.985 : isSpotlit ? 1.01 : 1 }],
+                        },
+                      ]}
+                    >
+                      {item.arabic && (
+                        <Text
+                          style={[
+                            styles.mutiaraArabic,
+                            { color: colors.isDark ? "#F5E6A3" : colors.primary },
+                          ]}
+                        >
+                          {item.arabic}
+                        </Text>
+                      )}
+                      {item.text && (
+                        <Text style={[styles.mutiaraText, { color: colors.foreground }]}>
+                          {item.text}
+                        </Text>
+                      )}
+                      {item.source && (
+                        <View style={styles.mutiaraSourceRow}>
+                          <View style={[styles.mutiaraSourcePill, { backgroundColor: "rgba(201,162,39,0.16)" }]}>
+                            <Text style={[styles.mutiaraSource, { color: colors.gold }]}>
+                              {item.source}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                    )}
-                  </View>
-                ))}
+                      )}
+                    </Pressable>
+                  );
+                })}
               </View>
 
               <Pressable
@@ -441,7 +582,7 @@ export default function LoginScreen() {
                 }}
                 style={({ pressed }) => [
                   styles.btn,
-                  { backgroundColor: colors.primary, marginTop: 18, opacity: pressed ? 0.88 : 1 },
+                  { backgroundColor: colors.primary, marginTop: 20, opacity: pressed ? 0.88 : 1 },
                 ]}
               >
                 <View style={styles.btnInner}>
@@ -1047,66 +1188,132 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     width: "100%",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(201,162,39,0.5)",
-    paddingHorizontal: 22,
-    paddingVertical: 24,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: "rgba(201,162,39,0.55)",
+    paddingHorizontal: 24,
+    paddingVertical: 28,
     alignItems: "center",
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  heroGlowOrb: {
+    position: "absolute",
+    top: -40,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "#E8C766",
   },
   heroBadge: {
-    backgroundColor: "rgba(201,162,39,0.18)",
+    backgroundColor: "rgba(201,162,39,0.22)",
     borderWidth: 1,
-    borderColor: "rgba(201,162,39,0.45)",
-    paddingHorizontal: 14,
-    paddingVertical: 4,
+    borderColor: "rgba(201,162,39,0.55)",
+    paddingHorizontal: 16,
+    paddingVertical: 5,
     borderRadius: 20,
-    marginBottom: 16,
+    marginBottom: 18,
   },
   heroBadgeText: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontFamily: "Inter_700Bold",
     color: "#F5E6A3",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
   heroArabicMain: {
-    fontSize: 20,
+    fontSize: 27,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
-    lineHeight: 34,
+    lineHeight: 44,
     textAlign: "center",
   },
   heroArabicAuthor: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
     color: "#E8C766",
-    marginTop: 6,
+    marginTop: 8,
   },
   heroDivider: {
-    width: 64,
+    width: 72,
     height: 1.5,
-    backgroundColor: "rgba(201,162,39,0.45)",
-    marginVertical: 16,
+    backgroundColor: "rgba(201,162,39,0.5)",
+    marginVertical: 18,
   },
   heroMottoArabic: {
-    fontSize: 22,
+    fontSize: 29,
     fontFamily: "Inter_700Bold",
     color: "#F5E6A3",
+    lineHeight: 42,
     textAlign: "center",
   },
   heroMottoMeaning: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
     fontStyle: "italic",
-    color: "rgba(255,255,255,0.85)",
+    color: "rgba(255,255,255,0.88)",
     textAlign: "center",
     marginTop: 4,
+    marginBottom: 18,
+  },
+  morphStageWrap: {
+    width: "100%",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.38)",
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     marginBottom: 20,
+    minHeight: 136,
+    justifyContent: "space-between",
+  },
+  morphStageInner: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  morphStageArabic: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF9E6",
+    lineHeight: 36,
+    textAlign: "center",
+  },
+  morphStageText: {
+    fontSize: 14.5,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.92)",
+    lineHeight: 22,
+    textAlign: "center",
+  },
+  morphStageSource: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#E8C766",
+    marginTop: 2,
+  },
+  morphDotsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 14,
+  },
+  morphDot: {
+    height: 7,
+    borderRadius: 4,
+  },
+  morphDotActive: {
+    width: 24,
+    backgroundColor: "#E8C766",
+  },
+  morphDotInactive: {
+    width: 7,
+    backgroundColor: "rgba(255,255,255,0.28)",
   },
   heroCtaBtn: {
     flexDirection: "row",
@@ -1115,18 +1322,18 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: "#E8C766",
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 25,
+    paddingVertical: 13,
+    borderRadius: 26,
     width: "100%",
   },
   heroCtaText: {
-    fontSize: 15,
+    fontSize: 15.5,
     fontFamily: "Inter_700Bold",
     color: "#1A2744",
   },
   mutiaraSectionCard: {
     width: "100%",
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 20,
   },
@@ -1141,42 +1348,42 @@ const styles = StyleSheet.create({
     height: 1,
   },
   mutiaraSectionTitle: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontFamily: "Inter_700Bold",
     letterSpacing: 1,
   },
   mutiaraBox: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderLeftWidth: 3.5,
-    paddingHorizontal: 15,
-    paddingVertical: 14,
-    gap: 6,
+    borderLeftWidth: 4,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    gap: 8,
   },
   mutiaraArabic: {
-    fontSize: 17,
+    fontSize: 22,
     fontFamily: "Inter_700Bold",
-    lineHeight: 28,
+    lineHeight: 37,
     textAlign: "right",
   },
   mutiaraText: {
-    fontSize: 13.5,
+    fontSize: 14.5,
     fontFamily: "Inter_400Regular",
-    lineHeight: 21,
+    lineHeight: 22,
     textAlign: "left",
   },
   mutiaraSourceRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 2,
+    marginTop: 4,
   },
   mutiaraSourcePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 10,
   },
   mutiaraSource: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontFamily: "Inter_600SemiBold",
   },
 });
