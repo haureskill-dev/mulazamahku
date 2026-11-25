@@ -99,6 +99,53 @@ export function findNearestKajian(allKajian: Kajian[], flyers: Flyer[] = []): Ka
   return allKajian.find((k) => k.status === "aktif") ?? allKajian[0];
 }
 
+/** Hitung timestamp jadwal kajian terdekat untuk pengurutan flyer (hari & jam terdekat lebih dulu) */
+export function getFlyerSortTimestamp(flyer: Flyer, allKajian: Kajian[], allFlyers: Flyer[]): number {
+  const now = new Date();
+  const kajian = allKajian.find((k) => k.id === flyer.kajian_id);
+
+  if (flyer.tanggal_berlaku) {
+    const parts = flyer.tanggal_berlaku.split("-").map(Number);
+    if (parts.length === 3 && !parts.some(Number.isNaN)) {
+      const [y, m, d] = parts;
+      const mins = getStartMinutes(flyer.keterangan || kajian?.waktu || "");
+      const hh = mins < 1440 ? Math.floor(mins / 60) : 8;
+      const mm = mins < 1440 ? mins % 60 : 0;
+      const eventDate = new Date(y, m - 1, d, hh, mm, 0, 0);
+      if (eventDate.getTime() + 60 * 60_000 >= now.getTime()) {
+        return eventDate.getTime();
+      }
+      return 1e15 + (1e13 - eventDate.getTime());
+    }
+  }
+
+  if (kajian) {
+    for (let offset = 0; offset < 31; offset++) {
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+      if (!isKajianOnDate(kajian, date, allFlyers)) continue;
+      const flyerWaktu = extractTimeFromFlyer(kajian, date, allFlyers);
+      const effectiveWaktu = flyerWaktu || kajian.waktu;
+      if (offset === 0 && isKajianPassedToday(effectiveWaktu)) continue;
+      const mins = getStartMinutes(effectiveWaktu);
+      const hh = mins < 1440 ? Math.floor(mins / 60) : 23;
+      const mm = mins < 1440 ? mins % 60 : 59;
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm, 0, 0).getTime();
+    }
+  }
+
+  return 2e15 - new Date(flyer.created_at).getTime();
+}
+
+export function sortFlyersBySchedule(flyers: Flyer[], allKajian: Kajian[]): Flyer[] {
+  return [...flyers].sort((a, b) => {
+    const diff =
+      getFlyerSortTimestamp(a, allKajian, flyers) -
+      getFlyerSortTimestamp(b, allKajian, flyers);
+    if (diff !== 0) return diff;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+}
+
 export function findNearestKajianWithDate(
   allKajian: Kajian[],
   flyers: Flyer[] = [],

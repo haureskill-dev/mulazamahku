@@ -28,6 +28,7 @@ import { FlyerService } from "@/services/flyerService";
 import { KajianTambahanService, KajianTambahan } from "@/services/kajianTambahanService";
 import { scheduleAllKajianReminders } from "@/services/notificationService";
 import { DUMMY_KAJIAN } from "@/services/dummyData";
+import { sortFlyersBySchedule } from "@/utils/kajianSchedule";
 import { Flyer, Kajian } from "@/types";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -247,6 +248,10 @@ export default function FlyerScreen() {
     setOriginalImageUrl(null);
   };
 
+  const sortedFlyerList = useMemo(() => {
+    return sortFlyersBySchedule(flyerList, allKajianList);
+  }, [flyerList, allKajianList]);
+
   const getKajianTitle = (id: string) => {
     const k = allKajianList.find((x) => x.id === id);
     return k ? k.judul : id;
@@ -398,7 +403,7 @@ export default function FlyerScreen() {
             Memuat flyer...
           </Text>
         </View>
-      ) : flyerList.length === 0 ? (
+      ) : sortedFlyerList.length === 0 ? (
         <View style={styles.centerContent}>
           <Feather name="image" size={48} color={colors.primary} style={{ opacity: 0.5, marginBottom: 16 }} />
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
@@ -407,7 +412,7 @@ export default function FlyerScreen() {
         </View>
       ) : (
         <FlatList
-          data={flyerList}
+          data={sortedFlyerList}
           keyExtractor={(item) => item.id}
           renderItem={renderFlyerItem}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100 }}

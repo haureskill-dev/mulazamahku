@@ -42,6 +42,52 @@ const ROLE_INFO: Record<UserRole, { label: string; icon: string; desc: string }>
   admin: { label: "Admin", icon: "settings", desc: "Kelola jadwal & flyer" },
 };
 
+const MULAZAMAH_MUTIARA: { arabic?: string; text?: string; source?: string }[] = [
+  {
+    arabic: "وصحبة أستاذ • وطول زمان\nوملازمة أستاذ • وطول زمان",
+    source: "قال الإمام الشافعي رحمه الله",
+  },
+  {
+    arabic: "من ثبت نبت",
+    text: "Barang siapa yang menetap, maka dia akan tumbuh.",
+  },
+  {
+    arabic: "الذي يربي الناس بصغار العلم قبل كباره",
+    source: "الإمام البخاري رحمه الله",
+  },
+  {
+    arabic:
+      "العلم على ثلاثة أشبار؛ من دخل في شبر الأول تكبر، ومن دخل في شبر الثاني تواضع، ومن دخل في شبر الثالث يعلم أنه لا يعلم",
+    source: "الشيخ بكر بن زيد رحمه الله",
+  },
+  {
+    text: "Jangan tergesa-gesa dan cepat bosan, ikhlash, sabar, tempuh cara yang benar, dan istiqomah dalam menuntut ilmu.",
+  },
+  {
+    text: "Jangan seperti orang yang fanatik (taassub) karena ini dilarang dalam agama kita.",
+  },
+  {
+    text: "Allah Azza wa Jalla adalah pemilik waktu, Allah yang akan atur untuk kita. Mohonlah kepada Allah keberkahan waktu dan usia.",
+  },
+  {
+    arabic: "خير الناس من طال عمره وحسن عمله",
+  },
+  {
+    text: "Adab seorang penuntut ilmu dalam menyikapi kesalahan sang muallim.",
+  },
+  {
+    arabic: "ما لا يدرك كله لا يدرك جله",
+  },
+  {
+    arabic: "العلم لا يعادله شيء لمن صحت نيته",
+    source: "الإمام أحمد رحمه الله",
+  },
+  {
+    arabic: "إنما العلم يأتى ولم يأتي",
+    source: "ابن عباس رضي الله عنهما",
+  },
+];
+
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -61,6 +107,7 @@ export default function LoginScreen() {
 
   // ── Login state ─────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
 
   // Check if user already passed the gate before
   useEffect(() => {
@@ -68,10 +115,12 @@ export default function LoginScreen() {
       if (v && (v === "murid" || v === "pengajar" || v === "admin")) {
         setSelectedRole(v as UserRole);
         setGateVerified(true);
+        setShowLanding(false);
       } else if (v === true as any) {
         // Legacy: user lama yang sudah verify dengan sistem lama
         setSelectedRole("murid");
         setGateVerified(true);
+        setShowLanding(false);
       } else {
         setGateVerified(false);
       }
@@ -297,10 +346,96 @@ export default function LoginScreen() {
         </View>
 
         {/* ════════════════════════════════════════════════════════════════
-            STEP 1 — PILIH PERAN
+            LANDING PAGE — KONTEN MUTIARA MULAZAMAHKU
             ════════════════════════════════════════════════════════════════ */}
-        {!selectedRole && !isDevGate ? (
+        {showLanding && !selectedRole && !isDevGate ? (
+          <View style={{ width: "100%", maxWidth: 560, alignSelf: "center", gap: 14 }}>
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center", marginTop: 4 }]}>
+                Ahlan wa Sahlan di Mulazamahku
+              </Text>
+              <Text style={[styles.gateSubtitle, { color: colors.mutedForeground, marginBottom: 16 }]}>
+                Pendamping halaqah kajian, jadwal mulazamah, catatan materi, dan faidah ilmu.
+              </Text>
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowLanding(false);
+                }}
+                style={({ pressed }) => [
+                  styles.btn,
+                  { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                <View style={styles.btnInner}>
+                  <Text style={[styles.btnText, { color: "#FFFFFF" }]}>Masuk ke Aplikasi</Text>
+                  <Feather name="arrow-right" size={17} color="#FFFFFF" />
+                </View>
+              </Pressable>
+            </View>
+
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 }}>
+                <Feather name="book-open" size={16} color={colors.gold} />
+                <Text style={[styles.cardTitle, { color: colors.foreground, fontSize: 16, marginBottom: 0 }]}>
+                  Mutiara Mulazamah
+                </Text>
+              </View>
+
+              <View style={{ gap: 10 }}>
+                {MULAZAMAH_MUTIARA.map((item, idx) => (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.mutiaraBox,
+                      { backgroundColor: colors.surface, borderColor: colors.border },
+                    ]}
+                  >
+                    {item.arabic && (
+                      <Text style={[styles.mutiaraArabic, { color: colors.accentText }]}>
+                        {item.arabic}
+                      </Text>
+                    )}
+                    {item.text && (
+                      <Text style={[styles.mutiaraText, { color: colors.foreground }]}>
+                        {item.text}
+                      </Text>
+                    )}
+                    {item.source && (
+                      <Text style={[styles.mutiaraSource, { color: colors.gold }]}>
+                        — {item.source}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowLanding(false);
+                }}
+                style={({ pressed }) => [
+                  styles.btn,
+                  { backgroundColor: colors.primary, marginTop: 16, opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                <View style={styles.btnInner}>
+                  <Text style={[styles.btnText, { color: "#FFFFFF" }]}>Mulai Sekarang</Text>
+                  <Feather name="arrow-right" size={17} color="#FFFFFF" />
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        ) : !selectedRole && !isDevGate ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable
+              onPress={() => setShowLanding(true)}
+              style={styles.backBtn}
+            >
+              <Feather name="arrow-left" size={15} color={colors.accentText} />
+              <Text style={[styles.backText, { color: colors.accentText }]}>Halaman Mutiara Mulazamah</Text>
+            </Pressable>
             <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: "center", marginTop: 8 }]}>
               Pilih Peran Anda
             </Text>
@@ -874,5 +1009,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     lineHeight: 18,
+  },
+  mutiaraBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 13,
+    gap: 6,
+  },
+  mutiaraArabic: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 26,
+    textAlign: "right",
+  },
+  mutiaraText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
+    textAlign: "left",
+  },
+  mutiaraSource: {
+    fontSize: 11.5,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
   },
 });

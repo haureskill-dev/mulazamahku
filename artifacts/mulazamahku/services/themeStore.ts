@@ -45,22 +45,12 @@ function ensureTimer() {
   timer = setInterval(recompute, 30_000);
 }
 
-// Muat preferensi tersimpan
-AsyncStorage.getItem(STORAGE_KEY)
-  .then((v) => {
-    if (v === "auto" || v === "light" || v === "dark") {
-      mode = v;
-      scheme = mode === "auto" ? schemeFromClock() : mode;
-      emit();
-    }
-  })
-  .catch(() => {});
-
+// Mode awal selalu otomatis pencahayaan ("auto": terang 06:00–17:59, gelap 18:00–05:59).
+// Perubahan manual hanya berlaku selama sesi aktif agar setiap dibuka kembali ke mode otomatis.
 export function setThemeMode(next: ThemeMode) {
   mode = next;
   scheme = mode === "auto" ? schemeFromClock() : mode;
   emit();
-  AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {});
 }
 
 function subscribe(cb: () => void) {

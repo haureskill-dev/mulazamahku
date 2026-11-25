@@ -128,18 +128,28 @@ export default function ProfileScreen() {
 
   const fetchJoinedUsers = useCallback(async () => {
     setLoadingUsers(true);
+    setUsersError(null);
     try {
-      const { data, error } = await supabase
-        .from("user_logs")
-        .select("nama, email, platform, logged_in_at")
-        .order("logged_in_at", { ascending: false })
-        .limit(500);
-      if (!error && data) {
-        const map = new Map<
-          string,
-          { key: string; nama: string; email: string; platform: string; lastLogin: string; count: number }
-        >();
-        for (const row of data as any[]) {
+      const [logsRes, tokensRes] = await Promise.all([
+        supabase
+          .from("user_logs")
+          .select("nama, email, platform, logged_in_at")
+          .order("logged_in_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("push_tokens")
+          .select("user_name, user_role, expo_token, updated_at, created_at")
+          .order("updated_at", { ascending: false })
+          .limit(500),
+      ]);
+
+      const map = new Map<
+        string,
+        { key: string; nama: string; email: string; platform: string; lastLogin: string; count: number }
+      >();
+
+      if (!logsRes.error && logsRes.data) {
+        for (const row of logsRes.data as any[]) {
           const key = (row.email || row.nama || "unknown").toLowerCase();
           const existing = map.get(key);
           if (!existing) {
@@ -155,9 +165,38 @@ export default function ProfileScreen() {
             existing.count += 1;
           }
         }
+      }
+
+      if (!tokensRes.error && tokensRes.data) {
+        for (const row of tokensRes.data as any[]) {
+          const nama = row.user_name || "Pengguna Aplikasi";
+          const key = `token:${nama.toLowerCase()}`;
+          if (!Array.from(map.values()).some((v) => v.nama.toLowerCase() === nama.toLowerCase())) {
+            const existing = map.get(key);
+            if (!existing) {
+              map.set(key, {
+                key,
+                nama,
+                email: `Peran: ${row.user_role || "murid"}`,
+                platform: "mobile",
+                lastLogin: row.updated_at || row.created_at,
+                count: 1,
+              });
+            } else {
+              existing.count += 1;
+            }
+          }
+        }
+      }
+
+      if (map.size === 0 && logsRes.error) {
+        setUsersError(`Gagal membaca user_logs: ${logsRes.error.message}`);
+      } else {
         setJoinedUsers(Array.from(map.values()));
       }
-    } catch {}
+    } catch (e: any) {
+      setUsersError(e?.message || "Gagal memuat daftar pengguna.");
+    }
     setLoadingUsers(false);
   }, []);
 
